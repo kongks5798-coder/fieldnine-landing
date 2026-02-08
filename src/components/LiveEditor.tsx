@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import ActivityStream, { type ActivityEvent, type ActivityEventType } from './ActivityStream';
 import DeployPipeline, { type PipelineState, INITIAL_PIPELINE, type StageStatus } from './DeployPipeline';
 import useDeployStatus, { type VercelState } from '@/hooks/useDeployStatus';
@@ -139,8 +139,11 @@ export default function LiveEditor() {
   );
 
   /* ─── Vercel state → pipeline sync ─── */
-  const prevVercelState = useRef<VercelState>(deploy.state);
-  const syncVercelState = useCallback((curr: VercelState) => {
+  const [prevVercelState, setPrevVercelState] = useState<VercelState>(deploy.state);
+
+  if (deploy.state !== prevVercelState) {
+    setPrevVercelState(deploy.state);
+    const curr = deploy.state;
     if (curr === 'ready') {
       setPipeline((p) => {
         let next = setPipelineStage(p, 2, 'completed');
@@ -161,11 +164,6 @@ export default function LiveEditor() {
         })
       );
     }
-  }, [deploy, pushEvent]);
-
-  if (deploy.state !== prevVercelState.current) {
-    prevVercelState.current = deploy.state;
-    syncVercelState(deploy.state);
   }
 
   /* ─── Preview srcDoc ─── */
