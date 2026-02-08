@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Field Nine OS: Live Visual Command Engine Animations ── */
+
+@keyframes pipelinePulse {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.8), 0 0 32px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes pipelineTravel {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes pipelineComplete {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes activitySlideIn {
+  0% {
+    transform: translateX(-12px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes previewScanline {
+  0% {
+    top: -2px;
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.2;
+  }
+}
+
+@keyframes previewFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-pipeline-pulse {
+  animation: pipelinePulse 2s ease-in-out infinite;
+}
+.animate-pipeline-travel {
+  animation: pipelineTravel 1.5s linear infinite;
+}
+.animate-pipeline-complete {
+  animation: pipelineComplete 0.4s ease-out forwards;
+}
+.animate-activity-slide-in {
+  animation: activitySlideIn 0.3s ease-out forwards;
+}
+.animate-preview-scanline {
+  animation: previewScanline 0.8s linear forwards;
+}
+.animate-preview-fade-in {
+  animation: previewFadeIn 0.4s ease-out forwards;
+}
