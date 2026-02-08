@@ -930,9 +930,9 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
   }, [aiCollapsed]);
 
   return (
-    <div className={`flex h-screen bg-[#0e1525] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
+    <div className={`flex h-screen bg-[#F9F9F7] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
       {/* ===== Left Sidebar (48px) — Replit-style ===== */}
-      <div className="w-12 bg-[#0b111e] flex flex-col items-center py-3 border-r border-[#1c2333] shrink-0">
+      <div className="w-12 bg-white flex flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
         <button
           type="button"
           onClick={onGoHome}
@@ -950,11 +950,11 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                 key={item.id}
                 type="button"
                 onClick={() => item.id === "home" && onGoHome?.()}
-                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#1c2333]/50 transition-all"
+                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
                 aria-label={item.label}
               >
                 <Icon size={18} strokeWidth={1.5} />
-                <span className="absolute left-full ml-2 px-2 py-1 bg-[#2b3245] text-xs text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                <span className="absolute left-full ml-2 px-2 py-1 bg-[#F0F0ED] text-xs text-[#1D2433] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[#E4E4E0]">
                   {item.label}
                 </span>
               </button>
@@ -965,14 +965,14 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
         <div className="flex flex-col items-center gap-1">
           <button
             type="button"
-            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#1c2333]/50 transition-all"
+            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
             aria-label="Help"
           >
             <HelpCircle size={18} strokeWidth={1.5} />
           </button>
           <button
             type="button"
-            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#1c2333]/50 transition-all"
+            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
             aria-label="Settings"
           >
             <Settings size={18} strokeWidth={1.5} />
@@ -982,14 +982,14 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
 
       {/* ===== File Explorer / Assets Sidebar ===== */}
       {showFileExplorer && (
-        <div className="w-[220px] bg-[#0e1525] border-r border-[#1c2333] flex flex-col shrink-0">
+        <div className="w-[220px] bg-[#F9F9F7] border-r border-[#E4E4E0] flex flex-col shrink-0">
           {/* Tab header: Files | Assets */}
-          <div className="flex items-center border-b border-[#1c2333] shrink-0">
+          <div className="flex items-center border-b border-[#E4E4E0] shrink-0">
             <button
               type="button"
               onClick={() => setExplorerTab("files")}
               className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors relative ${
-                explorerTab === "files" ? "text-[#e1e8f0]" : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                explorerTab === "files" ? "text-[#1D2433]" : "text-[#5F6B7A] hover:text-[#1D2433]"
               }`}
             >
               Files
@@ -999,7 +999,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               type="button"
               onClick={() => { setExplorerTab("assets"); loadAssets(); }}
               className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors relative ${
-                explorerTab === "assets" ? "text-[#e1e8f0]" : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                explorerTab === "assets" ? "text-[#1D2433]" : "text-[#5F6B7A] hover:text-[#1D2433]"
               }`}
             >
               Assets
@@ -1008,7 +1008,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={() => setShowFileExplorer(false)}
-              className="p-1 mr-1 text-[#5c6b8a] hover:text-[#9ba8c4] rounded transition-colors"
+              className="p-1 mr-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
               aria-label="Close explorer"
             >
               <X size={13} />
@@ -1020,11 +1020,11 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <>
               {/* Actions row */}
               <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-[10px] text-[#3d4b66]">{fileList.length} files</span>
+                <span className="text-[10px] text-[#9DA5B0]">{fileList.length} files</span>
                 <button
                   type="button"
                   onClick={() => setShowNewFileInput(true)}
-                  className="p-1 text-[#5c6b8a] hover:text-[#9ba8c4] rounded transition-colors"
+                  className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
                   aria-label="New file"
                 >
                   <FilePlus2 size={13} />
@@ -1034,11 +1034,11 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               {/* Search */}
               <div className="px-2 pb-2">
                 <div className="relative">
-                  <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#3d4b66]" />
+                  <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9DA5B0]" />
                   <input
                     type="text"
                     placeholder="Search files..."
-                    className="w-full pl-7 pr-2 py-1 bg-[#151c2c] border border-[#1c2333] text-[11px] text-[#e1e8f0] placeholder-[#3d4b66] rounded-md outline-none focus:border-[#0079f2] transition-colors"
+                    className="w-full pl-7 pr-2 py-1 bg-white border border-[#E4E4E0] text-[11px] text-[#1D2433] placeholder-[#9DA5B0] rounded-md outline-none focus:border-[#0079f2] transition-colors"
                   />
                 </div>
               </div>
@@ -1052,7 +1052,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                       value={newFileName}
                       onChange={(e) => setNewFileName(e.target.value)}
                       placeholder="filename.ext"
-                      className="w-full bg-[#151c2c] text-[#e1e8f0] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
+                      className="w-full bg-white text-[#1D2433] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
                       autoFocus
                       onBlur={() => { setShowNewFileInput(false); setNewFileName(""); }}
                       onKeyDown={(e) => { if (e.key === "Escape") { setShowNewFileInput(false); setNewFileName(""); }}}
@@ -1073,8 +1073,8 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                       onClick={() => openFile(fileName)}
                       className={`group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] cursor-pointer transition-colors mx-1 ${
                         isActive
-                          ? "bg-[#1c2333] text-[#e1e8f0]"
-                          : "text-[#9ba8c4] hover:bg-[#151c2c]"
+                          ? "bg-[#E8F2FF] text-[#1D2433]"
+                          : "text-[#5F6B7A] hover:bg-[#F5F5F3]"
                       }`}
                     >
                       <Icon size={14} className={info.color} />
@@ -1105,7 +1105,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                 className={`mx-2 mt-2 border-2 border-dashed rounded-lg p-3 text-center transition-colors cursor-pointer ${
                   dragOver
                     ? "border-[#0079f2] bg-[#0079f2]/10"
-                    : "border-[#1c2333] hover:border-[#2b3245]"
+                    : "border-[#E4E4E0] hover:border-[#C8C8C4]"
                 }`}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -1128,8 +1128,8 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                   </div>
                 ) : (
                   <>
-                    <Upload size={18} className="text-[#3d4b66] mx-auto mb-1" />
-                    <p className="text-[11px] text-[#5c6b8a]">Drop files or click to upload</p>
+                    <Upload size={18} className="text-[#9DA5B0] mx-auto mb-1" />
+                    <p className="text-[11px] text-[#5F6B7A]">Drop files or click to upload</p>
                   </>
                 )}
               </div>
@@ -1138,32 +1138,32 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               <div className="flex-1 overflow-y-auto px-1 py-2">
                 {assets.length === 0 ? (
                   <div className="text-center py-6">
-                    <ImageIcon size={24} className="text-[#2b3245] mx-auto mb-2" />
-                    <p className="text-[11px] text-[#3d4b66]">No assets yet</p>
+                    <ImageIcon size={24} className="text-[#E4E4E0] mx-auto mb-2" />
+                    <p className="text-[11px] text-[#9DA5B0]">No assets yet</p>
                   </div>
                 ) : (
                   assets.map((asset: AssetFile) => (
                     <div
                       key={asset.url}
-                      className="group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] mx-1 hover:bg-[#151c2c] transition-colors"
+                      className="group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] mx-1 hover:bg-[#F5F5F3] transition-colors"
                     >
                       {asset.type.startsWith("image/") ? (
-                        <div className="w-6 h-6 rounded overflow-hidden bg-[#1c2333] flex items-center justify-center shrink-0">
+                        <div className="w-6 h-6 rounded overflow-hidden bg-[#F0F0ED] flex items-center justify-center shrink-0">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
                         </div>
                       ) : (
-                        <ImageIcon size={14} className="text-[#5c6b8a] shrink-0" />
+                        <ImageIcon size={14} className="text-[#5F6B7A] shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="text-[11px] text-[#e1e8f0] truncate font-mono">{asset.name}</div>
-                        <div className="text-[9px] text-[#3d4b66]">{formatFileSize(asset.size)}</div>
+                        <div className="text-[11px] text-[#1D2433] truncate font-mono">{asset.name}</div>
+                        <div className="text-[9px] text-[#9DA5B0]">{formatFileSize(asset.size)}</div>
                       </div>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
                         <button
                           type="button"
                           onClick={() => handleCopyUrl(asset.url)}
-                          className="p-0.5 text-[#5c6b8a] hover:text-[#0079f2] rounded transition-colors"
+                          className="p-0.5 text-[#5F6B7A] hover:text-[#0079f2] rounded transition-colors"
                           title="Copy URL"
                         >
                           {copiedUrl === asset.url ? <Check size={11} className="text-[#00b894]" /> : <Copy size={11} />}
@@ -1171,7 +1171,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                         <button
                           type="button"
                           onClick={() => handleCopyUrl(asset.url)}
-                          className="p-0.5 text-[#5c6b8a] hover:text-[#0079f2] rounded transition-colors"
+                          className="p-0.5 text-[#5F6B7A] hover:text-[#0079f2] rounded transition-colors"
                           title="Insert URL"
                         >
                           <Link size={11} />
@@ -1179,7 +1179,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                         <button
                           type="button"
                           onClick={() => deleteAsset(asset.name)}
-                          className="p-0.5 text-[#5c6b8a] hover:text-[#f87171] rounded transition-colors"
+                          className="p-0.5 text-[#5F6B7A] hover:text-[#f87171] rounded transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={11} />
@@ -1190,7 +1190,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                 )}
               </div>
 
-              <div className="px-3 py-2 border-t border-[#1c2333] text-[10px] text-[#3d4b66]">
+              <div className="px-3 py-2 border-t border-[#E4E4E0] text-[10px] text-[#9DA5B0]">
                 {assets.length} assets
               </div>
             </div>
@@ -1201,13 +1201,13 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
       {/* ===== Main IDE Area ===== */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* ===== Top Header Bar ===== */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-[#0e1525] border-b border-[#1c2333] shrink-0">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-white border-b border-[#E4E4E0] shrink-0">
           <div className="flex items-center gap-2">
             {!showFileExplorer && (
               <button
                 type="button"
                 onClick={() => setShowFileExplorer(true)}
-                className="p-1.5 text-[#5c6b8a] hover:text-[#9ba8c4] rounded-md hover:bg-[#1c2333] transition-colors"
+                className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
                 aria-label="Show explorer"
               >
                 <FolderOpen size={14} />
@@ -1217,7 +1217,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={toggleAiPanel}
-              className={`p-1.5 rounded-md transition-colors ${!aiCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#1c2333]"}`}
+              className={`p-1.5 rounded-md transition-colors ${!aiCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED]"}`}
               aria-label="AI Panel"
             >
               {aiCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
@@ -1226,7 +1226,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             {/* Save status */}
             <div className="flex items-center gap-1.5 ml-2">
               {saveStatus === "saving" && (
-                <span className="flex items-center gap-1 text-[11px] text-[#5c6b8a]">
+                <span className="flex items-center gap-1 text-[11px] text-[#5F6B7A]">
                   <Loader2 size={12} className="animate-spin" /> Saving...
                 </span>
               )}
@@ -1248,7 +1248,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={() => manualSave(files)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[#9ba8c4] rounded-md hover:bg-[#1c2333] transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[#5F6B7A] rounded-md hover:bg-[#F0F0ED] transition-colors"
               aria-label="Save"
             >
               <Save size={13} />
@@ -1259,7 +1259,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={handleRun}
-              className="flex items-center gap-1.5 px-3 py-1 bg-[#00b894] text-[#0e1525] text-[12px] font-bold rounded-lg hover:bg-[#00a884] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1 bg-[#00b894] text-white text-[12px] font-bold rounded-lg hover:bg-[#00a884] transition-all"
             >
               <Play size={12} fill="currentColor" />
               Run
@@ -1327,13 +1327,13 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               </a>
             )}
 
-            <div className="w-px h-5 bg-[#1c2333] mx-1" />
+            <div className="w-px h-5 bg-[#E4E4E0] mx-1" />
 
             {/* Reset */}
             <button
               type="button"
               onClick={handleReset}
-              className="p-1.5 text-[#5c6b8a] hover:text-[#9ba8c4] rounded-md hover:bg-[#1c2333] transition-colors"
+              className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
               aria-label="Reset"
             >
               <RotateCcw size={13} />
@@ -1343,7 +1343,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={handleDownload}
-              className="p-1.5 text-[#5c6b8a] hover:text-[#9ba8c4] rounded-md hover:bg-[#1c2333] transition-colors"
+              className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
               aria-label="Download"
             >
               <Download size={13} />
@@ -1361,7 +1361,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                   type="button"
                   onClick={() => setViewport(size)}
                   className={`p-1 rounded-md transition-colors ${
-                    viewport === size ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                    viewport === size ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5F6B7A] hover:text-[#1D2433]"
                   }`}
                   aria-label={`${size} view`}
                 >
@@ -1375,7 +1375,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               type="button"
               onClick={toggleConsole}
               className={`p-1.5 rounded-md transition-colors ${
-                !consoleCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                !consoleCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5F6B7A] hover:text-[#1D2433]"
               }`}
               aria-label="Console"
             >
@@ -1386,7 +1386,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 text-[#5c6b8a] hover:text-[#9ba8c4] rounded-md hover:bg-[#1c2333] transition-colors"
+              className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
@@ -1396,11 +1396,11 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
 
         {/* ===== Generating Overlay ===== */}
         {isGenerating && (
-          <div className="absolute inset-0 z-40 bg-[#0e1525]/90 flex items-center justify-center">
+          <div className="absolute inset-0 z-40 bg-[#F9F9F7]/90 flex items-center justify-center">
             <div className="text-center">
               <Loader2 size={40} className="animate-spin text-[#0079f2] mx-auto mb-4" />
-              <h3 className="text-[18px] font-semibold text-[#e1e8f0] mb-2">Generating your app...</h3>
-              <p className="text-[13px] text-[#5c6b8a]">{initialPrompt}</p>
+              <h3 className="text-[18px] font-semibold text-[#1D2433] mb-2">Generating your app...</h3>
+              <p className="text-[13px] text-[#5F6B7A]">{initialPrompt}</p>
             </div>
           </div>
         )}
@@ -1438,9 +1438,9 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             >
               {/* Editor */}
               <Panel defaultSize="70" minSize="30" id="editor">
-                <div className="flex flex-col h-full bg-[#0e1525]">
-                  {/* Tab Bar */}
-                  <div className="flex items-center bg-[#0e1525] pl-1 overflow-x-auto shrink-0 border-b border-[#1c2333]">
+                <div className="flex flex-col h-full bg-[#1e1e1e]">
+                  {/* Tab Bar — stays dark (Monaco editor tabs) */}
+                  <div className="flex items-center bg-[#252526] pl-1 overflow-x-auto shrink-0 border-b border-[#404040]">
                     {openTabs.map((tab) => {
                       const file = files[tab];
                       if (!file) return null;
@@ -1453,8 +1453,8 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                           onClick={() => handleTabClick(tab)}
                           className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] cursor-pointer shrink-0 transition-all rounded-t-lg mt-1 mx-0.5 ${
                             isActive
-                              ? "bg-[#1c2333] text-[#e1e8f0]"
-                              : "text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#151c2c]"
+                              ? "bg-[#1e1e1e] text-[#e1e8f0]"
+                              : "text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d]"
                           }`}
                         >
                           <Icon size={13} className={info.color} />
@@ -1464,8 +1464,8 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                             onClick={(e) => handleTabClose(tab, e)}
                             className={`ml-1 rounded p-0.5 transition-all ${
                               isActive
-                                ? "text-[#5c6b8a] hover:text-[#e1e8f0] hover:bg-[#2b3245]"
-                                : "opacity-0 group-hover:opacity-100 hover:bg-[#2b3245]"
+                                ? "text-[#858585] hover:text-[#e1e8f0] hover:bg-[#404040]"
+                                : "opacity-0 group-hover:opacity-100 hover:bg-[#404040]"
                             }`}
                             aria-label={`Close ${tab}`}
                           >
@@ -1514,7 +1514,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
 
               <Separator className="splitter-handle-h" />
 
-              {/* Console/Shell Panel */}
+              {/* Console/Shell Panel — stays dark (terminal) */}
               <Panel
                 panelRef={consolePanelRef}
                 defaultSize="30"
@@ -1524,14 +1524,14 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                 id="console"
                 onResize={(size) => setConsoleCollapsed(size.asPercentage < 1)}
               >
-                <div className="h-full bg-[#0e1525] flex flex-col">
-                  <div className="flex items-center border-b border-[#1c2333] shrink-0">
+                <div className="h-full bg-[#1e1e1e] flex flex-col">
+                  <div className="flex items-center border-b border-[#404040] shrink-0">
                     <div className="flex">
                       <button
                         type="button"
                         onClick={() => setConsoleTab("console")}
                         className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                          consoleTab === "console" ? "text-[#e1e8f0]" : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                          consoleTab === "console" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
                         }`}
                       >
                         Console
@@ -1541,7 +1541,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                         type="button"
                         onClick={() => setConsoleTab("shell")}
                         className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                          consoleTab === "shell" ? "text-[#e1e8f0]" : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                          consoleTab === "shell" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
                         }`}
                       >
                         Shell
@@ -1557,7 +1557,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                       <button
                         type="button"
                         onClick={() => consoleTab === "console" ? setConsoleLines([]) : setShellHistory([])}
-                        className="text-[#5c6b8a] hover:text-[#9ba8c4] p-0.5 rounded transition-colors"
+                        className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
                         aria-label="Clear"
                       >
                         <Trash2 size={11} />
@@ -1565,7 +1565,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                       <button
                         type="button"
                         onClick={() => consolePanelRef.current?.collapse()}
-                        className="text-[#5c6b8a] hover:text-[#9ba8c4] p-0.5 rounded transition-colors"
+                        className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
                         aria-label="Close"
                       >
                         <X size={11} />
@@ -1576,11 +1576,11 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                   {consoleTab === "console" ? (
                     <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
                       {consoleLines.length === 0 ? (
-                        <div className="text-[#3d4b66] py-3 italic">No console output yet...</div>
+                        <div className="text-[#858585] py-3 italic">No console output yet...</div>
                       ) : (
                         consoleLines.map((line, i) => (
-                          <div key={i} className={`flex gap-2 py-[2px] border-b border-[#1c2333] ${consoleColorMap[line.type]}`}>
-                            <span className="text-[#3d4b66] shrink-0 select-none">{line.time}</span>
+                          <div key={i} className={`flex gap-2 py-[2px] border-b border-[#333333] ${consoleColorMap[line.type]}`}>
+                            <span className="text-[#858585] shrink-0 select-none">{line.time}</span>
                             <span className="break-all">{line.text}</span>
                           </div>
                         ))
@@ -1595,7 +1595,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                           </div>
                         ))}
                       </div>
-                      <div className="flex items-center px-3 py-1.5 border-t border-[#1c2333] shrink-0">
+                      <div className="flex items-center px-3 py-1.5 border-t border-[#404040] shrink-0">
                         <span className="text-[#00b894] text-[12px] font-mono mr-2">$</span>
                         <input
                           type="text"
@@ -1605,7 +1605,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                             if (e.key === "Enter") handleShellSubmit(shellInput);
                           }}
                           placeholder="Type a command..."
-                          className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#3d4b66] outline-none font-mono"
+                          className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
                         />
                       </div>
                     </div>
@@ -1625,11 +1625,11 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             collapsible
             id="preview"
           >
-            <div className="flex flex-col h-full bg-[#0e1525]">
+            <div className="flex flex-col h-full bg-[#F9F9F7]">
               {/* Webview header */}
-              <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#1c2333] shrink-0">
-                <span className="text-[12px] font-medium text-[#5c6b8a]">Webview</span>
-                <div className="flex-1 flex items-center gap-1.5 bg-[#151c2c] rounded-lg px-3 py-1 mx-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
+                <span className="text-[12px] font-medium text-[#5F6B7A]">Webview</span>
+                <div className="flex-1 flex items-center gap-1.5 bg-white rounded-lg px-3 py-1 mx-2 border border-[#E4E4E0]">
                   {vercelState === "building" ? (
                     <>
                       <Loader2 size={10} className="text-[#f59e0b] animate-spin" />
@@ -1639,8 +1639,8 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                     </>
                   ) : (
                     <>
-                      <Lock size={10} className={vercelState === "ready" ? "text-[#00b894]" : "text-[#3d4b66]"} />
-                      <span className="text-[11px] text-[#5c6b8a] font-mono truncate">
+                      <Lock size={10} className={vercelState === "ready" ? "text-[#00b894]" : "text-[#9DA5B0]"} />
+                      <span className="text-[11px] text-[#5F6B7A] font-mono truncate">
                         {vercelUrl ?? deployedUrl ?? `https://${projectSlug ?? "preview"}.fieldnine.app`}
                       </span>
                     </>
@@ -1650,7 +1650,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                   <button
                     type="button"
                     onClick={handleRun}
-                    className="p-1 text-[#5c6b8a] hover:text-[#9ba8c4] rounded transition-colors"
+                    className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
                     aria-label="Refresh"
                   >
                     <RefreshCw size={12} />
@@ -1660,7 +1660,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                       href={vercelUrl ?? deployedUrl ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 text-[#5c6b8a] hover:text-[#9ba8c4] rounded transition-colors"
+                      className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
                       aria-label="Open deployed site"
                     >
                       <ExternalLink size={12} />

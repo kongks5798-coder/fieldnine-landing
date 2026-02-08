@@ -141,9 +141,9 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
   const publishedProjects = projects.filter((p) => p.deployed_url);
 
   return (
-    <div className="flex h-screen bg-[#0e1525] text-white">
+    <div className="flex h-screen bg-[#F9F9F7] text-[#1D2433]">
       {/* ===== Left Sidebar (48px) ===== */}
-      <div className="w-12 bg-[#0b111e] flex flex-col items-center py-3 border-r border-[#1c2333] shrink-0">
+      <div className="w-12 bg-white flex flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0079f2] to-[#00c2ff] flex items-center justify-center mb-6">
           <Sparkles size={14} className="text-white" />
         </div>
@@ -159,13 +159,13 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                 onClick={() => setActiveNav(item.id)}
                 className={`group relative w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
                   isActive
-                    ? "bg-[#1c2333] text-white"
-                    : "text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#1c2333]/50"
+                    ? "bg-[#E8F2FF] text-[#0079F2]"
+                    : "text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED]"
                 }`}
                 aria-label={item.label}
               >
                 <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-                <span className="absolute left-full ml-2 px-2 py-1 bg-[#2b3245] text-xs text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                <span className="absolute left-full ml-2 px-2 py-1 bg-[#1D2433] text-xs text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
                   {item.label}
                 </span>
               </button>
@@ -180,11 +180,11 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
               <button
                 key={item.label}
                 type="button"
-                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5c6b8a] hover:text-[#9ba8c4] hover:bg-[#1c2333]/50 transition-all"
+                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
                 aria-label={item.label}
               >
                 <Icon size={18} strokeWidth={1.5} />
-                <span className="absolute left-full ml-2 px-2 py-1 bg-[#2b3245] text-xs text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                <span className="absolute left-full ml-2 px-2 py-1 bg-[#1D2433] text-xs text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
                   {item.label}
                 </span>
               </button>
@@ -197,13 +197,13 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
       <div className="flex-1 overflow-y-auto">
         {activeNav === "home" && (
           <div className="max-w-[720px] mx-auto px-6 pt-16 pb-12">
-            <h1 className="text-[28px] font-semibold text-[#f5f9fc] mb-8">
+            <h1 className="text-[28px] font-semibold text-[#1D2433] mb-8">
               Hi, what do you want to make?
             </h1>
 
             {/* Prompt Box */}
-            <div className="bg-[#151c2c] rounded-2xl border border-[#1c2333] overflow-hidden">
-              <div className="flex border-b border-[#1c2333]">
+            <div className="bg-white rounded-2xl border border-[#E4E4E0] overflow-hidden shadow-sm">
+              <div className="flex border-b border-[#E4E4E0]">
                 {(["app", "design"] as PromptTab[]).map((tab) => (
                   <button
                     key={tab}
@@ -211,13 +211,13 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                     onClick={() => setPromptTab(tab)}
                     className={`px-5 py-3 text-[13px] font-medium capitalize transition-colors relative ${
                       promptTab === tab
-                        ? "text-white"
-                        : "text-[#5c6b8a] hover:text-[#9ba8c4]"
+                        ? "text-[#1D2433]"
+                        : "text-[#5F6B7A] hover:text-[#1D2433]"
                     }`}
                   >
                     {tab === "app" ? "App" : "Design"}
                     {promptTab === tab && (
-                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />
+                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079F2]" />
                     )}
                   </button>
                 ))}
@@ -238,24 +238,24 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                       ? "Describe your app idea... (e.g., 'Build a weather dashboard with search')"
                       : "Describe the design you want... (e.g., 'A modern dark-themed landing page')"
                   }
-                  className="w-full bg-transparent text-[14px] text-[#e1e8f0] placeholder-[#3d4b66] resize-none outline-none min-h-[80px] leading-relaxed"
+                  className="w-full bg-transparent text-[14px] text-[#1D2433] placeholder-[#9DA5B0] resize-none outline-none min-h-[80px] leading-relaxed"
                   rows={3}
                 />
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#1c2333]">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E4E4E0]">
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setShowBuildDropdown(!showBuildDropdown)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c2333] text-[13px] text-[#9ba8c4] rounded-lg hover:bg-[#242d40] transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F5F3] text-[13px] text-[#5F6B7A] rounded-lg hover:bg-[#F0F0ED] transition-colors"
                       >
                         <Globe size={13} />
                         {buildType}
                         <ChevronDown size={12} />
                       </button>
                       {showBuildDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-[#1c2333] border border-[#2b3245] rounded-lg shadow-xl z-50 py-1 min-w-[140px]">
+                        <div className="absolute top-full left-0 mt-1 bg-white border border-[#E4E4E0] rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
                           {["Web app", "API server", "Static site", "Full-stack"].map((opt) => (
                             <button
                               key={opt}
@@ -266,8 +266,8 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                               }}
                               className={`w-full text-left px-3 py-1.5 text-[13px] transition-colors ${
                                 buildType === opt
-                                  ? "bg-[#0079f2]/20 text-[#0079f2]"
-                                  : "text-[#9ba8c4] hover:bg-[#242d40]"
+                                  ? "bg-[#0079F2]/10 text-[#0079F2]"
+                                  : "text-[#5F6B7A] hover:bg-[#F5F5F3]"
                               }`}
                             >
                               {opt}
@@ -279,7 +279,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
 
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c2333] text-[13px] text-[#9ba8c4] rounded-lg hover:bg-[#242d40] transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F5F3] text-[13px] text-[#5F6B7A] rounded-lg hover:bg-[#F0F0ED] transition-colors"
                     >
                       <Sparkles size={13} />
                       Auto
@@ -291,7 +291,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                     type="button"
                     onClick={handleSubmit}
                     disabled={!promptText.trim() || creating}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#0079f2] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0066cc] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#0079F2] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0066CC] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     {creating ? (
                       <><Loader2 size={14} className="animate-spin" /> Creating...</>
@@ -310,7 +310,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                   key={tpl}
                   type="button"
                   onClick={() => setPromptText(tpl)}
-                  className="px-3 py-1.5 bg-[#151c2c] border border-[#1c2333] text-[12px] text-[#5c6b8a] rounded-full hover:text-[#9ba8c4] hover:border-[#2b3245] transition-colors"
+                  className="px-3 py-1.5 bg-white border border-[#E4E4E0] text-[12px] text-[#5F6B7A] rounded-full hover:text-[#1D2433] hover:border-[#C8C8C4] transition-colors"
                 >
                   {tpl}
                 </button>
@@ -320,23 +320,23 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
             {/* Recent Projects */}
             <div className="mt-12">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[15px] font-semibold text-[#e1e8f0]">Recent Apps</h2>
+                <h2 className="text-[15px] font-semibold text-[#1D2433]">Recent Apps</h2>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#3d4b66]" />
+                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9DA5B0]" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search apps..."
-                      className="pl-8 pr-3 py-1.5 bg-[#151c2c] border border-[#1c2333] text-[12px] text-[#e1e8f0] placeholder-[#3d4b66] rounded-lg outline-none focus:border-[#0079f2] transition-colors w-[180px]"
+                      className="pl-8 pr-3 py-1.5 bg-white border border-[#E4E4E0] text-[12px] text-[#1D2433] placeholder-[#9DA5B0] rounded-lg outline-none focus:border-[#0079F2] transition-colors w-[180px]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleNewBlank}
                     disabled={creating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079f2] text-white text-[12px] font-medium rounded-lg hover:bg-[#0066cc] disabled:opacity-50 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-lg hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
                   >
                     <Plus size={13} />
                     New App
@@ -346,13 +346,13 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
 
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 size={20} className="animate-spin text-[#5c6b8a]" />
-                  <span className="ml-2 text-[13px] text-[#5c6b8a]">Loading projects...</span>
+                  <Loader2 size={20} className="animate-spin text-[#5F6B7A]" />
+                  <span className="ml-2 text-[13px] text-[#5F6B7A]">Loading projects...</span>
                 </div>
               ) : filteredProjects.length === 0 ? (
                 <div className="text-center py-12">
-                  <AppWindow size={40} className="text-[#2b3245] mx-auto mb-3" />
-                  <p className="text-[13px] text-[#5c6b8a]">
+                  <AppWindow size={40} className="text-[#E4E4E0] mx-auto mb-3" />
+                  <p className="text-[13px] text-[#5F6B7A]">
                     {searchQuery ? "No matching apps found" : "No apps yet — create one above!"}
                   </p>
                 </div>
@@ -361,21 +361,21 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                   {filteredProjects.map((project) => (
                     <div
                       key={project.id}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#151c2c] transition-colors group"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F5F5F3] transition-colors group"
                     >
                       <button
                         type="button"
                         onClick={() => handleOpenExisting(project.slug)}
                         className="flex items-center gap-3 flex-1 min-w-0 text-left"
                       >
-                        <div className="w-9 h-9 rounded-lg bg-[#1c2333] flex items-center justify-center shrink-0">
-                          <AppWindow size={16} className="text-[#5c6b8a]" />
+                        <div className="w-9 h-9 rounded-lg bg-[#F0F0ED] flex items-center justify-center shrink-0">
+                          <AppWindow size={16} className="text-[#5F6B7A]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-medium text-[#e1e8f0] truncate">
+                          <div className="text-[13px] font-medium text-[#1D2433] truncate">
                             {project.name}
                           </div>
-                          <div className="text-[11px] text-[#5c6b8a] truncate">
+                          <div className="text-[11px] text-[#5F6B7A] truncate">
                             {project.description || project.prompt?.slice(0, 60) || "No description"}
                           </div>
                         </div>
@@ -386,32 +386,32 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                             href={project.deployed_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1 rounded text-[#00b894] hover:bg-[#00b894]/10 transition-colors"
+                            className="p-1 rounded text-[#00B894] hover:bg-[#00B894]/10 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                             title="View deployed site"
                           >
                             <ExternalLink size={13} />
                           </a>
                         )}
-                        <span className="text-[11px] text-[#3d4b66] flex items-center gap-1">
+                        <span className="text-[11px] text-[#9DA5B0] flex items-center gap-1">
                           <Clock size={11} />
                           {timeAgo(project.updated_at)}
                         </span>
                         <div className="relative">
                           <button
                             type="button"
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[#1c2333] text-[#5c6b8a] transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[#E4E4E0] text-[#5F6B7A] transition-all"
                             onClick={() => setMenuOpen(menuOpen === project.slug ? null : project.slug)}
                             aria-label="More options"
                           >
                             <MoreHorizontal size={14} />
                           </button>
                           {menuOpen === project.slug && (
-                            <div className="absolute right-0 top-full mt-1 bg-[#1c2333] border border-[#2b3245] rounded-lg shadow-xl z-50 py-1 min-w-[120px]">
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-[#E4E4E0] rounded-lg shadow-lg z-50 py-1 min-w-[120px]">
                               <button
                                 type="button"
                                 onClick={() => handleDelete(project.slug)}
-                                className="w-full text-left px-3 py-1.5 text-[12px] text-[#f87171] hover:bg-[#f87171]/10 flex items-center gap-2 transition-colors"
+                                className="w-full text-left px-3 py-1.5 text-[12px] text-[#EF4444] hover:bg-[#EF4444]/10 flex items-center gap-2 transition-colors"
                               >
                                 <Trash2 size={12} /> Delete
                               </button>
@@ -430,12 +430,12 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
         {activeNav === "apps" && (
           <div className="max-w-[720px] mx-auto px-6 pt-16 pb-12">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-[22px] font-semibold text-[#f5f9fc]">My Apps</h1>
+              <h1 className="text-[22px] font-semibold text-[#1D2433]">My Apps</h1>
               <button
                 type="button"
                 onClick={handleNewBlank}
                 disabled={creating}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079f2] text-white text-[12px] font-medium rounded-lg hover:bg-[#0066cc] disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-lg hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
               >
                 <Plus size={13} />
                 New App
@@ -443,13 +443,13 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 size={20} className="animate-spin text-[#5c6b8a]" />
+                <Loader2 size={20} className="animate-spin text-[#5F6B7A]" />
               </div>
             ) : projects.length === 0 ? (
               <div className="text-center py-16">
-                <AppWindow size={48} className="text-[#2b3245] mx-auto mb-4" />
-                <p className="text-[14px] text-[#5c6b8a] mb-2">No apps yet</p>
-                <p className="text-[12px] text-[#3d4b66]">Create your first app from the Home screen</p>
+                <AppWindow size={48} className="text-[#E4E4E0] mx-auto mb-4" />
+                <p className="text-[14px] text-[#5F6B7A] mb-2">No apps yet</p>
+                <p className="text-[12px] text-[#9DA5B0]">Create your first app from the Home screen</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -458,16 +458,16 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                     key={project.id}
                     type="button"
                     onClick={() => handleOpenExisting(project.slug)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#151c2c] transition-colors group text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F5F5F3] transition-colors group text-left"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-[#1c2333] flex items-center justify-center shrink-0">
-                      <AppWindow size={16} className="text-[#5c6b8a]" />
+                    <div className="w-9 h-9 rounded-lg bg-[#F0F0ED] flex items-center justify-center shrink-0">
+                      <AppWindow size={16} className="text-[#5F6B7A]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium text-[#e1e8f0] truncate">{project.name}</div>
-                      <div className="text-[11px] text-[#5c6b8a]">{project.description || "No description"}</div>
+                      <div className="text-[13px] font-medium text-[#1D2433] truncate">{project.name}</div>
+                      <div className="text-[11px] text-[#5F6B7A]">{project.description || "No description"}</div>
                     </div>
-                    <span className="text-[11px] text-[#3d4b66]">{timeAgo(project.updated_at)}</span>
+                    <span className="text-[11px] text-[#9DA5B0]">{timeAgo(project.updated_at)}</span>
                   </button>
                 ))}
               </div>
@@ -477,38 +477,38 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
 
         {activeNav === "published" && (
           <div className="max-w-[720px] mx-auto px-6 pt-16 pb-12">
-            <h1 className="text-[22px] font-semibold text-[#f5f9fc] mb-6">Published Apps</h1>
+            <h1 className="text-[22px] font-semibold text-[#1D2433] mb-6">Published Apps</h1>
             {publishedProjects.length === 0 ? (
               <div className="text-center py-16">
-                <Globe size={48} className="text-[#2b3245] mx-auto mb-4" />
-                <p className="text-[14px] text-[#5c6b8a] mb-2">No published apps yet</p>
-                <p className="text-[12px] text-[#3d4b66]">Deploy your first app to see it here</p>
+                <Globe size={48} className="text-[#E4E4E0] mx-auto mb-4" />
+                <p className="text-[14px] text-[#5F6B7A] mb-2">No published apps yet</p>
+                <p className="text-[12px] text-[#9DA5B0]">Deploy your first app to see it here</p>
               </div>
             ) : (
               <div className="space-y-1">
                 {publishedProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#151c2c] transition-colors group"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F5F5F3] transition-colors group"
                   >
                     <button
                       type="button"
                       onClick={() => handleOpenExisting(project.slug)}
                       className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-[#00b894]/20 flex items-center justify-center shrink-0">
-                        <Globe size={16} className="text-[#00b894]" />
+                      <div className="w-9 h-9 rounded-lg bg-[#00B894]/10 flex items-center justify-center shrink-0">
+                        <Globe size={16} className="text-[#00B894]" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-medium text-[#e1e8f0] truncate">{project.name}</div>
-                        <div className="text-[11px] text-[#00b894] truncate">{project.deployed_url}</div>
+                        <div className="text-[13px] font-medium text-[#1D2433] truncate">{project.name}</div>
+                        <div className="text-[11px] text-[#00B894] truncate">{project.deployed_url}</div>
                       </div>
                     </button>
                     <a
                       href={project.deployed_url!}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1 text-[12px] text-[#00b894] bg-[#00b894]/10 rounded-lg hover:bg-[#00b894]/20 transition-colors flex items-center gap-1"
+                      className="px-3 py-1 text-[12px] text-[#00B894] bg-[#00B894]/10 rounded-lg hover:bg-[#00B894]/15 transition-colors flex items-center gap-1"
                     >
                       <ExternalLink size={12} /> Visit
                     </a>
