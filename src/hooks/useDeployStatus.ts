@@ -1,81 +1,105 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export type VercelState = 'idle' | 'building' | 'ready' | 'error';
+export type DeployState = "idle" | "building" | "ready" | "error";
 
-export interface DeployInfo {
-  state: VercelState;
+interface DeployInfo {
+  status: DeployState;
   url: string | null;
-  createdAt: number | null;
-  commitSha: string | null;
-  error: string | null;
+  commitMessage: string | null;
 }
 
-const INITIAL_DEPLOY_INFO: DeployInfo = {
-  state: 'idle',
-  url: null,
-  createdAt: null,
-  commitSha: null,
-  error: null,
-};
-
-interface UseDeployStatusOptions {
-  projectId?: string;
-  token?: string;
-  pollInterval?: number;
-}
-
-export default function useDeployStatus(options: UseDeployStatusOptions = {}) {
-  const { projectId, token, pollInterval = 10000 } = options;
-  const [deploy, setDeploy] = useState<DeployInfo>(INITIAL_DEPLOY_INFO);
-  const [loading, setLoading] = useState(false);
+/**
+ * Polls /api/deploy-status at a configurable interval.
+ * Provides real-time deploy badge state: idle → building → ready.
+ */
+export function useDeployStatus(enabled: boolean = true) {
+  const [deploy, setDeploy] = useState<DeployInfo>({
+    status: "idle",
+    url: null,
+    commitMessage: null,
+  });
+  const [polling, setPolling] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
 
   const fetchStatus = useCallback(async () => {
-    if (!projectId || !token) return;
-
-    setLoading(true);
     try {
-      const res = await fetch(
-        `https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=1`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) throw new Error(`Vercel API ${res.status}`);
-
-      const json = await res.json();
-      const data = json.deployments?.[0];
-      if (!data) return;
-
-      const stateMap: Record<string, VercelState> = {
-        BUILDING: 'building',
-        READY: 'ready',
-        ERROR: 'error',
-        CANCELED: 'error',
-      };
+      const res = await fetch("/api/deploy-status");
+      if (!res.ok) return;
+      const data = await res.json();
 
       setDeploy({
-        state: stateMap[data.state] ?? 'idle',
-        url: data.url ? `https://${data.url}` : null,
-        createdAt: data.createdAt ?? null,
-        commitSha: data.meta?.githubCommitSha ?? null,
-        error: data.state === 'ERROR' ? (data.errorMessage ?? 'Build failed') : null,
+        status: data.status ?? "idle",
+        url: data.url ?? null,
+        commitMessage: data.meta?.githubCommitMessage ?? null,
       });
-    } catch (err) {
-      setDeploy((prev) => ({
-        ...prev,
-        state: 'error',
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }));
-    } finally {
-      setLoading(false);
+
+      // If we were building and it's now ready, stop fast polling
+      if (data.status === "ready" || data.status === "error") {
+        pollCountRef.current = 0;
+      }
+    } catch {
+      // silent fail
     }
-  }, [projectId, token]);
+  }, []);
 
+  /** Start fast polling (every 3s) after a commit is pushed. Stops after 2 minutes or when ready. */
+  const startPolling = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    pollCountRef.current = 0;
+    setPolling(true);
+    setDeploy((prev) => ({ ...prev, status: "building" }));
+
+    intervalRef.current = setInterval(async () => {
+      pollCountRef.current++;
+      await fetchStatus();
+
+      // Stop polling after 40 attempts (2 min) or when deployment is done
+      if (pollCountRef.current >= 40) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setPolling(false);
+      }
+    }, 3000);
+  }, [fetchStatus]);
+
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setPolling(false);
+  }, []);
+
+  // Auto-stop when status becomes ready
   useEffect(() => {
-    fetchStatus();
-    const iv = setInterval(fetchStatus, pollInterval);
-    return () => clearInterval(iv);
-  }, [fetchStatus, pollInterval]);
+    if (deploy.status === "ready" && polling) {
+      // Keep "ready" for a few more seconds then stop
+      setTimeout(() => {
+        stopPolling();
+      }, 5000);
+    }
+  }, [deploy.status, polling, stopPolling]);
 
-  return { deploy, loading, refresh: fetchStatus };
+  // Initial fetch on mount
+  useEffect(() => {
+    if (!enabled) return;
+    const id = setTimeout(() => fetchStatus(), 0);
+    return () => clearTimeout(id);
+  }, [enabled, fetchStatus]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  return {
+    deployState: deploy.status,
+    deployUrl: deploy.url,
+    commitMessage: deploy.commitMessage,
+    isPolling: polling,
+    startPolling,
+    stopPolling,
+    refresh: fetchStatus,
+  };
 }

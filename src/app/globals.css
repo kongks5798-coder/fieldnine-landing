@@ -1,31 +1,200 @@
 @import "tailwindcss";
 
+/* ========================================
+   Field Nine OS — Unified Design System
+   Replit-style IDE + Pipeline Animations
+   ======================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --fn-ivory: #F9F9F7;
+  --fn-black: #171717;
+  --fn-gray-100: #F3F4F6;
+  --fn-gray-200: #E5E7EB;
+  --fn-gray-300: #D1D5DB;
+  --fn-gray-400: #9CA3AF;
+  --fn-gray-500: #6B7280;
+  --fn-gray-600: #4B5563;
+  --fn-blue: #2563EB;
+  --fn-blue-light: #3B82F6;
+  --fn-blue-dark: #1D4ED8;
+  --fn-green: #10B981;
+  --fn-orange: #F59E0B;
+  --fn-red: #EF4444;
+  --fn-editor-bg: #0D1117;
+  --fn-editor-line: #161B22;
+  --fn-editor-border: #30363D;
+  --fn-editor-text: #E6EDF3;
+  --fn-editor-keyword: #FF7B72;
+  --fn-editor-string: #A5D6FF;
+  --fn-editor-function: #D2A8FF;
+  --fn-editor-variable: #79C0FF;
+  --fn-editor-jsx: #7EE787;
+  --fn-editor-comment: #8B949E;
+
+  /* Replit dark palette */
+  --replit-bg: #0e1525;
+  --replit-sidebar: #0b111e;
+  --replit-border: #1c2333;
+  --replit-surface: #151c2c;
+  --replit-text: #e1e8f0;
+  --replit-muted: #5c6b8a;
+  --replit-accent: #0079f2;
+  --replit-green: #00b894;
+
+  --background: var(--replit-bg);
+  --foreground: var(--replit-text);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-fn-ivory: var(--fn-ivory);
+  --color-fn-black: var(--fn-black);
+  --color-fn-blue: var(--fn-blue);
+  --color-fn-blue-light: var(--fn-blue-light);
+  --color-fn-green: var(--fn-green);
+  --color-fn-orange: var(--fn-orange);
+  --color-fn-red: var(--fn-red);
+  --color-fn-gray-100: var(--fn-gray-100);
+  --color-fn-gray-200: var(--fn-gray-200);
+  --color-fn-gray-300: var(--fn-gray-300);
+  --color-fn-gray-400: var(--fn-gray-400);
+  --color-fn-gray-500: var(--fn-gray-500);
+  --color-fn-gray-600: var(--fn-gray-600);
+  --color-fn-editor-bg: var(--fn-editor-bg);
+  --color-fn-editor-line: var(--fn-editor-line);
+  --color-fn-editor-border: var(--fn-editor-border);
+  --color-fn-editor-text: var(--fn-editor-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--replit-bg);
+  color: var(--replit-text);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100vh;
 }
 
-/* ── Field Nine OS: Live Visual Command Engine Animations ── */
+/* ========================================
+   Animations — Replit IDE
+   ======================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(37, 99, 235, 0.6);
+  }
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes progressBar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-glow {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientFlow 4s ease infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Staggered children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+
+/* ========================================
+   Animations — Pipeline (Legacy)
+   ======================================== */
 
 @keyframes pipelinePulse {
   0%, 100% {
@@ -115,4 +284,99 @@ body {
 }
 .animate-preview-fade-in {
   animation: previewFadeIn 0.4s ease-out forwards;
+}
+
+/* ========================================
+   Glass-morphism
+   ======================================== */
+
+.glass {
+  background: rgba(249, 249, 247, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-dark {
+  background: rgba(13, 17, 23, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(48, 54, 61, 0.6);
+}
+
+/* ========================================
+   Code Editor Syntax Colors
+   ======================================== */
+
+.code-keyword { color: var(--fn-editor-keyword); }
+.code-string { color: var(--fn-editor-string); }
+.code-function { color: var(--fn-editor-function); }
+.code-variable { color: var(--fn-editor-variable); }
+.code-jsx { color: var(--fn-editor-jsx); }
+.code-comment { color: var(--fn-editor-comment); }
+.code-default { color: var(--fn-editor-text); }
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b3245;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3d4b66;
+}
+
+/* ========================================
+   Selection
+   ======================================== */
+
+::selection {
+  background: rgba(0, 121, 242, 0.3);
+  color: #e1e8f0;
+}
+
+/* ========================================
+   Resizable Panel Splitters
+   ======================================== */
+
+.splitter-handle-v {
+  width: 4px;
+  background: #1c2333;
+  transition: background 0.15s ease;
+  position: relative;
+}
+
+.splitter-handle-v:hover,
+.splitter-handle-v[data-resize-handle-active],
+.splitter-handle-v:active {
+  background: #0079f2;
+}
+
+.splitter-handle-h {
+  height: 4px;
+  background: #1c2333;
+  transition: background 0.15s ease;
+  position: relative;
+}
+
+.splitter-handle-h:hover,
+.splitter-handle-h[data-resize-handle-active],
+.splitter-handle-h:active {
+  background: #0079f2;
+}
+
+[data-resize-handle-active] {
+  background: #0079f2 !important;
 }

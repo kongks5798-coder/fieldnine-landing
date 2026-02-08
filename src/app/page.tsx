@@ -1,5 +1,5 @@
-import LiveEditor from '@/components/LiveEditor';
+import LiveEditorWrapper from '@/components/LiveEditorWrapper';
 
 export default function Home() {
-  return <LiveEditor />;
+  return <LiveEditorWrapper />;
 }
