@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ACCESS_TOKEN = "f9boss2026";
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN_SECRET || "f9boss2026";
 const COOKIE_NAME = "f9_access";
 
 export function middleware(req: NextRequest) {
