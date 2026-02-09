@@ -1,3 +1,4 @@
+/* === Field Nine App Styles === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -13,6 +14,7 @@ body {
   padding: 0 24px;
 }
 
+/* --- Navigation --- */
 .nav {
   display: flex;
   align-items: center;
@@ -43,6 +45,7 @@ body {
 .nav-links a:hover,
 .nav-links a.active { color: #f1f5f9; }
 
+/* --- Hero --- */
 .hero {
   text-align: center;
   padding: 80px 0 60px;
@@ -108,60 +111,71 @@ body {
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.1);
-  color: #e2e8f0;
+  background: rgba(255,255,255,0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
 }
 
+.counter-display {
+  font-size: 14px;
+  color: #64748b;
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.counter-display span {
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* --- Cards --- */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
   padding: 40px 0;
 }
 
 .card {
-  background: #1a1a2e;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 24px;
+  animation: slideUp 0.4s ease-out;
+  transition: all 0.2s;
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.3);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
 }
 
-.card-emoji {
-  font-size: 32px;
+.card-emoji { font-size: 32px; margin-bottom: 12px; }
+.card h3 { font-size: 16px; margin-bottom: 8px; }
+.card p { font-size: 13px; color: #64748b; line-height: 1.5; }
+.card-time { font-size: 11px; color: #475569; margin-top: 12px; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.card h3 {
-  font-size: 20px;
-  color: #e2e8f0;
-  margin: 12px 0;
-}
-
-.card p {
-  color: #94a3b8;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.card-time {
-  font-size: 12px;
-  color: #64748b;
-}
-
+/* --- Footer --- */
 .footer {
   text-align: center;
-  padding: 20px 0;
+  padding: 40px 0;
   border-top: 1px solid rgba(255,255,255,0.06);
+  color: #475569;
+  font-size: 14px;
 }
 
-.footer .heart { color: #f43f5e; }
+.heart { color: #ef4444; }
