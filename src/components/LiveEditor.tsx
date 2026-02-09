@@ -54,6 +54,7 @@ import { useAssets, type AssetFile } from "@/hooks/useAssets";
 import { useDeployStatus } from "@/hooks/useDeployStatus";
 import { deployProject } from "@/lib/deploy";
 import { parseAIResponse } from "@/lib/parseAIResponse";
+import { createZip } from "@/lib/zipExport";
 
 /* ===== File System Types ===== */
 interface VFile {
@@ -815,18 +816,17 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     setActiveFile(targetFile);
   }, [openTabs, triggerAutoSave, triggerAutoCommit]);
 
-  /* ===== Download ===== */
+  /* ===== Download as ZIP ===== */
   const handleDownload = useCallback(() => {
-    const fileList = Object.entries(files);
-    const content = fileList.map(([name, f]) => `// === ${name} ===\n${f.content}`).join("\n\n");
-    const blob = new Blob([content], { type: "text/plain" });
+    const entries = Object.entries(files).map(([name, f]) => ({ name, content: f.content }));
+    const blob = createZip(entries);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "fieldnine-project.txt";
+    a.download = `${projectSlug || "fieldnine-project"}.zip`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [files]);
+  }, [files, projectSlug]);
 
   /* ===== Real Deploy — Shadow Commit + Supabase Storage ===== */
   const handleDeploy = useCallback(async () => {
