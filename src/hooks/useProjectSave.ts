@@ -81,9 +81,10 @@ export function useProjectSave(
   );
 
   /* --- Show "saved" then reset to idle after 3s --- */
-  const showSaved = useCallback((isSupabaseOk: boolean) => {
+  const showSaved = useCallback((_isSupabaseOk: boolean) => {
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    setSaveStatus(isSupabaseOk ? "saved" : "error");
+    // localStorage always succeeds, so show "saved" regardless of Supabase
+    setSaveStatus("saved");
     savedTimerRef.current = setTimeout(() => setSaveStatus("idle"), 3000);
   }, []);
 

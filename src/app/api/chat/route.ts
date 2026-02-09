@@ -33,23 +33,18 @@ Rules:
 - When modifying existing code, provide the full updated version of the relevant section.`;
 
 export async function POST(req: Request) {
-  const provider = process.env.AI_PROVIDER || "anthropic";
+  // Auto-detect provider: explicit setting > available key > error
+  const explicit = process.env.AI_PROVIDER;
+  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const provider = explicit || (hasOpenAI ? "openai" : hasAnthropic ? "anthropic" : "none");
 
   try {
-    if (provider === "anthropic") {
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return new Response(
-          JSON.stringify({ error: "ANTHROPIC_API_KEY is not configured" }),
-          { status: 503, headers: { "Content-Type": "application/json" } },
-        );
-      }
-    } else if (provider === "openai") {
-      if (!process.env.OPENAI_API_KEY) {
-        return new Response(
-          JSON.stringify({ error: "OPENAI_API_KEY is not configured" }),
-          { status: 503, headers: { "Content-Type": "application/json" } },
-        );
-      }
+    if (provider === "none" || (provider === "anthropic" && !hasAnthropic) || (provider === "openai" && !hasOpenAI)) {
+      return new Response(
+        JSON.stringify({ error: `No API key configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.`, provider, hasOpenAI, hasAnthropic }),
+        { status: 503, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     const { messages } = await req.json();

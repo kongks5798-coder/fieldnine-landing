@@ -255,7 +255,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                         <ChevronDown size={12} />
                       </button>
                       {showBuildDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-white border border-[#E4E4E0] rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
+                        <div className="absolute top-full left-0 mt-1 bg-white border border-[#E4E4E0] rounded-xl shadow-lg z-50 py-1 min-w-[140px]">
                           {["Web app", "API server", "Static site", "Full-stack"].map((opt) => (
                             <button
                               key={opt}
@@ -329,14 +329,14 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search apps..."
-                      className="pl-8 pr-3 py-1.5 bg-white border border-[#E4E4E0] text-[12px] text-[#1D2433] placeholder-[#9DA5B0] rounded-lg outline-none focus:border-[#0079F2] transition-colors w-[180px]"
+                      className="pl-8 pr-3 py-1.5 bg-white border border-[#E4E4E0] text-[12px] text-[#1D2433] placeholder-[#9DA5B0] rounded-xl outline-none focus:border-[#0079F2] transition-colors w-[180px]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleNewBlank}
                     disabled={creating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-lg hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-xl hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
                   >
                     <Plus size={13} />
                     New App
@@ -361,7 +361,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                   {filteredProjects.map((project) => (
                     <div
                       key={project.id}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F5F5F3] transition-colors group"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-[#F5F5F3] transition-colors group"
                     >
                       <button
                         type="button"
@@ -407,7 +407,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                             <MoreHorizontal size={14} />
                           </button>
                           {menuOpen === project.slug && (
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-[#E4E4E0] rounded-lg shadow-lg z-50 py-1 min-w-[120px]">
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-[#E4E4E0] rounded-xl shadow-lg z-50 py-1 min-w-[120px]">
                               <button
                                 type="button"
                                 onClick={() => handleDelete(project.slug)}
@@ -435,7 +435,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                 type="button"
                 onClick={handleNewBlank}
                 disabled={creating}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-lg hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-xl hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
               >
                 <Plus size={13} />
                 New App
@@ -458,7 +458,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                     key={project.id}
                     type="button"
                     onClick={() => handleOpenExisting(project.slug)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F5F5F3] transition-colors group text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-[#F5F5F3] transition-colors group text-left"
                   >
                     <div className="w-9 h-9 rounded-lg bg-[#F0F0ED] flex items-center justify-center shrink-0">
                       <AppWindow size={16} className="text-[#5F6B7A]" />
@@ -489,7 +489,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
                 {publishedProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F5F5F3] transition-colors group"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-[#F5F5F3] transition-colors group"
                   >
                     <button
                       type="button"

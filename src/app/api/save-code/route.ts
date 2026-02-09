@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
   // Validate token
   if (!GITHUB_TOKEN) {
     return NextResponse.json(
-      { error: "GITHUB_TOKEN not configured" },
+      { error: "GITHUB_TOKEN not configured", hint: "Add GITHUB_TOKEN to .env.local" },
       { status: 500 }
     );
   }

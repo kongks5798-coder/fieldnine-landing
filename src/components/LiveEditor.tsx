@@ -53,6 +53,7 @@ import { useProjectSave } from "@/hooks/useProjectSave";
 import { useAssets, type AssetFile } from "@/hooks/useAssets";
 import { useDeployStatus } from "@/hooks/useDeployStatus";
 import { deployProject } from "@/lib/deploy";
+import { parseAIResponse } from "@/lib/parseAIResponse";
 
 /* ===== File System Types ===== */
 interface VFile {
@@ -514,129 +515,88 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     if (!initialPrompt) return;
     setIsGenerating(true);
 
-    const timeout = setTimeout(() => {
-      const generatedHTML = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${initialPrompt}</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="app">
-    <header class="header">
-      <h1>${initialPrompt}</h1>
-      <p>AI가 생성한 프로젝트입니다. 자유롭게 수정하세요.</p>
-    </header>
-    <main class="main-content">
-      <div class="feature-grid">
-        <div class="feature-card">
-          <span class="feature-icon">🚀</span>
-          <h3>빠른 시작</h3>
-          <p>AI가 기본 구조를 생성했습니다.</p>
-        </div>
-        <div class="feature-card">
-          <span class="feature-icon">🎨</span>
-          <h3>커스텀 디자인</h3>
-          <p>style.css를 수정하여 원하는 디자인으로 변경하세요.</p>
-        </div>
-        <div class="feature-card">
-          <span class="feature-icon">⚡</span>
-          <h3>실시간 프리뷰</h3>
-          <p>코드 수정 시 즉시 결과가 반영됩니다.</p>
-        </div>
-      </div>
-    </main>
-  </div>
-  <script src="app.js"></script>
-</body>
-</html>`;
+    const abortController = new AbortController();
 
-      const generatedCSS = `/* AI Generated Styles — ${initialPrompt} */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+    (async () => {
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: `다음 요청에 맞는 완전한 웹사이트를 만들어주세요. index.html, style.css, app.js 세 파일 모두 완전한 코드를 생성해주세요:\n\n${initialPrompt}`,
+              },
+            ],
+          }),
+          signal: abortController.signal,
+        });
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  color: #e2e8f0;
-  min-height: 100vh;
-}
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
 
-.app { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+        // Read the full streaming response
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let rawStream = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          rawStream += decoder.decode(value, { stream: true });
+        }
 
-.header {
-  text-align: center;
-  padding: 80px 0 48px;
-}
+        // Parse Vercel AI SDK UI Message Stream Protocol
+        // Text parts are lines like: 0:"escaped text chunk"
+        let fullText = "";
+        for (const line of rawStream.split("\n")) {
+          if (line.startsWith("0:")) {
+            try {
+              fullText += JSON.parse(line.slice(2));
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        }
 
-.header h1 {
-  font-size: 42px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 16px;
-}
+        // Extract code blocks using shared parser
+        const { codeBlocks } = parseAIResponse(fullText);
 
-.header p {
-  color: #94a3b8;
-  font-size: 16px;
-}
+        if (codeBlocks.length > 0) {
+          // Build files from parsed code blocks
+          const newFiles: Record<string, VFile> = {};
+          for (const block of codeBlocks) {
+            const info = getFileInfo(block.targetFile);
+            newFiles[block.targetFile] = {
+              name: block.targetFile,
+              language: info.language,
+              content: block.code,
+              icon: info.icon,
+            };
+          }
 
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  padding: 40px 0;
-}
+          // Ensure all 3 default files exist (fill missing with defaults)
+          for (const key of ["index.html", "style.css", "app.js"]) {
+            if (!newFiles[key]) {
+              newFiles[key] = JSON.parse(JSON.stringify(DEFAULT_FILES[key]));
+            }
+          }
 
-.feature-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 32px;
-  transition: all 0.3s;
-}
+          setFiles(newFiles);
+          setOpenTabs(Object.keys(newFiles));
+          setActiveFile("index.html");
+          triggerAutoSave(newFiles);
+        }
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error("[LiveEditor] AI generation failed:", err);
+          // Fallback: use default files as-is
+        }
+      } finally {
+        setIsGenerating(false);
+      }
+    })();
 
-.feature-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(102, 126, 234, 0.4);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-}
-
-.feature-icon { font-size: 36px; display: block; margin-bottom: 16px; }
-.feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.feature-card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }`;
-
-      const generatedJS = `// AI Generated — ${initialPrompt}
-console.log('🤖 AI가 "${initialPrompt}" 프로젝트를 생성했습니다!');
-console.log('📁 Files: index.html, style.css, app.js');
-console.log('✨ 자유롭게 수정해보세요!');
-
-// Interactive features
-document.querySelectorAll('.feature-card').forEach((card, i) => {
-  card.style.animationDelay = \`\${i * 0.15}s\`;
-  card.addEventListener('click', () => {
-    card.style.transform = 'scale(0.95)';
-    setTimeout(() => { card.style.transform = ''; }, 150);
-  });
-});`;
-
-      const newFiles: Record<string, VFile> = {
-        "index.html": { name: "index.html", language: "html", content: generatedHTML, icon: FileCode2 },
-        "style.css": { name: "style.css", language: "css", content: generatedCSS, icon: FileText },
-        "app.js": { name: "app.js", language: "javascript", content: generatedJS, icon: FileCog },
-      };
-
-      setFiles(newFiles);
-      setOpenTabs(["index.html", "style.css", "app.js"]);
-      setActiveFile("index.html");
-      setIsGenerating(false);
-      triggerAutoSave(newFiles);
-    }, 2500);
-
-    return () => clearTimeout(timeout);
+    return () => abortController.abort();
   }, [initialPrompt, triggerAutoSave]);
 
   /* ===== Build combined HTML ===== */
@@ -722,7 +682,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
       autoRunRef.current = setTimeout(() => {
         setConsoleLines([]);
         setRenderedHTML(buildPreview());
-      }, 600);
+      }, 300);
     },
     [activeFile, buildPreview, triggerAutoSave]
   );
@@ -905,6 +865,8 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
   const openFile = (fileName: string) => {
     if (!openTabs.includes(fileName)) setOpenTabs([...openTabs, fileName]);
     setActiveFile(fileName);
+    // 파일 전환 시 프리뷰 갱신
+    setRenderedHTML(buildPreview());
   };
 
   const viewportWidths: Record<ViewportSize, string> = {
@@ -1102,7 +1064,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={`mx-2 mt-2 border-2 border-dashed rounded-lg p-3 text-center transition-colors cursor-pointer ${
+                className={`mx-2 mt-2 border-2 border-dashed rounded-xl p-3 text-center transition-colors cursor-pointer ${
                   dragOver
                     ? "border-[#0079f2] bg-[#0079f2]/10"
                     : "border-[#E4E4E0] hover:border-[#C8C8C4]"
@@ -1259,7 +1221,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
             <button
               type="button"
               onClick={handleRun}
-              className="flex items-center gap-1.5 px-3 py-1 bg-[#00b894] text-white text-[12px] font-bold rounded-lg hover:bg-[#00a884] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1 bg-[#00b894] text-white text-[12px] font-bold rounded-xl hover:bg-[#00a884] transition-all"
             >
               <Play size={12} fill="currentColor" />
               Run
@@ -1270,7 +1232,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               type="button"
               onClick={handleDeploy}
               disabled={deployStatus === "deploying" || !projectSlug}
-              className={`flex items-center gap-1.5 px-3 py-1 text-[12px] font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-[12px] font-semibold rounded-xl transition-all ${
                 deployStatus === "deployed"
                   ? "bg-[#00b894]/20 text-[#00b894]"
                   : deployStatus === "deploying"
@@ -1629,7 +1591,7 @@ document.querySelectorAll('.feature-card').forEach((card, i) => {
               {/* Webview header */}
               <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
                 <span className="text-[12px] font-medium text-[#5F6B7A]">Webview</span>
-                <div className="flex-1 flex items-center gap-1.5 bg-white rounded-lg px-3 py-1 mx-2 border border-[#E4E4E0]">
+                <div className="flex-1 flex items-center gap-1.5 bg-white rounded-xl px-3 py-1 mx-2 border border-[#E4E4E0]">
                   {vercelState === "building" ? (
                     <>
                       <Loader2 size={10} className="text-[#f59e0b] animate-spin" />
