@@ -72,6 +72,21 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, systemMessages, isStreaming, isCommitting]);
 
+  // Mount-time API connectivity test
+  useEffect(() => {
+    console.log("[AIChatPanel] Mounted. Testing API...");
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "ping" }] }),
+    })
+      .then((res) => {
+        console.log("[AIChatPanel] API test:", res.status, res.headers.get("content-type"));
+        res.body?.cancel(); // cancel stream to save tokens
+      })
+      .catch((err) => console.error("[AIChatPanel] API test FAILED:", err));
+  }, []);
+
   const shadowCommit = useCallback(
     async (fileChanges: FileChange[], commitMsg: string): Promise<boolean> => {
       if (onShadowCommit) {
@@ -285,9 +300,8 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     [messages, currentFiles, handleAIResponseComplete],
   );
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("[AIChatPanel] Form submit. input:", inputValue, "streaming:", isStreaming, "committing:", isCommitting);
+  const doSend = useCallback(() => {
+    console.log("[AIChatPanel] doSend. input:", inputValue, "streaming:", isStreaming, "committing:", isCommitting);
     if (!inputValue.trim() || isStreaming || isCommitting) return;
     const text = inputValue.trim();
     setInputValue("");
@@ -296,7 +310,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       setError(err instanceof Error ? err.message : String(err));
       setIsStreaming(false);
     });
-  };
+  }, [inputValue, isStreaming, isCommitting, sendToAI]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      doSend();
+    }
+  }, [doSend]);
 
   const renderMessageContent = (content: string, messageId: string) => {
     const parsed = parseAIResponse(content);
@@ -480,19 +501,21 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleFormSubmit} className="px-3 py-2.5 border-t border-[#E4E4E0] bg-[#F9F9F7] shrink-0">
+      {/* Input — no <form>, direct onClick + Enter key */}
+      <div className="px-3 py-2.5 border-t border-[#E4E4E0] bg-[#F9F9F7] shrink-0">
         <div className="flex gap-2">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="기능을 지시하세요... (예: 빨간 버튼 만들어줘)"
             className="flex-1 bg-white text-[#1D2433] text-xs px-3 py-2 rounded-xl border border-[#E4E4E0] focus:border-[#0079F2] focus:ring-1 focus:ring-[#0079F2]/20 outline-none placeholder-[#9DA5B0] transition-all"
             disabled={isStreaming || isCommitting}
           />
           <button
-            type="submit"
+            type="button"
+            onClick={doSend}
             disabled={!inputValue.trim() || isStreaming || isCommitting}
             className="p-2 bg-[#0079F2] text-white rounded-xl hover:bg-[#0066CC] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             aria-label="Send message"
@@ -501,9 +524,9 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           </button>
         </div>
         <div className="text-[9px] text-[#9DA5B0] mt-1.5 text-center">
-          Field Nine AI — Shadow Commit Engine v3.0
+          Field Nine AI — Shadow Commit Engine v3.1
         </div>
-      </form>
+      </div>
     </div>
   );
 }
