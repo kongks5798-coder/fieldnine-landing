@@ -545,16 +545,21 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           rawStream += decoder.decode(value, { stream: true });
         }
 
-        // Parse Vercel AI SDK UI Message Stream Protocol
-        // Text parts are lines like: 0:"escaped text chunk"
+        // Parse Vercel AI SDK UI Message Stream Protocol (SSE format)
+        // Lines: data: {"type":"text-delta","delta":"chunk"}
         let fullText = "";
         for (const line of rawStream.split("\n")) {
-          if (line.startsWith("0:")) {
-            try {
-              fullText += JSON.parse(line.slice(2));
-            } catch {
-              // skip malformed chunks
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const obj = JSON.parse(payload);
+            if (obj.type === "text-delta" && typeof obj.delta === "string") {
+              fullText += obj.delta;
             }
+          } catch {
+            // skip non-JSON lines
           }
         }
 
