@@ -65,6 +65,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [systemMessages, setSystemMessages] = useState<SystemMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "error">("checking");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -72,19 +73,26 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, systemMessages, isStreaming, isCommitting]);
 
-  // Mount-time API connectivity test
+  // Mount-time API connectivity test — result shown in UI
   useEffect(() => {
     console.log("[AIChatPanel] Mounted. Testing API...");
     fetch("/api/chat", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: [{ role: "user", content: "ping" }] }),
     })
       .then((res) => {
         console.log("[AIChatPanel] API test:", res.status, res.headers.get("content-type"));
-        res.body?.cancel(); // cancel stream to save tokens
+        setApiStatus(res.ok ? "ok" : "error");
+        if (!res.ok) setError(`API 연결 실패: HTTP ${res.status}`);
+        res.body?.cancel();
       })
-      .catch((err) => console.error("[AIChatPanel] API test FAILED:", err));
+      .catch((err) => {
+        console.error("[AIChatPanel] API test FAILED:", err);
+        setApiStatus("error");
+        setError(`API 연결 실패: ${err instanceof Error ? err.message : String(err)}`);
+      });
   }, []);
 
   const shadowCommit = useCallback(
@@ -95,6 +103,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       try {
         const res = await fetch("/api/save-code", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ files: fileChanges, message: commitMsg }),
         });
@@ -207,9 +216,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           { role: "user" as const, content: contextPrefix + userText },
         ];
 
-        console.log("[AIChatPanel] Fetching /api/chat ...");
+        console.log("[AIChatPanel] Fetching /api/chat, msgs:", apiMessages.length);
         const res = await fetch("/api/chat", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: apiMessages }),
           signal: abortController.signal,
@@ -407,6 +417,17 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             <div className="whitespace-pre-wrap">{WELCOME_TEXT}</div>
           </div>
         </div>
+
+        {/* API connectivity status */}
+        {apiStatus !== "ok" && (
+          <div className={`mx-2 px-3 py-1.5 rounded-lg text-[10px] ${
+            apiStatus === "checking"
+              ? "bg-[#FFF8E1] text-[#F59E0B] border border-[#F59E0B]/20"
+              : "bg-red-50 text-red-600 border border-red-200"
+          }`}>
+            {apiStatus === "checking" ? "API 연결 확인 중..." : "API 연결 실패 — 쿠키/인증 문제일 수 있습니다"}
+          </div>
+        )}
 
         {messages.map((msg) => (
           <div key={msg.id}>
