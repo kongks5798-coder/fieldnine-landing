@@ -32,10 +32,13 @@ export default function LiveEditorWrapper() {
     setView("ide");
   }, []);
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const handleGoHome = useCallback(() => {
     setView("dashboard");
     setPrompt(undefined);
     setProjectSlug(null);
+    setRefreshKey((k) => k + 1);
   }, []);
 
   if (view === "ide") {
@@ -53,6 +56,7 @@ export default function LiveEditorWrapper() {
       onStartProject={handleStartProject}
       onOpenProject={handleOpenProject}
       currentView="dashboard"
+      refreshKey={refreshKey}
     />
   );
 }

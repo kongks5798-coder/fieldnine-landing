@@ -60,9 +60,10 @@ interface ReplitAppProps {
   onStartProject: (prompt: string, projectSlug: string) => void;
   onOpenProject: (projectSlug?: string) => void;
   currentView: "dashboard";
+  refreshKey?: number;
 }
 
-export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppProps) {
+export default function ReplitApp({ onStartProject, onOpenProject, refreshKey }: ReplitAppProps) {
   const [activeNav, setActiveNav] = useState<"home" | "apps" | "published">("home");
   const [promptTab, setPromptTab] = useState<PromptTab>("app");
   const [promptText, setPromptText] = useState("");
@@ -74,13 +75,14 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
   const [creating, setCreating] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
-  /* ===== Load projects from Supabase ===== */
+  /* ===== Load projects ===== */
   useEffect(() => {
+    setLoading(true);
     listProjects().then((data) => {
       setProjects(data);
       setLoading(false);
     });
-  }, []);
+  }, [refreshKey]);
 
   /* ===== Create project + start IDE ===== */
   const handleSubmit = useCallback(async () => {
