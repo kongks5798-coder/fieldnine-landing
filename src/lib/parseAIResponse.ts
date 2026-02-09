@@ -37,7 +37,12 @@ export function parseAIResponse(text: string): ParsedAIResponse {
   while ((match = fenceRegex.exec(text)) !== null) {
     const language = (match[1] || "html").toLowerCase();
     let code = match[2].trimEnd();
-    let targetFile = LANGUAGE_TO_FILE[language] || "index.html";
+    const targetFile = LANGUAGE_TO_FILE[language];
+
+    // Skip unknown languages (python, bash, etc.) to avoid overwriting files
+    if (!targetFile) continue;
+
+    let resolvedTarget = targetFile;
 
     // Try to extract target comment from first line
     const pattern = TARGET_COMMENT_PATTERNS[language];
@@ -47,13 +52,13 @@ export function parseAIResponse(text: string): ParsedAIResponse {
         const extracted = targetMatch[1].trim();
         // Only accept filenames with valid extensions
         if (/\.\w+$/.test(extracted)) {
-          targetFile = extracted;
+          resolvedTarget = extracted;
         }
         code = code.replace(pattern, "");
       }
     }
 
-    codeBlocks.push({ language, code, targetFile });
+    codeBlocks.push({ language, code, targetFile: resolvedTarget });
   }
 
   // Remove code fences from explanation

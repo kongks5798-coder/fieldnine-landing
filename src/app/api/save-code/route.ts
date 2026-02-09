@@ -113,6 +113,19 @@ async function createCommit(files: FileChange[], message: string) {
   };
 }
 
+// Security: Only allow safe file paths
+const ALLOWED_EXTENSIONS = /\.(html|htm|css|js|ts|json|md|txt|svg|xml)$/i;
+const MAX_FILES = 10;
+const MAX_FILE_SIZE = 500_000; // 500KB per file
+
+function isPathSafe(path: string): boolean {
+  if (!path || typeof path !== "string") return false;
+  if (path.includes("..") || path.startsWith("/") || path.startsWith("\\")) return false;
+  if (path.includes("/.") || path.includes("\\.")) return false; // hidden files
+  if (!ALLOWED_EXTENSIONS.test(path)) return false;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   // Validate token
   if (!GITHUB_TOKEN) {
@@ -125,11 +138,34 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SaveCodeBody;
 
-    if (!body.files || body.files.length === 0) {
+    if (!body.files || !Array.isArray(body.files) || body.files.length === 0) {
       return NextResponse.json(
         { error: "No files provided" },
         { status: 400 }
       );
+    }
+
+    if (body.files.length > MAX_FILES) {
+      return NextResponse.json(
+        { error: `Too many files (max ${MAX_FILES})` },
+        { status: 400 }
+      );
+    }
+
+    // Validate each file path and size
+    for (const file of body.files) {
+      if (!isPathSafe(file.path)) {
+        return NextResponse.json(
+          { error: `Invalid file path: ${file.path}` },
+          { status: 400 }
+        );
+      }
+      if (typeof file.content !== "string" || file.content.length > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: `File too large: ${file.path}` },
+          { status: 400 }
+        );
+      }
     }
 
     const result = await createCommit(

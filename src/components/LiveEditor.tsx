@@ -561,9 +561,10 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         });
 
         if (!res.ok) throw new Error(`API error: ${res.status}`);
+        if (!res.body) throw new Error("Empty response body");
 
         // Read the full streaming response
-        const reader = res.body!.getReader();
+        const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let rawStream = "";
         while (true) {
@@ -717,6 +718,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     (value: string | undefined) => {
       const newContent = value ?? "";
       setFiles((prev) => {
+        if (!prev[activeFile]) return prev;
         const next = { ...prev, [activeFile]: { ...prev[activeFile], content: newContent } };
         triggerAutoSave(next);
         triggerAutoCommit(next);

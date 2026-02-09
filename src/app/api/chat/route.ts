@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   try {
     if (provider === "none" || (provider === "anthropic" && !hasAnthropic) || (provider === "openai" && !hasOpenAI)) {
       return new Response(
-        JSON.stringify({ error: `No API key configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.`, provider, hasOpenAI, hasAnthropic }),
+        JSON.stringify({ error: "AI provider not configured. Contact admin." }),
         { status: 503, headers: { "Content-Type": "application/json" } },
       );
     }

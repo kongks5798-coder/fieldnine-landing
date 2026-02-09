@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 /* ===== Types ===== */
@@ -150,6 +150,14 @@ export function useProjectSave(
 
     return null;
   }, [deserialize, projectSlug, lsKey]);
+
+  /* --- Cleanup timers on unmount --- */
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   /* --- Clear local storage (for reset) --- */
   const clearLocalStorage = useCallback(() => {
