@@ -76,6 +76,9 @@ export default function AIChatPanel({ onInsertCode, activeFile, currentFiles, on
     regenerate,
     clearError,
   } = useChat({
+    onError: (err) => {
+      console.error("[AIChatPanel] useChat error:", err);
+    },
     onFinish: async ({ message }) => {
       const text = getMessageText(message);
       await handleAIResponseComplete(message.id, text);
@@ -169,7 +172,7 @@ export default function AIChatPanel({ onInsertCode, activeFile, currentFiles, on
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isActive || isCommitting) return;
     const userText = inputValue.trim();
@@ -184,7 +187,11 @@ export default function AIChatPanel({ onInsertCode, activeFile, currentFiles, on
       contextPrefix = `[현재 프로젝트 코드]\n${snippets}\n\n[사용자 요청]\n`;
     }
 
-    sendMessage({ text: contextPrefix + userText });
+    try {
+      await sendMessage({ text: contextPrefix + userText });
+    } catch (err) {
+      console.error("[AIChatPanel] sendMessage failed:", err);
+    }
   };
 
   // Parse code blocks from a message for rendering

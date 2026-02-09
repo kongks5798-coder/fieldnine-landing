@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 
@@ -91,7 +91,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const { messages } = await req.json();
+    const { messages: rawMessages } = await req.json();
+
+    // Convert UIMessage format (from useChat) to ModelMessage format (for streamText)
+    const messages = await convertToModelMessages(rawMessages);
 
     const model =
       provider === "openai"
