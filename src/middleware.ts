@@ -18,7 +18,7 @@ export function middleware(req: NextRequest) {
     const res = NextResponse.redirect(url);
     res.cookies.set(COOKIE_NAME, ACCESS_TOKEN, {
       httpOnly: true,
-      secure: true,
+      secure: req.nextUrl.protocol === "https:",
       sameSite: "lax",
       maxAge: 60 * 60 * 24, // 24시간
     });

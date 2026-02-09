@@ -44,6 +44,9 @@ export function parseAIResponse(text: string): ParsedAIResponse {
 
     let resolvedTarget = targetFile;
 
+    // Strip leading standalone filename lines (e.g. "app.js" or "style.css" on first line)
+    code = code.replace(/^\s*\w+\.\w{1,4}\s*\n/, "");
+
     // Try to extract target comment from first line
     const pattern = TARGET_COMMENT_PATTERNS[language];
     if (pattern) {
