@@ -1,6 +1,30 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export function middleware() {
+const ACCESS_TOKEN = "f9boss2026";
+const COOKIE_NAME = "f9_access";
+
+export function middleware(req: NextRequest) {
+  // 1. URL 토큰으로 접근 → 쿠키 설정 후 리다이렉트 (토큰이 URL에 남지 않게)
+  const tokenParam = req.nextUrl.searchParams.get("access");
+  if (tokenParam === ACCESS_TOKEN) {
+    const url = req.nextUrl.clone();
+    url.searchParams.delete("access");
+    const res = NextResponse.redirect(url);
+    res.cookies.set(COOKIE_NAME, ACCESS_TOKEN, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24, // 24시간
+    });
+    return res;
+  }
+
+  // 2. 쿠키에 토큰이 있으면 통과
+  if (req.cookies.get(COOKIE_NAME)?.value === ACCESS_TOKEN) {
+    return NextResponse.next();
+  }
+
+  // 3. 그 외 전부 차단
   return new NextResponse(
     `<!DOCTYPE html>
 <html lang="en">
