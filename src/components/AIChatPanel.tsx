@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { parseAIResponse } from "@/lib/parseAIResponse";
+import { validateJS } from "@/lib/codeValidator";
 import {
   Send,
   Sparkles,
@@ -111,6 +112,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initialPromptSentRef = useRef(false);
+  const autoFixRetryRef = useRef(0); // max 1 auto-fix retry per AI response
 
   /* ===== Agent Mode State ===== */
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
@@ -223,6 +225,49 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       const parsed = parseAIResponse(content);
       if (parsed.codeBlocks.length === 0) return;
 
+      // Validate JS code blocks before insertion
+      const jsBlocks = parsed.codeBlocks.filter(
+        (b) => b.targetFile.endsWith(".js") || b.targetFile.endsWith(".ts")
+      );
+      const validationErrors: string[] = [];
+      for (const block of jsBlocks) {
+        const result = validateJS(block.code);
+        if (!result.valid) {
+          validationErrors.push(`[${block.targetFile}] ${result.errors.join("; ")}`);
+        }
+      }
+
+      // If JS has errors and we haven't retried yet, auto-fix
+      if (validationErrors.length > 0 && autoFixRetryRef.current < 1) {
+        autoFixRetryRef.current += 1;
+        addProgressEvent("file-insert", `코드 검증 실패 — 자동 수정 요청 (${autoFixRetryRef.current}/1)`, "pending");
+
+        // Still insert the code (so user can see it), but also auto-request fix
+        for (const block of parsed.codeBlocks) {
+          onInsertCode(block.code, block.targetFile, true);
+        }
+
+        // Auto-send fix request
+        const fixPrompt = `방금 생성한 코드에 다음 오류가 있습니다. 전체 파일을 다시 출력해서 수정해주세요:\n\n${validationErrors.join("\n")}\n\n중요: 모든 변수를 선언 후 사용하고, 문법 오류가 없어야 합니다.`;
+
+        // Add fix request as user message and re-send
+        const fixMsg: ChatMessage = {
+          id: `user-autofix-${Date.now()}`,
+          role: "user",
+          content: fixPrompt,
+        };
+        setMessages((prev) => [...prev, fixMsg]);
+
+        // Trigger sendToAI after a short delay (allows state to update)
+        setTimeout(() => {
+          sendToAIRef.current?.(fixPrompt);
+        }, 500);
+        return;
+      }
+
+      // Reset retry counter on successful validation
+      autoFixRetryRef.current = 0;
+
       for (const block of parsed.codeBlocks) {
         onInsertCode(block.code, block.targetFile, true);
         addProgressEvent("file-insert", `${block.targetFile} 자동 삽입`, "done");
@@ -276,6 +321,9 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     },
     [agentMode, onInsertCode, shadowCommit, addSystemMessage, addProgressEvent],
   );
+
+  // Ref for sendToAI to avoid circular dependency
+  const sendToAIRef = useRef<((text: string) => Promise<void>) | null>(null);
 
   const handleCopy = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -441,6 +489,9 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     },
     [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent],
   );
+
+  // Keep sendToAI ref updated for auto-fix callback
+  useEffect(() => { sendToAIRef.current = sendToAI; }, [sendToAI]);
 
   // Auto-send initial prompt when transitioning from dashboard
   useEffect(() => {

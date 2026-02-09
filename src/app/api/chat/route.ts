@@ -75,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
 - Add meaningful interactivity: click handlers, animations, dynamic content updates, counters, toggles, etc.
 - Guard every DOM query: \`const el = document.getElementById('x'); if (el) { ... }\`
 - Log startup message: console.log('🚀 App loaded!');
+- CRITICAL: Before using ANY variable, it MUST be declared with const/let/var/function. Never use abbreviations like "pp", "el2", "btn2" without declaring them first.
+- CRITICAL: After writing the code, mentally trace every variable reference and confirm it has a corresponding declaration. Missing declarations cause runtime crashes.
+- Common mistake to AVOID: writing \`pp.textContent = ...\` or \`pp.style...\` where \`pp\` was never declared. Use full descriptive names like \`paragraph\`, \`priceText\`, \`progressBar\`.
 
 ## Language
 - Explanations: Korean
