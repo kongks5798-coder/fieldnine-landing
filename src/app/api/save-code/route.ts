@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
@@ -147,6 +148,15 @@ function isPathSafe(path: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting (10 commits per minute)
+  const cookies = request.headers.get("cookie") ?? "";
+  const sessionMatch = cookies.match(/f9_access=([^;]+)/);
+  const rlKey = sessionMatch?.[1] ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(`save-code-${rlKey}`, { limit: 10, windowSec: 60 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }, { status: 429 });
+  }
+
   // Validate token
   if (!GITHUB_TOKEN) {
     return NextResponse.json(

@@ -3,10 +3,24 @@ import { NextRequest, NextResponse } from "next/server";
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN_SECRET ?? "";
 const COOKIE_NAME = "f9_access";
 
+/** Content Security Policy */
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net fonts.googleapis.com",
+  "font-src 'self' fonts.gstatic.com cdn.jsdelivr.net",
+  "img-src 'self' data: blob: *.supabase.co",
+  "connect-src 'self' *.supabase.co api.github.com api.vercel.com",
+  "frame-src 'self' blob: data:",
+  "worker-src 'self' blob:",
+  "media-src 'self' blob: data: *.supabase.co",
+].join("; ");
+
 /** Shared security headers applied to all responses */
 const SECURITY_HEADERS: Record<string, string> = {
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy": CSP_DIRECTIVES,
 };
 
 function addSecurityHeaders(res: NextResponse) {

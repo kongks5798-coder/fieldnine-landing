@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN ?? "";
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID ?? "";
@@ -6,7 +7,16 @@ const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID ?? "";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Rate limiting (30 polls per minute)
+  const cookies = req.headers.get("cookie") ?? "";
+  const sessionMatch = cookies.match(/f9_access=([^;]+)/);
+  const rlKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(`deploy-status-${rlKey}`, { limit: 30, windowSec: 60 });
+  if (!rl.allowed) {
+    return NextResponse.json({ status: "error", message: "Rate limit exceeded" }, { status: 429 });
+  }
+
   if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
     return NextResponse.json({
       status: "unknown",

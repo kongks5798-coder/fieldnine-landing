@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cached, invalidateCachePrefix } from "@/lib/apiCache";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
@@ -26,6 +27,15 @@ interface CommitEntry {
 
 /** GET /api/git-history?page=1&per_page=20&fresh=1 */
 export async function GET(req: NextRequest) {
+  // Rate limiting (20 requests per minute)
+  const cookies = req.headers.get("cookie") ?? "";
+  const sessionMatch = cookies.match(/f9_access=([^;]+)/);
+  const rlKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(`git-history-${rlKey}`, { limit: 20, windowSec: 60 });
+  if (!rl.allowed) {
+    return NextResponse.json({ commits: [], error: "Rate limit exceeded" }, { status: 429 });
+  }
+
   if (!GITHUB_TOKEN) {
     return NextResponse.json({ commits: [], error: "GITHUB_TOKEN not set" }, { status: 200 });
   }

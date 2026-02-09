@@ -55,6 +55,7 @@ import { createZip } from "@/lib/zipExport";
 import { useTheme } from "@/lib/useTheme";
 import { FileCog, FileText, Package } from "lucide-react";
 import { useUndoHistory } from "@/hooks/useUndoHistory";
+import { ErrorBoundary } from "./providers";
 
 /* ===== Default Project Files ===== */
 const DEFAULT_FILES: Record<string, VFile> = {
@@ -1452,7 +1453,9 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
               id="ai-chat"
               onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
             >
-              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} />
+              <ErrorBoundary fallbackLabel="AI Chat crashed — click Retry">
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} />
+              </ErrorBoundary>
             </Panel>
 
             <Separator className="splitter-handle-v" />
@@ -1518,26 +1521,28 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                   id="console"
                   onResize={(size) => setConsoleCollapsed(size.asPercentage < 1)}
                 >
-                  <ConsolePanel
-                    consoleTab={consoleTab}
-                    setConsoleTab={setConsoleTab}
-                    consoleLines={consoleLines}
-                    setConsoleLines={setConsoleLines}
-                    consoleFilter={consoleFilter}
-                    setConsoleFilter={setConsoleFilter}
-                    shellHistory={shellHistory}
-                    setShellHistory={setShellHistory}
-                    shellInput={shellInput}
-                    setShellInput={setShellInput}
-                    handleShellSubmit={handleShellSubmit}
-                    gitHistory={gitHistory}
-                    gitLoading={gitLoading}
-                    fetchGitHistory={fetchGitHistory}
-                    restoringCommit={restoringCommit}
-                    handleGitRestore={handleGitRestore}
-                    onCollapse={() => consolePanelRef.current?.collapse()}
-                    onAIFix={handleAIFix}
-                  />
+                  <ErrorBoundary fallbackLabel="Console crashed — click Retry">
+                    <ConsolePanel
+                      consoleTab={consoleTab}
+                      setConsoleTab={setConsoleTab}
+                      consoleLines={consoleLines}
+                      setConsoleLines={setConsoleLines}
+                      consoleFilter={consoleFilter}
+                      setConsoleFilter={setConsoleFilter}
+                      shellHistory={shellHistory}
+                      setShellHistory={setShellHistory}
+                      shellInput={shellInput}
+                      setShellInput={setShellInput}
+                      handleShellSubmit={handleShellSubmit}
+                      gitHistory={gitHistory}
+                      gitLoading={gitLoading}
+                      fetchGitHistory={fetchGitHistory}
+                      restoringCommit={restoringCommit}
+                      handleGitRestore={handleGitRestore}
+                      onCollapse={() => consolePanelRef.current?.collapse()}
+                      onAIFix={handleAIFix}
+                    />
+                  </ErrorBoundary>
                 </Panel>
               </Group>
             </Panel>
@@ -1552,18 +1557,20 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
               collapsible
               id="preview"
             >
-              <PreviewPanel
-                renderedHTML={previewHTML}
-                viewport={viewport}
-                iframeRef={iframeRef}
-                handleRun={handleRun}
-                vercelState={vercelState}
-                vercelUrl={vercelUrl}
-                vercelCommitMsg={vercelCommitMsg}
-                deployedUrl={deployedUrl}
-                inspectorMode={inspectorMode}
-                onInspectorToggle={() => setInspectorMode((v) => !v)}
-              />
+              <ErrorBoundary fallbackLabel="Preview crashed — click Retry">
+                <PreviewPanel
+                  renderedHTML={previewHTML}
+                  viewport={viewport}
+                  iframeRef={iframeRef}
+                  handleRun={handleRun}
+                  vercelState={vercelState}
+                  vercelUrl={vercelUrl}
+                  vercelCommitMsg={vercelCommitMsg}
+                  deployedUrl={deployedUrl}
+                  inspectorMode={inspectorMode}
+                  onInspectorToggle={() => setInspectorMode((v) => !v)}
+                />
+              </ErrorBoundary>
             </Panel>
           </Group>
         )}

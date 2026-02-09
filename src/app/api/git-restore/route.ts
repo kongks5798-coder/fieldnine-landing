@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
@@ -18,6 +19,15 @@ async function ghFetch(url: string) {
 
 /** GET /api/git-restore?sha=abc1234 — fetch file contents at a specific commit */
 export async function GET(req: NextRequest) {
+  // Rate limiting (10 restores per minute)
+  const cookies = req.headers.get("cookie") ?? "";
+  const sessionMatch = cookies.match(/f9_access=([^;]+)/);
+  const rlKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(`git-restore-${rlKey}`, { limit: 10, windowSec: 60 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }, { status: 429 });
+  }
+
   if (!GITHUB_TOKEN) {
     return NextResponse.json({ error: "GITHUB_TOKEN not set" }, { status: 500 });
   }
