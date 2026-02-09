@@ -1,4 +1,4 @@
-// === Field Nine App Logic ===
+pp.js
 document.addEventListener('DOMContentLoaded', () => {
   let clickCount = 0;
   let cardCount = 0;
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (countEl) countEl.textContent = clickCount;
     const hue = (clickCount * 15) % 360;
     document.body.style.background =
-      \`linear-gradient(135deg, hsl(\${hue}, 20%, 4%) 0%, hsl(\${hue + 30}, 15%, 8%) 100%)\`;
+      `linear-gradient(135deg, hsl(${hue}, 20%, 4%) 0%, hsl(${hue + 30}, 15%, 8%) 100%)`;
   }
 
   function addCard() {
@@ -31,19 +31,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = titles[Math.floor(Math.random() * titles.length)];
     const desc = descs[Math.floor(Math.random() * descs.length)];
     const now = new Date().toLocaleTimeString('ko-KR');
-    card.innerHTML = \`
-      <div class="card-emoji">\${emoji}</div>
-      <h3>\${title}</h3>
-      <p>\${desc}</p>
-      <div class="card-time">\${now}에 생성됨</div>
-    \`;
+    card.innerHTML = `
+      <div class="card-emoji">${emoji}</div>
+      <h3>${title}</h3>
+      <p>${desc}</p>
+      <div class="card-time">${now}에 생성됨</div>
+    `;
     container.prepend(card);
   }
 
   if (startBtn) startBtn.addEventListener('click', handleStart);
   if (addCardBtn) addCardBtn.addEventListener('click', addCard);
 
-  // 초기 카드 3개 생성
   for (let i = 0; i < 3; i++) {
     setTimeout(() => addCard(), i * 200);
   }
