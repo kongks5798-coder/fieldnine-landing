@@ -78,9 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
 - Code: English (variable names, comments, HTML content can mix Korean for UI text)`;
 
 export async function POST(req: Request) {
-  // Rate limiting (15 requests per minute per IP)
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const rl = checkRateLimit(ip, { limit: 15, windowSec: 60 });
+  // Rate limiting (15 requests per minute per session)
+  // Use auth cookie as key (unique per session); fall back to IP
+  const cookies = req.headers.get("cookie") ?? "";
+  const sessionMatch = cookies.match(/f9_access=([^;]+)/);
+  const rateLimitKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(rateLimitKey, { limit: 15, windowSec: 60 });
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }),
@@ -108,7 +111,35 @@ export async function POST(req: Request) {
       );
     }
 
-    const { messages: rawMessages } = await req.json();
+    const body = await req.json();
+    const rawMessages = body?.messages;
+    const requestedModel = body?.model as string | undefined; // e.g. "gpt-4o", "gpt-4o-mini", "claude-sonnet"
+
+    // Input validation
+    if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request: messages array required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (rawMessages.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "Too many messages (max 50)" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    // Limit total payload size (~200KB) to prevent abuse
+    const totalSize = rawMessages.reduce(
+      (sum: number, m: Record<string, unknown>) =>
+        sum + (typeof m.content === "string" ? m.content.length : JSON.stringify(m).length),
+      0,
+    );
+    if (totalSize > 200_000) {
+      return new Response(
+        JSON.stringify({ error: "Request too large (max ~200KB)" }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     // useChat sends UIMessage format (with parts array),
     // but initial generation sends plain format (with content string).
@@ -118,12 +149,23 @@ export async function POST(req: Request) {
       ? await convertToModelMessages(rawMessages)
       : rawMessages;
 
-    const model =
-      provider === "openai"
-        ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o")
-        : createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })(
-            "claude-sonnet-4-20250514",
-          );
+    // Model selection: client can request a specific model, otherwise use default
+    const MODELS: Record<string, () => ReturnType<ReturnType<typeof createOpenAI>> | ReturnType<ReturnType<typeof createAnthropic>>> = {
+      ...(hasOpenAI ? {
+        "gpt-4o": () => createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o"),
+        "gpt-4o-mini": () => createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o-mini"),
+      } : {}),
+      ...(hasAnthropic ? {
+        "claude-sonnet": () => createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514"),
+      } : {}),
+    };
+
+    const modelFactory = requestedModel && MODELS[requestedModel]
+      ? MODELS[requestedModel]
+      : provider === "openai"
+        ? () => createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o")
+        : () => createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514");
+    const model = modelFactory();
 
     const result = streamText({
       model,

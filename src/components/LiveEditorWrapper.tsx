@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+import ErrorBoundary from "./ErrorBoundary";
 import ReplitApp from "./ReplitApp";
 
 const LiveEditor = dynamic(() => import("./LiveEditor"), {
@@ -43,20 +44,24 @@ export default function LiveEditorWrapper() {
 
   if (view === "ide") {
     return (
-      <LiveEditor
-        initialPrompt={prompt}
-        projectSlug={projectSlug}
-        onGoHome={handleGoHome}
-      />
+      <ErrorBoundary fallbackMessage="IDE에서 오류가 발생했습니다">
+        <LiveEditor
+          initialPrompt={prompt}
+          projectSlug={projectSlug}
+          onGoHome={handleGoHome}
+        />
+      </ErrorBoundary>
     );
   }
 
   return (
-    <ReplitApp
-      onStartProject={handleStartProject}
-      onOpenProject={handleOpenProject}
-      currentView="dashboard"
-      refreshKey={refreshKey}
-    />
+    <ErrorBoundary fallbackMessage="대시보드에서 오류가 발생했습니다">
+      <ReplitApp
+        onStartProject={handleStartProject}
+        onOpenProject={handleOpenProject}
+        currentView="dashboard"
+        refreshKey={refreshKey}
+      />
+    </ErrorBoundary>
   );
 }

@@ -48,6 +48,7 @@ interface AIChatPanelProps {
   currentFiles?: Record<string, CurrentFile>;
   onShadowCommit?: (files: FileChange[], message: string) => Promise<boolean>;
   onDeployStatusChanged?: (status: string) => void;
+  initialPrompt?: string;
 }
 
 function now() {
@@ -55,9 +56,17 @@ function now() {
 }
 
 const WELCOME_TEXT =
-  "안녕하세요, 보스! Field Nine AI입니다.\n\n기능을 지시하시면 코드를 생성하고 서버에 자동 반영합니다.\n\n예시: \"빨간 버튼 만들어줘\", \"히어로 섹션 추가해줘\", \"다크모드 토글\"";
+  "무엇을 만들까요? 기능을 지시하면 코드 생성 → 자동 배포합니다.";
 
-export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit }: AIChatPanelProps) {
+const AI_MODELS = [
+  { id: "gpt-4o", label: "GPT-4o" },
+  { id: "gpt-4o-mini", label: "GPT-4o Mini" },
+  { id: "claude-sonnet", label: "Claude Sonnet" },
+] as const;
+
+type AIModelId = (typeof AI_MODELS)[number]["id"];
+
+export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt }: AIChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
@@ -65,35 +74,16 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [systemMessages, setSystemMessages] = useState<SystemMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "error">("checking");
+  const [apiStatus, setApiStatus] = useState<"ok" | "error">("ok");
+  const [selectedModel, setSelectedModel] = useState<AIModelId>("gpt-4o");
+  const [showModelMenu, setShowModelMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const initialPromptSentRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, systemMessages, isStreaming, isCommitting]);
-
-  // Mount-time API connectivity test — result shown in UI
-  useEffect(() => {
-    console.log("[AIChatPanel] Mounted. Testing API...");
-    fetch("/api/chat", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: "ping" }] }),
-    })
-      .then((res) => {
-        console.log("[AIChatPanel] API test:", res.status, res.headers.get("content-type"));
-        setApiStatus(res.ok ? "ok" : "error");
-        if (!res.ok) setError(`API 연결 실패: HTTP ${res.status}`);
-        res.body?.cancel();
-      })
-      .catch((err) => {
-        console.error("[AIChatPanel] API test FAILED:", err);
-        setApiStatus("error");
-        setError(`API 연결 실패: ${err instanceof Error ? err.message : String(err)}`);
-      });
-  }, []);
 
   const shadowCommit = useCallback(
     async (fileChanges: FileChange[], commitMsg: string): Promise<boolean> => {
@@ -221,7 +211,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: apiMessages }),
+          body: JSON.stringify({ messages: apiMessages, model: selectedModel }),
           signal: abortController.signal,
         });
 
@@ -237,7 +227,37 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
-        let sseBuffer = ""; // Buffer for partial SSE lines across chunks
+        let sseBuffer = "";
+        let insertedBlocks = 0; // Track how many code blocks we've already live-inserted
+
+        /** Parse a single SSE data line and accumulate text */
+        const processLine = (line: string) => {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) return;
+          const payload = trimmed.slice(5).trim();
+          if (!payload || payload === "[DONE]") return;
+          const obj = JSON.parse(payload);
+          if (obj.type === "text-delta" && typeof obj.delta === "string") {
+            fullText += obj.delta;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: fullText } : m,
+              ),
+            );
+            // Live preview: when a new code block closes (```), insert it immediately
+            const parsed = parseAIResponse(fullText);
+            if (parsed.codeBlocks.length > insertedBlocks) {
+              for (let i = insertedBlocks; i < parsed.codeBlocks.length; i++) {
+                const block = parsed.codeBlocks[i];
+                onInsertCode(block.code, block.targetFile);
+              }
+              insertedBlocks = parsed.codeBlocks.length;
+            }
+          }
+          if (obj.type === "error") {
+            throw new Error(obj.errorText || obj.message || "API stream error");
+          }
+        };
 
         while (true) {
           const { done, value } = await reader.read();
@@ -249,42 +269,22 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           sseBuffer = lines.pop() || "";
 
           for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data:")) continue;
-            const payload = trimmed.slice(5).trim();
-            if (payload === "[DONE]") continue;
             try {
-              const obj = JSON.parse(payload);
-              if (obj.type === "text-delta" && typeof obj.delta === "string") {
-                fullText += obj.delta;
-                // Update assistant message in real-time
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, content: fullText } : m,
-                  ),
-                );
-              }
-              if (obj.type === "error") {
-                throw new Error(obj.errorText || obj.message || "API stream error");
-              }
+              processLine(line);
             } catch (e) {
-              // Re-throw API errors; skip JSON parse errors (partial lines)
-              if (e instanceof SyntaxError) continue;
+              if (e instanceof SyntaxError) continue; // partial JSON, skip
               throw e;
             }
           }
         }
 
-        // Flush any remaining buffered data
-        if (sseBuffer.trim().startsWith("data:")) {
-          const payload = sseBuffer.trim().slice(5).trim();
-          if (payload && payload !== "[DONE]") {
+        // Flush remaining buffer (decoder may hold trailing bytes)
+        sseBuffer += decoder.decode();
+        if (sseBuffer.trim()) {
+          for (const line of sseBuffer.split("\n")) {
             try {
-              const obj = JSON.parse(payload);
-              if (obj.type === "text-delta" && typeof obj.delta === "string") {
-                fullText += obj.delta;
-              }
-            } catch { /* skip trailing partial */ }
+              processLine(line);
+            } catch { /* trailing partial — safe to skip */ }
           }
         }
 
@@ -307,8 +307,16 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         abortRef.current = null;
       }
     },
-    [messages, currentFiles, handleAIResponseComplete],
+    [messages, currentFiles, handleAIResponseComplete, selectedModel],
   );
+
+  // Auto-send initial prompt when transitioning from dashboard
+  useEffect(() => {
+    if (!initialPrompt || initialPromptSentRef.current) return;
+    initialPromptSentRef.current = true;
+    sendToAI(initialPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt]);
 
   const doSend = useCallback(() => {
     console.log("[AIChatPanel] doSend. input:", inputValue, "streaming:", isStreaming, "committing:", isCommitting);
@@ -388,7 +396,35 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#0079F2] to-[#00c2ff] flex items-center justify-center">
           <Sparkles size={10} className="text-white" />
         </div>
-        <span className="text-xs font-semibold text-[var(--r-text)]">AI Assistant</span>
+        <span className="text-xs font-semibold text-[var(--r-text)]">Agent</span>
+        {/* Model selector */}
+        <div className="relative ml-1">
+          <button
+            type="button"
+            onClick={() => setShowModelMenu((v) => !v)}
+            className="text-[10px] text-[var(--r-text-secondary)] bg-[var(--r-surface-hover)] px-1.5 py-0.5 rounded-md hover:text-[var(--r-text)] transition-colors"
+          >
+            {AI_MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel}
+          </button>
+          {showModelMenu && (
+            <div className="absolute top-full left-0 mt-1 bg-[var(--r-surface)] border border-[var(--r-border)] rounded-lg shadow-lg z-50 py-1 min-w-[120px]">
+              {AI_MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => { setSelectedModel(m.id); setShowModelMenu(false); }}
+                  className={`w-full text-left px-3 py-1 text-[11px] transition-colors ${
+                    selectedModel === m.id
+                      ? "bg-[#0079F2]/10 text-[#0079F2]"
+                      : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {isCommitting && (
           <span className="flex items-center gap-1 text-[10px] text-[#F59E0B] ml-auto">
             <Loader2 size={10} className="animate-spin" /> Committing...
@@ -419,13 +455,9 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         </div>
 
         {/* API connectivity status */}
-        {apiStatus !== "ok" && (
-          <div className={`mx-2 px-3 py-1.5 rounded-lg text-[10px] ${
-            apiStatus === "checking"
-              ? "bg-[#FFF8E1] text-[#F59E0B] border border-[#F59E0B]/20"
-              : "bg-red-50 text-red-600 border border-red-200"
-          }`}>
-            {apiStatus === "checking" ? "API 연결 확인 중..." : "API 연결 실패 — 쿠키/인증 문제일 수 있습니다"}
+        {apiStatus === "error" && (
+          <div className="mx-2 px-3 py-1.5 rounded-lg text-[10px] bg-red-50 text-red-600 border border-red-200">
+            API 연결 실패 — 쿠키/인증 문제일 수 있습니다
           </div>
         )}
 

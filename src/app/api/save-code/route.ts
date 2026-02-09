@@ -115,14 +115,24 @@ async function createCommit(files: FileChange[], message: string) {
 
 // Security: Only allow safe file paths
 const ALLOWED_EXTENSIONS = /\.(html|htm|css|js|ts|json|md|txt|svg|xml)$/i;
+const SAFE_FILENAME = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 const MAX_FILES = 10;
 const MAX_FILE_SIZE = 500_000; // 500KB per file
 
 function isPathSafe(path: string): boolean {
   if (!path || typeof path !== "string") return false;
-  if (path.includes("..") || path.startsWith("/") || path.startsWith("\\")) return false;
-  if (path.includes("/.") || path.includes("\\.")) return false; // hidden files
+  // Block NUL bytes and control characters
+  if (/[\x00-\x1f]/.test(path)) return false;
+  // Block path traversal patterns
+  if (path.includes("..") || path.includes("/") || path.includes("\\")) return false;
+  // Only flat filenames — no directories, no hidden files
+  if (path.startsWith(".")) return false;
+  // Whitelist: alphanumeric + dot/dash/underscore only
+  if (!SAFE_FILENAME.test(path)) return false;
+  // Must have an allowed extension
   if (!ALLOWED_EXTENSIONS.test(path)) return false;
+  // Max filename length
+  if (path.length > 100) return false;
   return true;
 }
 

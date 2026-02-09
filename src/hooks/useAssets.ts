@@ -16,6 +16,7 @@ export interface AssetFile {
 export function useAssets(projectSlug: string | null) {
   const [assets, setAssets] = useState<AssetFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   /** List all assets for the current project */
   const loadAssets = useCallback(async () => {
@@ -55,9 +56,11 @@ export function useAssets(projectSlug: string | null) {
     async (fileList: FileList | File[]) => {
       if (!supabase || !projectSlug) return;
       setUploading(true);
+      setUploadError(null);
 
       const files = Array.from(fileList);
       const results: AssetFile[] = [];
+      const failedNames: string[] = [];
 
       for (const file of files) {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -70,6 +73,7 @@ export function useAssets(projectSlug: string | null) {
 
         if (error) {
           console.error(`[useAssets] upload "${file.name}" failed:`, error);
+          failedNames.push(file.name);
           continue;
         }
 
@@ -84,6 +88,9 @@ export function useAssets(projectSlug: string | null) {
         });
       }
 
+      if (failedNames.length > 0) {
+        setUploadError(`업로드 실패: ${failedNames.join(", ")}`);
+      }
       setAssets((prev) => [...results, ...prev]);
       setUploading(false);
     },
@@ -114,5 +121,5 @@ export function useAssets(projectSlug: string | null) {
     [projectSlug],
   );
 
-  return { assets, uploading, loadAssets, uploadFiles, deleteAsset };
+  return { assets, uploading, uploadError, setUploadError, loadAssets, uploadFiles, deleteAsset };
 }

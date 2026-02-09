@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Editor from "@monaco-editor/react";
 import {
   Panel,
   Group,
@@ -18,16 +17,10 @@ import {
   Maximize2,
   Minimize2,
   Terminal as TerminalIcon,
-  X,
   FolderOpen,
-  Trash2,
   PanelLeftClose,
   PanelLeftOpen,
-  FilePlus2,
-  Download,
   FileCode2,
-  FileText,
-  FileCog,
   Sparkles,
   Save,
   Check,
@@ -35,36 +28,27 @@ import {
   CloudOff,
   Rocket,
   Home,
-  AppWindow,
   Globe,
   HelpCircle,
-  Search,
   RefreshCw,
   ExternalLink,
-  Image as ImageIcon,
-  Upload,
-  Copy,
-  Link,
-  GitCommitHorizontal,
+  Download,
   Moon,
   Sun,
 } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
+import FileExplorer, { getFileInfo, type VFile, type ExplorerTab } from "./FileExplorer";
+import ConsolePanel, { type ConsoleLine, type ConsoleTab, type GitCommitEntry } from "./ConsolePanel";
+import PreviewPanel from "./PreviewPanel";
+import EditorTabs from "./EditorTabs";
+import { ToastContainer, useToast } from "./Toast";
 import { useProjectSave } from "@/hooks/useProjectSave";
-import { useAssets, type AssetFile } from "@/hooks/useAssets";
+import { useAssets } from "@/hooks/useAssets";
 import { useDeployStatus } from "@/hooks/useDeployStatus";
 import { deployProject } from "@/lib/deploy";
-import { parseAIResponse } from "@/lib/parseAIResponse";
 import { createZip } from "@/lib/zipExport";
 import { useTheme } from "@/lib/useTheme";
-
-/* ===== File System Types ===== */
-interface VFile {
-  name: string;
-  language: string;
-  content: string;
-  icon: React.ElementType;
-}
+import { FileCog, FileText } from "lucide-react";
 
 /* ===== Default Project Files ===== */
 const DEFAULT_FILES: Record<string, VFile> = {
@@ -368,49 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 type ViewportSize = "desktop" | "tablet" | "mobile";
 type EditorTheme = "vs-dark" | "light" | "hc-black";
-type ConsoleTab = "console" | "shell" | "history";
-type ExplorerTab = "files" | "assets";
-
-interface ConsoleLine {
-  type: "log" | "error" | "warn" | "info";
-  text: string;
-  time: string;
-}
-
-interface GitCommitEntry {
-  sha: string;
-  fullSha: string;
-  message: string;
-  author: string;
-  date: string;
-  url: string;
-}
-
-const FILE_ICON_MAP: Record<string, { icon: React.ElementType; color: string }> = {
-  html: { icon: FileCode2, color: "text-[#e44d26]" },
-  css: { icon: FileText, color: "text-[#2965f1]" },
-  javascript: { icon: FileCog, color: "text-[#f7df1e]" },
-  json: { icon: FileCog, color: "text-[#5b5b5b]" },
-  markdown: { icon: FileText, color: "text-[#858585]" },
-};
-
-function getFileInfo(fileName: string) {
-  const ext = fileName.split(".").pop() ?? "";
-  const langMap: Record<string, string> = {
-    html: "html", htm: "html", css: "css", js: "javascript",
-    json: "json", md: "markdown", txt: "plaintext", ts: "typescript",
-  };
-  const language = langMap[ext] ?? "plaintext";
-  const info = FILE_ICON_MAP[language] ?? { icon: FileText, color: "text-[#858585]" };
-  return { language, ...info };
-}
-
-/* ===== Sidebar Nav ===== */
-const SIDEBAR_NAV = [
-  { icon: Home, label: "Home", id: "home" },
-  { icon: AppWindow, label: "My Apps", id: "apps" },
-  { icon: Globe, label: "Published", id: "published" },
-];
 
 /* ===== Main Component ===== */
 interface LiveEditorProps {
@@ -432,11 +373,13 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([]);
   const [editorTheme] = useState<EditorTheme>("vs-dark");
   const [showNewFileInput, setShowNewFileInput] = useState(false);
+  const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [newFileName, setNewFileName] = useState("");
   const [showFileExplorer, setShowFileExplorer] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<"editor" | "preview" | "ai">("editor");
   const [isMobile, setIsMobile] = useState(false);
   const [consoleTab, setConsoleTab] = useState<ConsoleTab>("console");
+  const [consoleFilter, setConsoleFilter] = useState<ConsoleLine["type"] | "all">("all");
   const [shellInput, setShellInput] = useState("");
   const [shellHistory, setShellHistory] = useState<string[]>([
     "$ npm install",
@@ -444,15 +387,14 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     "$ npm start",
     "Server running on port 3000",
   ]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "deployed">("idle");
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const [explorerTab, setExplorerTab] = useState<ExplorerTab>("files");
   const [gitHistory, setGitHistory] = useState<GitCommitEntry[]>([]);
   const [gitLoading, setGitLoading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+
+  /* ===== Toast ===== */
+  const { toasts, addToast, dismissToast, updateToast } = useToast();
 
   /* ===== Project Save Hook ===== */
   const { saveStatus, triggerAutoSave, manualSave, loadFromStorage, clearLocalStorage } =
@@ -482,7 +424,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         });
         const data = await res.json();
         if (data.success) {
-          // Trigger Vercel deploy status polling
           startVercelPolling();
           return true;
         }
@@ -525,7 +466,37 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     }
   }, []);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  /* ===== Restore files from a git commit ===== */
+  const [restoringCommit, setRestoringCommit] = useState<string | null>(null);
+  const handleGitRestore = useCallback(async (fullSha: string) => {
+    setRestoringCommit(fullSha);
+    try {
+      const res = await fetch(`/api/git-restore?sha=${fullSha}`);
+      const data = await res.json();
+      if (!res.ok || !data.files) throw new Error(data.error || "Restore failed");
+
+      const restoredFiles: Record<string, VFile> = {};
+      for (const [name, content] of Object.entries(data.files as Record<string, string>)) {
+        const info = getFileInfo(name);
+        restoredFiles[name] = { name, language: info.language, content, icon: info.icon };
+      }
+      setFiles((prev) => ({ ...prev, ...restoredFiles }));
+      setOpenTabs((prev) => {
+        const newTabs = [...prev];
+        for (const name of Object.keys(restoredFiles)) {
+          if (!newTabs.includes(name)) newTabs.push(name);
+        }
+        return newTabs;
+      });
+      triggerAutoSave({ ...files, ...restoredFiles });
+      addToast({ type: "success", message: `커밋 ${data.sha}로 복원 완료` });
+    } catch (err) {
+      addToast({ type: "error", message: `복원 실패: ${(err as Error).message}` });
+    } finally {
+      setRestoringCommit(null);
+    }
+  }, [files, triggerAutoSave, addToast]);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const autoRunRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -552,6 +523,16 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  /* ===== Auto-open AI panel when initial prompt is present ===== */
+  useEffect(() => {
+    if (!initialPrompt) return;
+    if (isMobile) {
+      setMobilePanel("ai");
+    } else {
+      aiPanelRef.current?.expand();
+    }
+  }, [initialPrompt, isMobile]);
+
   /* ===== Load saved project on mount ===== */
   useEffect(() => {
     loadFromStorage().then((loaded) => {
@@ -564,114 +545,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     loadAssets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  /* ===== Handle initial prompt (AI code generation) ===== */
-  useEffect(() => {
-    if (!initialPrompt) return;
-    setIsGenerating(true);
-    setGenerationError(null);
-
-    const abortController = new AbortController();
-
-    (async () => {
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "user",
-                content: `다음 요청에 맞는 완전한 웹사이트를 만들어주세요. index.html, style.css, app.js 세 파일 모두 완전한 코드를 생성해주세요:\n\n${initialPrompt}`,
-              },
-            ],
-          }),
-          signal: abortController.signal,
-        });
-
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        if (!res.body) throw new Error("Empty response body");
-
-        // Read the full streaming response
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let rawStream = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          rawStream += decoder.decode(value, { stream: true });
-        }
-
-        // Parse Vercel AI SDK UI Message Stream Protocol (SSE format)
-        // Lines: data: {"type":"text-delta","delta":"chunk"}
-        let fullText = "";
-        for (const line of rawStream.split("\n")) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const payload = trimmed.slice(5).trim();
-          if (payload === "[DONE]") break;
-          try {
-            const obj = JSON.parse(payload);
-            if (obj.type === "text-delta" && typeof obj.delta === "string") {
-              fullText += obj.delta;
-            }
-          } catch {
-            // skip non-JSON lines
-          }
-        }
-
-        // Extract code blocks using shared parser
-        const { codeBlocks } = parseAIResponse(fullText);
-
-        if (codeBlocks.length > 0) {
-          // Build files from parsed code blocks
-          const newFiles: Record<string, VFile> = {};
-          for (const block of codeBlocks) {
-            const info = getFileInfo(block.targetFile);
-            newFiles[block.targetFile] = {
-              name: block.targetFile,
-              language: info.language,
-              content: block.code,
-              icon: info.icon,
-            };
-          }
-
-          // Ensure all 3 default files exist (fill missing with defaults)
-          for (const key of ["index.html", "style.css", "app.js"]) {
-            if (!newFiles[key]) {
-              newFiles[key] = JSON.parse(JSON.stringify(DEFAULT_FILES[key]));
-            }
-          }
-
-          setFiles(newFiles);
-          setOpenTabs(Object.keys(newFiles));
-          setActiveFile("index.html");
-          triggerAutoSave(newFiles);
-
-          // Auto shadow commit → GitHub push → Vercel auto-deploy
-          const fileChanges = Object.entries(newFiles).map(([name, f]) => ({
-            path: name,
-            content: f.content,
-          }));
-          handleShadowCommit(fileChanges, `feat: AI generated — ${initialPrompt.slice(0, 60)}`);
-        }
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          console.error("[LiveEditor] AI generation failed:", err);
-          const msg = (err as Error).message || "";
-          if (msg.includes("503")) {
-            setGenerationError("API 키가 설정되지 않았습니다. OPENAI_API_KEY 또는 ANTHROPIC_API_KEY를 확인하세요.");
-          } else {
-            setGenerationError(`코드 생성 실패: ${msg}`);
-          }
-        }
-      } finally {
-        setIsGenerating(false);
-      }
-    })();
-
-    return () => abortController.abort();
-  }, [initialPrompt, triggerAutoSave, handleShadowCommit]);
 
   /* ===== Build combined HTML ===== */
   const buildPreview = useCallback(() => {
@@ -856,64 +729,32 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     URL.revokeObjectURL(url);
   }, [files, projectSlug]);
 
-  /* ===== Real Deploy — Shadow Commit + Supabase Storage ===== */
+  /* ===== Real Deploy ===== */
   const handleDeploy = useCallback(async () => {
     if (!projectSlug) return;
     setDeployStatus("deploying");
+    const toastId = addToast({ type: "loading", message: "배포 중..." });
     await manualSave(files);
 
-    // Shadow commit to GitHub → triggers Vercel auto-deploy
     const fileChanges = Object.entries(files).map(([name, f]) => ({
       path: name,
       content: f.content,
     }));
     handleShadowCommit(fileChanges, `deploy: ${projectSlug}`);
 
-    // Also deploy combined HTML to Supabase Storage (instant preview)
     const combinedHTML = buildPreview();
     const url = await deployProject(projectSlug, combinedHTML);
 
     if (url) {
       setDeployedUrl(url);
       setDeployStatus("deployed");
+      updateToast(toastId, { type: "success", message: "배포 완료!", url });
       setTimeout(() => setDeployStatus("idle"), 8000);
     } else {
       setDeployStatus("idle");
+      updateToast(toastId, { type: "error", message: "배포 실패 — 다시 시도해주세요" });
     }
-  }, [files, projectSlug, manualSave, buildPreview, handleShadowCommit]);
-
-  /* ===== Asset drag & drop ===== */
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      if (e.dataTransfer.files.length > 0) {
-        uploadFiles(e.dataTransfer.files);
-      }
-    },
-    [uploadFiles],
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setDragOver(false);
-  }, []);
-
-  const handleCopyUrl = useCallback((url: string) => {
-    navigator.clipboard.writeText(url);
-    setCopiedUrl(url);
-    setTimeout(() => setCopiedUrl(null), 2000);
-  }, []);
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  }, [files, projectSlug, manualSave, buildPreview, handleShadowCommit, addToast, updateToast]);
 
   /* ===== Shell commands ===== */
   const handleShellSubmit = useCallback((cmd: string) => {
@@ -942,7 +783,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
   const handleTabClick = (fileName: string) => {
     setActiveFile(fileName);
-    // 탭 전환 시 디바운스 대기 중인 미적용 변경사항을 즉시 프리뷰에 반영
     if (autoRunRef.current) clearTimeout(autoRunRef.current);
     setRenderedHTML(buildPreview());
   };
@@ -958,19 +798,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const openFile = (fileName: string) => {
     if (!openTabs.includes(fileName)) setOpenTabs([...openTabs, fileName]);
     setActiveFile(fileName);
-    // 파일 전환 시 프리뷰 갱신
     setRenderedHTML(buildPreview());
   };
-
-  const viewportWidths: Record<ViewportSize, string> = {
-    desktop: "100%", tablet: "768px", mobile: "375px",
-  };
-
-  const consoleColorMap: Record<string, string> = {
-    log: "text-[#d4d4d4]", error: "text-[#f87171]", warn: "text-[#fbbf24]", info: "text-[#60a5fa]",
-  };
-
-  const fileList = Object.keys(files);
 
   const toggleConsole = useCallback(() => {
     const panel = consolePanelRef.current;
@@ -983,6 +812,47 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     if (!panel) return;
     if (aiCollapsed) panel.expand(); else panel.collapse();
   }, [aiCollapsed]);
+
+  /* ===== Keyboard Shortcuts ===== */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+
+      if (e.key === "s" && !e.shiftKey) {
+        e.preventDefault();
+        manualSave(files);
+        return;
+      }
+      if (e.key === "R" && e.shiftKey) {
+        e.preventDefault();
+        handleRun();
+        return;
+      }
+      if (e.key === "D" && e.shiftKey) {
+        e.preventDefault();
+        handleDeploy();
+        return;
+      }
+      if (e.key === "b" && !e.shiftKey) {
+        e.preventDefault();
+        setShowFileExplorer((v) => !v);
+        return;
+      }
+      if (e.key === "j" && !e.shiftKey) {
+        e.preventDefault();
+        toggleConsole();
+        return;
+      }
+      if (e.key === "A" && e.shiftKey) {
+        e.preventDefault();
+        toggleAiPanel();
+        return;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [files, manualSave, handleRun, handleDeploy, toggleConsole, toggleAiPanel]);
 
   return (
     <div className={`flex h-screen bg-[var(--r-bg)] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
@@ -998,23 +868,28 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         </button>
 
         <div className="flex flex-col items-center gap-1 flex-1">
-          {SIDEBAR_NAV.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => item.id === "home" && onGoHome?.()}
-                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)] transition-all"
-                aria-label={item.label}
-              >
-                <Icon size={18} strokeWidth={1.5} />
-                <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--r-sidebar)] text-xs text-[var(--r-text)] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[var(--r-border)]">
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
+          <button
+            type="button"
+            onClick={() => setShowFileExplorer((v) => !v)}
+            className={`group relative w-9 h-9 rounded-lg flex items-center justify-center transition-all ${showFileExplorer ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)]"}`}
+            aria-label="Files"
+          >
+            <FolderOpen size={18} strokeWidth={1.5} />
+            <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--r-sidebar)] text-xs text-[var(--r-text)] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[var(--r-border)]">
+              Files
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={toggleAiPanel}
+            className={`group relative w-9 h-9 rounded-lg flex items-center justify-center transition-all ${!aiCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)]"}`}
+            aria-label="AI Agent"
+          >
+            <Sparkles size={18} strokeWidth={1.5} />
+            <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--r-sidebar)] text-xs text-[var(--r-text)] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[var(--r-border)]">
+              Agent
+            </span>
+          </button>
         </div>
 
         <div className="flex flex-col items-center gap-1">
@@ -1044,222 +919,30 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setShowFileExplorer(false)} />
       )}
 
-      {/* ===== File Explorer / Assets Sidebar (overlay on mobile) ===== */}
+      {/* ===== File Explorer / Assets Sidebar ===== */}
       {showFileExplorer && (
-        <div className={`bg-[var(--r-bg)] border-r border-[var(--r-border)] flex flex-col shrink-0 ${isMobile ? "fixed left-0 top-0 bottom-0 w-[260px] z-40 shadow-xl" : "w-[220px]"}`}>
-          {/* Tab header: Files | Assets */}
-          <div className="flex items-center border-b border-[var(--r-border)] shrink-0">
-            <button
-              type="button"
-              onClick={() => setExplorerTab("files")}
-              className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors relative ${
-                explorerTab === "files" ? "text-[var(--r-text)]" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
-              }`}
-            >
-              Files
-              {explorerTab === "files" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setExplorerTab("assets"); loadAssets(); }}
-              className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors relative ${
-                explorerTab === "assets" ? "text-[var(--r-text)]" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
-              }`}
-            >
-              Assets
-              {explorerTab === "assets" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowFileExplorer(false)}
-              className="p-1 mr-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
-              aria-label="Close explorer"
-            >
-              <X size={13} />
-            </button>
-          </div>
-
-          {explorerTab === "files" ? (
-            /* ===== FILES TAB ===== */
-            <>
-              {/* Actions row */}
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-[10px] text-[var(--r-text-muted)]">{fileList.length} files</span>
-                <button
-                  type="button"
-                  onClick={() => setShowNewFileInput(true)}
-                  className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
-                  aria-label="New file"
-                >
-                  <FilePlus2 size={13} />
-                </button>
-              </div>
-
-              {/* Search */}
-              <div className="px-2 pb-2">
-                <div className="relative">
-                  <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--r-text-muted)]" />
-                  <input
-                    type="text"
-                    placeholder="Search files..."
-                    className="w-full pl-7 pr-2 py-1 bg-[var(--r-surface)] border border-[var(--r-border)] text-[11px] text-[var(--r-text)] placeholder-[#9DA5B0] rounded-md outline-none focus:border-[#0079f2] transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* New file input */}
-              {showNewFileInput && (
-                <div className="px-2 pb-2">
-                  <form onSubmit={(e) => { e.preventDefault(); createFile(newFileName); }}>
-                    <input
-                      type="text"
-                      value={newFileName}
-                      onChange={(e) => setNewFileName(e.target.value)}
-                      placeholder="name.html / .css / .js"
-                      className="w-full bg-[var(--r-surface)] text-[var(--r-text)] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
-                      autoFocus
-                      onBlur={() => { setShowNewFileInput(false); setNewFileName(""); }}
-                      onKeyDown={(e) => { if (e.key === "Escape") { setShowNewFileInput(false); setNewFileName(""); }}}
-                    />
-                  </form>
-                </div>
-              )}
-
-              {/* File tree */}
-              <div className="flex-1 overflow-y-auto px-1 py-1">
-                {fileList.map((fileName) => {
-                  const info = getFileInfo(fileName);
-                  const Icon = info.icon;
-                  const isActive = activeFile === fileName;
-                  return (
-                    <div
-                      key={fileName}
-                      onClick={() => openFile(fileName)}
-                      className={`group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] cursor-pointer transition-colors mx-1 ${
-                        isActive
-                          ? "bg-[var(--r-accent-light)] text-[var(--r-text)]"
-                          : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
-                      }`}
-                    >
-                      <Icon size={14} className={info.color} />
-                      <span className="truncate flex-1 font-mono">{fileName}</span>
-                      {!["index.html", "style.css", "app.js"].includes(fileName) && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); deleteFile(fileName); }}
-                          className="opacity-0 group-hover:opacity-100 hover:text-[#f87171] transition-all p-0.5"
-                          aria-label={`Delete ${fileName}`}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            /* ===== ASSETS TAB ===== */
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Upload area */}
-              <div
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                className={`mx-2 mt-2 border-2 border-dashed rounded-xl p-3 text-center transition-colors cursor-pointer ${
-                  dragOver
-                    ? "border-[#0079f2] bg-[#0079f2]/10"
-                    : "border-[var(--r-border)] hover:border-[#C8C8C4]"
-                }`}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      uploadFiles(e.target.files);
-                      e.target.value = "";
-                    }
-                  }}
-                />
-                {uploading ? (
-                  <div className="flex items-center justify-center gap-2 py-2">
-                    <Loader2 size={14} className="animate-spin text-[#0079f2]" />
-                    <span className="text-[11px] text-[#0079f2]">Uploading...</span>
-                  </div>
-                ) : (
-                  <>
-                    <Upload size={18} className="text-[var(--r-text-muted)] mx-auto mb-1" />
-                    <p className="text-[11px] text-[var(--r-text-secondary)]">Drop files or click to upload</p>
-                  </>
-                )}
-              </div>
-
-              {/* Assets list */}
-              <div className="flex-1 overflow-y-auto px-1 py-2">
-                {assets.length === 0 ? (
-                  <div className="text-center py-6">
-                    <ImageIcon size={24} className="text-[#E4E4E0] mx-auto mb-2" />
-                    <p className="text-[11px] text-[var(--r-text-muted)]">No assets yet</p>
-                  </div>
-                ) : (
-                  assets.map((asset: AssetFile) => (
-                    <div
-                      key={asset.url}
-                      className="group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] mx-1 hover:bg-[var(--r-surface-hover)] transition-colors"
-                    >
-                      {asset.type.startsWith("image/") ? (
-                        <div className="w-6 h-6 rounded overflow-hidden bg-[var(--r-sidebar)] flex items-center justify-center shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <ImageIcon size={14} className="text-[var(--r-text-secondary)] shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] text-[var(--r-text)] truncate font-mono">{asset.name}</div>
-                        <div className="text-[9px] text-[var(--r-text-muted)]">{formatFileSize(asset.size)}</div>
-                      </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyUrl(asset.url)}
-                          className="p-0.5 text-[var(--r-text-secondary)] hover:text-[#0079f2] rounded transition-colors"
-                          title="Copy URL"
-                        >
-                          {copiedUrl === asset.url ? <Check size={11} className="text-[#00b894]" /> : <Copy size={11} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyUrl(asset.url)}
-                          className="p-0.5 text-[var(--r-text-secondary)] hover:text-[#0079f2] rounded transition-colors"
-                          title="Insert URL"
-                        >
-                          <Link size={11} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteAsset(asset.name)}
-                          className="p-0.5 text-[var(--r-text-secondary)] hover:text-[#f87171] rounded transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="px-3 py-2 border-t border-[var(--r-border)] text-[10px] text-[var(--r-text-muted)]">
-                {assets.length} assets
-              </div>
-            </div>
-          )}
-        </div>
+        <FileExplorer
+          files={files}
+          activeFile={activeFile}
+          openFile={openFile}
+          createFile={createFile}
+          deleteFile={deleteFile}
+          showNewFileInput={showNewFileInput}
+          setShowNewFileInput={setShowNewFileInput}
+          newFileName={newFileName}
+          setNewFileName={setNewFileName}
+          fileSearchQuery={fileSearchQuery}
+          setFileSearchQuery={setFileSearchQuery}
+          explorerTab={explorerTab}
+          setExplorerTab={setExplorerTab}
+          assets={assets}
+          uploading={uploading}
+          loadAssets={loadAssets}
+          uploadFiles={uploadFiles}
+          deleteAsset={deleteAsset}
+          isMobile={isMobile}
+          setShowFileExplorer={setShowFileExplorer}
+        />
       )}
 
       {/* ===== Main IDE Area ===== */}
@@ -1267,7 +950,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         {/* ===== Top Header Bar ===== */}
         <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 bg-[var(--r-surface)] border-b border-[var(--r-border)] shrink-0 overflow-x-auto">
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile: Home button (replaces sidebar) */}
             <button
               type="button"
               onClick={onGoHome}
@@ -1297,7 +979,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               {aiCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
             </button>
 
-            {/* Save status */}
             <div className="flex items-center gap-1.5 ml-2">
               {saveStatus === "saving" && (
                 <span className="flex items-center gap-1 text-[11px] text-[var(--r-text-secondary)]">
@@ -1318,7 +999,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Save */}
             <button
               type="button"
               onClick={() => manualSave(files)}
@@ -1329,7 +1009,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               <span className="hidden sm:inline">Save</span>
             </button>
 
-            {/* Run */}
             <button
               type="button"
               onClick={handleRun}
@@ -1339,7 +1018,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               Run
             </button>
 
-            {/* Deploy */}
             <button
               type="button"
               onClick={handleDeploy}
@@ -1361,7 +1039,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               )}
             </button>
 
-            {/* Vercel Real-time Deploy Badge */}
             {vercelPolling && vercelState === "building" && (
               <span className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#f59e0b] bg-[#f59e0b]/10 rounded-md animate-pulse">
                 <Loader2 size={11} className="animate-spin" />
@@ -1387,7 +1064,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               </span>
             )}
 
-            {/* Deployed URL link (Supabase deploy) */}
             {deployedUrl && deployStatus === "deployed" && (
               <a
                 href={deployedUrl}
@@ -1403,7 +1079,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
             <div className="w-px h-5 bg-[#E4E4E0] mx-1" />
 
-            {/* Reset */}
             <button
               type="button"
               onClick={handleReset}
@@ -1413,7 +1088,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               <RotateCcw size={13} />
             </button>
 
-            {/* Download */}
             <button
               type="button"
               onClick={handleDownload}
@@ -1423,7 +1097,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               <Download size={13} />
             </button>
 
-            {/* Viewport */}
             <div className="hidden md:flex items-center gap-0.5 ml-1">
               {([
                 ["desktop", Monitor],
@@ -1444,7 +1117,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               ))}
             </div>
 
-            {/* Console toggle */}
             <button
               type="button"
               onClick={toggleConsole}
@@ -1456,7 +1128,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               <TerminalIcon size={13} />
             </button>
 
-            {/* Fullscreen */}
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
@@ -1467,34 +1138,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             </button>
           </div>
         </div>
-
-        {/* ===== Generating Overlay ===== */}
-        {(isGenerating || generationError) && (
-          <div className="absolute inset-0 z-40 bg-[var(--r-bg)]/90 flex items-center justify-center">
-            <div className="text-center max-w-md px-6">
-              {generationError ? (
-                <>
-                  <CloudOff size={40} className="text-[#f87171] mx-auto mb-4" />
-                  <h3 className="text-[18px] font-semibold text-[var(--r-text)] mb-2">Generation Failed</h3>
-                  <p className="text-[13px] text-[#f87171] mb-4">{generationError}</p>
-                  <button
-                    type="button"
-                    onClick={() => { setGenerationError(null); window.location.reload(); }}
-                    className="px-4 py-2 bg-[#0079f2] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0066cc] transition-colors"
-                  >
-                    Retry
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Loader2 size={40} className="animate-spin text-[#0079f2] mx-auto mb-4" />
-                  <h3 className="text-[18px] font-semibold text-[var(--r-text)] mb-2">Generating your app...</h3>
-                  <p className="text-[13px] text-[var(--r-text-secondary)]">{initialPrompt}</p>
-                </>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* ===== Mobile Panel Switcher ===== */}
         {isMobile && (
@@ -1523,67 +1166,19 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         {/* ===== Mobile: Single Panel View ===== */}
         {isMobile ? (
           <div className="flex-1 min-h-0 flex flex-col">
-            {/* Mobile Editor */}
             {mobilePanel === "editor" && (
-              <div className="flex flex-col h-full bg-[#1e1e1e]">
-                <div className="flex items-center bg-[#252526] pl-1 overflow-x-auto shrink-0 border-b border-[#404040]">
-                  {openTabs.map((tab) => {
-                    const file = files[tab];
-                    if (!file) return null;
-                    const info = getFileInfo(tab);
-                    const Icon = info.icon;
-                    const isActive = activeFile === tab;
-                    return (
-                      <div
-                        key={tab}
-                        onClick={() => handleTabClick(tab)}
-                        className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] cursor-pointer shrink-0 transition-all rounded-t-lg mt-1 mx-0.5 ${
-                          isActive ? "bg-[#1e1e1e] text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d]"
-                        }`}
-                      >
-                        <Icon size={13} className={info.color} />
-                        <span className="font-mono">{tab}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleTabClose(tab, e)}
-                          className={`ml-1 rounded p-0.5 transition-all ${
-                            isActive ? "text-[#858585] hover:text-[#e1e8f0] hover:bg-[#404040]" : "opacity-0 group-hover:opacity-100 hover:bg-[#404040]"
-                          }`}
-                          aria-label={`Close ${tab}`}
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex-1 min-h-0">
-                  <Editor
-                    height="100%"
-                    language={files[activeFile]?.language ?? "html"}
-                    value={files[activeFile]?.content ?? ""}
-                    onChange={handleCodeChange}
-                    theme={editorTheme}
-                    options={{
-                      fontSize: 13,
-                      lineHeight: 22,
-                      minimap: { enabled: false },
-                      scrollBeyondLastLine: false,
-                      padding: { top: 8 },
-                      fontFamily: "var(--font-geist-mono), 'Fira Code', 'Cascadia Code', monospace",
-                      wordWrap: "on",
-                      tabSize: 2,
-                      automaticLayout: true,
-                      lineNumbers: "on",
-                      glyphMargin: false,
-                      folding: false,
-                    }}
-                  />
-                </div>
-              </div>
+              <EditorTabs
+                files={files}
+                activeFile={activeFile}
+                openTabs={openTabs}
+                editorTheme={editorTheme}
+                onTabClick={handleTabClick}
+                onTabClose={handleTabClose}
+                onCodeChange={handleCodeChange}
+                compact
+              />
             )}
 
-            {/* Mobile Preview */}
             {mobilePanel === "preview" && (
               <div className="flex flex-col h-full bg-[var(--r-bg)]">
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--r-border)] shrink-0">
@@ -1608,10 +1203,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               </div>
             )}
 
-            {/* Mobile AI Chat */}
             {mobilePanel === "ai" && (
               <div className="flex-1 min-h-0">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} />
               </div>
             )}
           </div>
@@ -1627,19 +1221,19 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             {/* --- AI Chat Panel --- */}
             <Panel
               panelRef={aiPanelRef}
-              defaultSize="22"
+              defaultSize="25"
               minSize="15"
               collapsible
               id="ai-chat"
               onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
             >
-              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} />
+              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} />
             </Panel>
 
             <Separator className="splitter-handle-v" />
 
             {/* --- Editor + Console --- */}
-            <Panel defaultSize="43" minSize="25" id="editor-console">
+            <Panel defaultSize="40" minSize="25" id="editor-console">
               <Group
                 orientation="vertical"
                 defaultLayout={verticalLayout.defaultLayout}
@@ -1649,83 +1243,20 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               >
                 {/* Editor */}
                 <Panel defaultSize="70" minSize="30" id="editor">
-                  <div className="flex flex-col h-full bg-[#1e1e1e]">
-                    {/* Tab Bar — stays dark (Monaco editor tabs) */}
-                    <div className="flex items-center bg-[#252526] pl-1 overflow-x-auto shrink-0 border-b border-[#404040]">
-                      {openTabs.map((tab) => {
-                        const file = files[tab];
-                        if (!file) return null;
-                        const info = getFileInfo(tab);
-                        const Icon = info.icon;
-                        const isActive = activeFile === tab;
-                        return (
-                          <div
-                            key={tab}
-                            onClick={() => handleTabClick(tab)}
-                            className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] cursor-pointer shrink-0 transition-all rounded-t-lg mt-1 mx-0.5 ${
-                              isActive
-                                ? "bg-[#1e1e1e] text-[#e1e8f0]"
-                                : "text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d]"
-                            }`}
-                          >
-                            <Icon size={13} className={info.color} />
-                            <span className="font-mono">{tab}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => handleTabClose(tab, e)}
-                              className={`ml-1 rounded p-0.5 transition-all ${
-                                isActive
-                                  ? "text-[#858585] hover:text-[#e1e8f0] hover:bg-[#404040]"
-                                  : "opacity-0 group-hover:opacity-100 hover:bg-[#404040]"
-                              }`}
-                              aria-label={`Close ${tab}`}
-                            >
-                              <X size={10} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Monaco Editor */}
-                    <div className="flex-1 min-h-0">
-                      <Editor
-                        height="100%"
-                        language={files[activeFile]?.language ?? "html"}
-                        value={files[activeFile]?.content ?? ""}
-                        onChange={handleCodeChange}
-                        theme={editorTheme}
-                        options={{
-                          fontSize: 13,
-                          lineHeight: 22,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          padding: { top: 12 },
-                          fontFamily: "var(--font-geist-mono), 'Fira Code', 'Cascadia Code', monospace",
-                          fontLigatures: true,
-                          wordWrap: "on",
-                          tabSize: 2,
-                          automaticLayout: true,
-                          bracketPairColorization: { enabled: true },
-                          smoothScrolling: true,
-                          cursorBlinking: "smooth",
-                          cursorSmoothCaretAnimation: "on",
-                          renderLineHighlight: "line",
-                          lineNumbers: "on",
-                          glyphMargin: false,
-                          folding: true,
-                          links: true,
-                          contextmenu: true,
-                          suggest: { showMethods: true, showFunctions: true, showVariables: true, showWords: true },
-                        }}
-                      />
-                    </div>
-                  </div>
+                  <EditorTabs
+                    files={files}
+                    activeFile={activeFile}
+                    openTabs={openTabs}
+                    editorTheme={editorTheme}
+                    onTabClick={handleTabClick}
+                    onTabClose={handleTabClose}
+                    onCodeChange={handleCodeChange}
+                  />
                 </Panel>
 
                 <Separator className="splitter-handle-h" />
 
-                {/* Console/Shell Panel — stays dark (terminal) */}
+                {/* Console/Shell Panel */}
                 <Panel
                   panelRef={consolePanelRef}
                   defaultSize="30"
@@ -1735,139 +1266,25 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                   id="console"
                   onResize={(size) => setConsoleCollapsed(size.asPercentage < 1)}
                 >
-                  <div className="h-full bg-[#1e1e1e] flex flex-col">
-                    <div className="flex items-center border-b border-[#404040] shrink-0">
-                      <div className="flex">
-                        <button
-                          type="button"
-                          onClick={() => setConsoleTab("console")}
-                          className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                            consoleTab === "console" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
-                          }`}
-                        >
-                          Console
-                          {consoleTab === "console" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConsoleTab("shell")}
-                          className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                            consoleTab === "shell" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
-                          }`}
-                        >
-                          Shell
-                          {consoleTab === "shell" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setConsoleTab("history"); fetchGitHistory(); }}
-                          className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                            consoleTab === "history" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
-                          }`}
-                        >
-                          History
-                          {consoleTab === "history" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-                        </button>
-                      </div>
-                      <div className="ml-auto flex items-center gap-1 pr-2">
-                        {consoleTab === "console" && consoleLines.length > 0 && (
-                          <span className="text-[10px] bg-[#0079f2]/20 text-[#0079f2] px-1.5 py-0.5 rounded-full font-mono">
-                            {consoleLines.length}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => consoleTab === "console" ? setConsoleLines([]) : setShellHistory([])}
-                          className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
-                          aria-label="Clear"
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => consolePanelRef.current?.collapse()}
-                          className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
-                          aria-label="Close"
-                        >
-                          <X size={11} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {consoleTab === "console" ? (
-                      <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
-                        {consoleLines.length === 0 ? (
-                          <div className="text-[#858585] py-3 italic">No console output yet...</div>
-                        ) : (
-                          consoleLines.map((line, i) => (
-                            <div key={i} className={`flex gap-2 py-[2px] border-b border-[#333333] ${consoleColorMap[line.type]}`}>
-                              <span className="text-[#858585] shrink-0 select-none">{line.time}</span>
-                              <span className="break-all">{line.text}</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    ) : consoleTab === "shell" ? (
-                      <div className="flex-1 flex flex-col min-h-0">
-                        <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
-                          {shellHistory.map((line, i) => (
-                            <div key={i} className={`py-[1px] ${line.startsWith("$") ? "text-[#00b894]" : "text-[#d4d4d4]"}`}>
-                              {line}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center px-3 py-1.5 border-t border-[#404040] shrink-0">
-                          <span className="text-[#00b894] text-[12px] font-mono mr-2">$</span>
-                          <input
-                            type="text"
-                            value={shellInput}
-                            onChange={(e) => setShellInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleShellSubmit(shellInput);
-                            }}
-                            placeholder="Type a command..."
-                            className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      /* ===== Git History Tab ===== */
-                      <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
-                        {gitLoading ? (
-                          <div className="flex items-center gap-2 py-3 text-[#858585]">
-                            <Loader2 size={12} className="animate-spin" /> Loading commits...
-                          </div>
-                        ) : gitHistory.length === 0 ? (
-                          <div className="text-[#858585] py-3 italic">No commits found</div>
-                        ) : (
-                          gitHistory.map((commit) => (
-                            <a
-                              key={commit.fullSha}
-                              href={commit.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-start gap-2 py-1.5 border-b border-[#333333] hover:bg-[#2d2d2d] rounded px-1 transition-colors group"
-                            >
-                              <GitCommitHorizontal size={12} className="text-[#0079f2] mt-0.5 shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <div className="text-[#e1e8f0] truncate group-hover:text-[#60a5fa]">
-                                  {commit.message.split("\n")[0]}
-                                </div>
-                                <div className="text-[#858585] text-[10px] mt-0.5">
-                                  <span className="text-[#0079f2]">{commit.sha}</span>
-                                  {" · "}
-                                  {new Date(commit.date).toLocaleString("ko-KR", {
-                                    month: "short", day: "numeric",
-                                    hour: "2-digit", minute: "2-digit",
-                                  })}
-                                </div>
-                              </div>
-                            </a>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <ConsolePanel
+                    consoleTab={consoleTab}
+                    setConsoleTab={setConsoleTab}
+                    consoleLines={consoleLines}
+                    setConsoleLines={setConsoleLines}
+                    consoleFilter={consoleFilter}
+                    setConsoleFilter={setConsoleFilter}
+                    shellHistory={shellHistory}
+                    setShellHistory={setShellHistory}
+                    shellInput={shellInput}
+                    setShellInput={setShellInput}
+                    handleShellSubmit={handleShellSubmit}
+                    gitHistory={gitHistory}
+                    gitLoading={gitLoading}
+                    fetchGitHistory={fetchGitHistory}
+                    restoringCommit={restoringCommit}
+                    handleGitRestore={handleGitRestore}
+                    onCollapse={() => consolePanelRef.current?.collapse()}
+                  />
                 </Panel>
               </Group>
             </Panel>
@@ -1882,78 +1299,21 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               collapsible
               id="preview"
             >
-              <div className="flex flex-col h-full bg-[var(--r-bg)]">
-                {/* Webview header */}
-                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--r-border)] shrink-0">
-                  <span className="text-[12px] font-medium text-[var(--r-text-secondary)]">Webview</span>
-                  {(() => {
-                    const liveUrl = vercelUrl ?? deployedUrl;
-                    return (
-                      <div
-                        className={`flex-1 flex items-center gap-1.5 bg-[var(--r-surface)] rounded-xl px-3 py-1 mx-2 border border-[var(--r-border)] ${liveUrl ? "cursor-pointer hover:border-[#0079f2] transition-colors" : ""}`}
-                        onClick={() => { if (liveUrl) window.open(liveUrl, "_blank"); }}
-                        title={liveUrl ? `${liveUrl} (클릭하여 새 탭에서 열기)` : "로컬 프리뷰"}
-                      >
-                        {vercelState === "building" ? (
-                          <>
-                            <Loader2 size={10} className="text-[#f59e0b] animate-spin" />
-                            <span className="text-[11px] text-[#f59e0b] font-mono truncate">
-                              Building... {vercelCommitMsg ? `(${vercelCommitMsg})` : ""}
-                            </span>
-                          </>
-                        ) : liveUrl ? (
-                          <>
-                            <Globe size={10} className="text-[#00b894] shrink-0" />
-                            <span className="text-[11px] text-[var(--r-text)] font-mono truncate">{liveUrl}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Monitor size={10} className="text-[var(--r-text-muted)] shrink-0" />
-                            <span className="text-[11px] text-[var(--r-text-muted)] font-mono truncate">Local Preview</span>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      type="button"
-                      onClick={handleRun}
-                      className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
-                      aria-label="Refresh"
-                    >
-                      <RefreshCw size={12} />
-                    </button>
-                    {(vercelUrl || deployedUrl) && (
-                      <a
-                        href={vercelUrl ?? deployedUrl ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
-                        aria-label="Open deployed site"
-                      >
-                        <ExternalLink size={12} />
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* iframe */}
-                <div className="flex-1 min-h-0 flex justify-center bg-white overflow-auto">
-                  <iframe
-                    ref={iframeRef}
-                    srcDoc={renderedHTML}
-                    title="Live Preview"
-                    className="bg-white border-0 h-full transition-all duration-300"
-                    style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
-                    sandbox="allow-scripts allow-modals"
-                  />
-                </div>
-              </div>
+              <PreviewPanel
+                renderedHTML={renderedHTML}
+                viewport={viewport}
+                iframeRef={iframeRef}
+                handleRun={handleRun}
+                vercelState={vercelState}
+                vercelUrl={vercelUrl}
+                vercelCommitMsg={vercelCommitMsg}
+                deployedUrl={deployedUrl}
+              />
             </Panel>
           </Group>
         )}
       </div>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

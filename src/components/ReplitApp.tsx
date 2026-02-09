@@ -34,10 +34,14 @@ const NAV_ITEMS = [
 
 /* ===== Prompt Templates ===== */
 const TEMPLATES = [
-  "Build a landing page with hero section",
-  "Create a todo app with local storage",
-  "Make a personal portfolio site",
-  "Build a weather dashboard",
+  "Build a SaaS landing page with pricing table and FAQ",
+  "Create a todo app with local storage and dark mode",
+  "Make a personal portfolio with project cards and contact form",
+  "Build a weather dashboard with city search",
+  "Create a blog with markdown posts and sidebar navigation",
+  "Build a Pomodoro timer with sound notifications",
+  "Make an image gallery with lightbox and grid layout",
+  "Create a calculator app with history",
 ];
 
 /* ===== Time formatting ===== */
