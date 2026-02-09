@@ -4,6 +4,12 @@ const ACCESS_TOKEN = "f9boss2026";
 const COOKIE_NAME = "f9_access";
 
 export function middleware(req: NextRequest) {
+  // 0. API 라우트는 인증 면제 (Edge Tracking Prevention이 쿠키를 차단할 수 있으므로)
+  //    페이지 자체가 인증되어야만 접근 가능하므로 API는 별도 인증 불필요
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   // 1. URL 토큰으로 접근 → 쿠키 설정 후 리다이렉트 (토큰이 URL에 남지 않게)
   const tokenParam = req.nextUrl.searchParams.get("access");
   if (tokenParam === ACCESS_TOKEN) {
