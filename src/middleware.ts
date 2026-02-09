@@ -60,27 +60,7 @@ export async function middleware(req: NextRequest) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 4. POST로 비밀번호 제출 처리
-  if (req.method === "POST") {
-    try {
-      const body = await req.text();
-      const params = new URLSearchParams(body);
-      const pw = params.get("password");
-      if (pw === ACCESS_TOKEN) {
-        const url = req.nextUrl.clone();
-        const res = NextResponse.redirect(url);
-        res.cookies.set(COOKIE_NAME, ACCESS_TOKEN, {
-          httpOnly: true,
-          secure: req.nextUrl.protocol === "https:",
-          sameSite: "lax",
-          maxAge: 60 * 60 * 24,
-        });
-        return addSecurityHeaders(res);
-      }
-    } catch {}
-  }
-
-  // 5. 로그인 페이지 표시
+  // 4. 로그인 페이지 표시 (JS로 ?access= 파라미터 전송)
   return addSecurityHeaders(
     new NextResponse(
       `<!DOCTYPE html>
@@ -100,7 +80,7 @@ export async function middleware(req: NextRequest) {
     .container { text-align: center; padding: 2rem; max-width: 360px; }
     h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
     p { color: #86868b; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    form { display: flex; flex-direction: column; gap: 0.75rem; }
+    .form { display: flex; flex-direction: column; gap: 0.75rem; }
     input {
       padding: 0.75rem 1rem; border: 1px solid #d1d1d6; border-radius: 12px;
       font-size: 0.95rem; outline: none; text-align: center;
@@ -113,17 +93,24 @@ export async function middleware(req: NextRequest) {
       cursor: pointer; transition: background 0.2s;
     }
     button:hover { background: #0066cc; }
+    .err { color: #f43f5e; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>F9 OS</h1>
     <p>Access Restricted</p>
-    <form method="POST">
-      <input type="password" name="password" placeholder="Access Code" autocomplete="off" autofocus />
-      <button type="submit">Enter</button>
-    </form>
+    <div class="form">
+      <input id="pw" type="password" placeholder="Access Code" autocomplete="off" autofocus />
+      <button id="btn" type="button">Enter</button>
+      <div id="err" class="err">Invalid code</div>
+    </div>
   </div>
+  <script>
+    function submit(){var v=document.getElementById('pw').value;if(!v)return;window.location.href=window.location.pathname+'?access='+encodeURIComponent(v);}
+    document.getElementById('btn').onclick=submit;
+    document.getElementById('pw').onkeydown=function(e){if(e.key==='Enter')submit();};
+  </script>
 </body>
 </html>`,
       {
