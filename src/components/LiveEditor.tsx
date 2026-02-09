@@ -482,6 +482,22 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     [startVercelPolling],
   );
 
+  /* ===== Auto Shadow Commit on code edits (10s debounce) ===== */
+  const shadowCommitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerAutoCommit = useCallback(
+    (files: Record<string, VFile>) => {
+      if (shadowCommitDebounceRef.current) clearTimeout(shadowCommitDebounceRef.current);
+      shadowCommitDebounceRef.current = setTimeout(() => {
+        const fileChanges = Object.entries(files).map(([name, f]) => ({
+          path: name,
+          content: f.content,
+        }));
+        handleShadowCommit(fileChanges, "chore: auto-save code changes");
+      }, 10_000);
+    },
+    [handleShadowCommit],
+  );
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const autoRunRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -687,6 +703,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       setFiles((prev) => {
         const next = { ...prev, [activeFile]: { ...prev[activeFile], content: newContent } };
         triggerAutoSave(next);
+        triggerAutoCommit(next);
         return next;
       });
 
@@ -696,7 +713,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         setRenderedHTML(buildPreview());
       }, 300);
     },
-    [activeFile, buildPreview, triggerAutoSave]
+    [activeFile, buildPreview, triggerAutoSave, triggerAutoCommit]
   );
 
   useEffect(() => {
@@ -788,12 +805,20 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     URL.revokeObjectURL(url);
   }, [files]);
 
-  /* ===== Real Deploy — Supabase Storage ===== */
+  /* ===== Real Deploy — Shadow Commit + Supabase Storage ===== */
   const handleDeploy = useCallback(async () => {
     if (!projectSlug) return;
     setDeployStatus("deploying");
     await manualSave(files);
 
+    // Shadow commit to GitHub → triggers Vercel auto-deploy
+    const fileChanges = Object.entries(files).map(([name, f]) => ({
+      path: name,
+      content: f.content,
+    }));
+    handleShadowCommit(fileChanges, `deploy: ${projectSlug}`);
+
+    // Also deploy combined HTML to Supabase Storage (instant preview)
     const combinedHTML = buildPreview();
     const url = await deployProject(projectSlug, combinedHTML);
 
@@ -804,7 +829,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     } else {
       setDeployStatus("idle");
     }
-  }, [files, projectSlug, manualSave, buildPreview]);
+  }, [files, projectSlug, manualSave, buildPreview, handleShadowCommit]);
 
   /* ===== Asset drag & drop ===== */
   const handleDrop = useCallback(
