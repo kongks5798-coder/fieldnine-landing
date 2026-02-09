@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (startBtn) startBtn.addEventListener('click', handleStart);
   if (addCardBtn) addCardBtn.addEventListener('click', addCard);
 
-  // 초기 카드 3개 생성
   for (let i = 0; i < 3; i++) {
     setTimeout(() => addCard(), i * 200);
   }
