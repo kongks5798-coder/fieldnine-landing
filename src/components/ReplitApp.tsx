@@ -5,7 +5,6 @@ import {
   Home,
   AppWindow,
   Globe,
-  Settings,
   HelpCircle,
   ArrowRight,
   ChevronDown,
@@ -31,11 +30,6 @@ const NAV_ITEMS = [
   { icon: Home, label: "Home", id: "home" as const },
   { icon: AppWindow, label: "My Apps", id: "apps" as const },
   { icon: Globe, label: "Published", id: "published" as const },
-];
-
-const BOTTOM_NAV = [
-  { icon: HelpCircle, label: "Help" },
-  { icon: Settings, label: "Settings" },
 ];
 
 /* ===== Prompt Templates ===== */
