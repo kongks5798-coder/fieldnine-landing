@@ -912,7 +912,12 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     setShellInput("");
   }, [files]);
 
-  const handleTabClick = (fileName: string) => setActiveFile(fileName);
+  const handleTabClick = (fileName: string) => {
+    setActiveFile(fileName);
+    // 탭 전환 시 디바운스 대기 중인 미적용 변경사항을 즉시 프리뷰에 반영
+    if (autoRunRef.current) clearTimeout(autoRunRef.current);
+    setRenderedHTML(buildPreview());
+  };
 
   const handleTabClose = (fileName: string, e: React.MouseEvent) => {
     e.stopPropagation();
