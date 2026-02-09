@@ -44,7 +44,11 @@ export function parseAIResponse(text: string): ParsedAIResponse {
     if (pattern) {
       const targetMatch = code.match(pattern);
       if (targetMatch) {
-        targetFile = targetMatch[1].trim();
+        const extracted = targetMatch[1].trim();
+        // Only accept filenames with valid extensions
+        if (/\.\w+$/.test(extracted)) {
+          targetFile = extracted;
+        }
         code = code.replace(pattern, "");
       }
     }

@@ -33,9 +33,15 @@ interface SystemMessage {
   timestamp: string;
 }
 
+interface CurrentFile {
+  name: string;
+  content: string;
+}
+
 interface AIChatPanelProps {
   onInsertCode: (code: string, fileName: string) => void;
   activeFile: string;
+  currentFiles?: Record<string, CurrentFile>;
   onShadowCommit?: (files: FileChange[], message: string) => Promise<boolean>;
   onDeployStatusChanged?: (status: string) => void;
 }
@@ -52,20 +58,10 @@ function getMessageText(msg: UIMessage): string {
     .join("");
 }
 
-const INITIAL_MESSAGES: UIMessage[] = [
-  {
-    id: "welcome",
-    role: "assistant",
-    parts: [
-      {
-        type: "text",
-        text: "안녕하세요, 보스! Field Nine AI입니다.\n\n기능을 지시하시면 코드를 생성하고 서버에 자동 반영합니다.\n\n예시: \"빨간 버튼 만들어줘\", \"히어로 섹션 추가해줘\", \"다크모드 토글\"",
-      },
-    ],
-  },
-];
+const WELCOME_TEXT =
+  "안녕하세요, 보스! Field Nine AI입니다.\n\n기능을 지시하시면 코드를 생성하고 서버에 자동 반영합니다.\n\n예시: \"빨간 버튼 만들어줘\", \"히어로 섹션 추가해줘\", \"다크모드 토글\"";
 
-export default function AIChatPanel({ onInsertCode, activeFile, onShadowCommit }: AIChatPanelProps) {
+export default function AIChatPanel({ onInsertCode, activeFile, currentFiles, onShadowCommit }: AIChatPanelProps) {
   const [isCommitting, setIsCommitting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [systemMessages, setSystemMessages] = useState<SystemMessage[]>([]);
@@ -80,7 +76,6 @@ export default function AIChatPanel({ onInsertCode, activeFile, onShadowCommit }
     regenerate,
     clearError,
   } = useChat({
-    messages: INITIAL_MESSAGES,
     onFinish: async ({ message }) => {
       const text = getMessageText(message);
       await handleAIResponseComplete(message.id, text);
@@ -177,9 +172,19 @@ export default function AIChatPanel({ onInsertCode, activeFile, onShadowCommit }
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isActive || isCommitting) return;
-    const text = inputValue.trim();
+    const userText = inputValue.trim();
     setInputValue("");
-    sendMessage({ text });
+
+    // Build code context prefix so AI knows current state
+    let contextPrefix = "";
+    if (currentFiles && Object.keys(currentFiles).length > 0) {
+      const snippets = Object.entries(currentFiles)
+        .map(([, f]) => `--- ${f.name} ---\n${f.content.slice(0, 2000)}`)
+        .join("\n\n");
+      contextPrefix = `[현재 프로젝트 코드]\n${snippets}\n\n[사용자 요청]\n`;
+    }
+
+    sendMessage({ text: contextPrefix + userText });
   };
 
   // Parse code blocks from a message for rendering
@@ -279,6 +284,16 @@ export default function AIChatPanel({ onInsertCode, activeFile, onShadowCommit }
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0 bg-white">
+        {/* Static welcome message (not sent to API) */}
+        <div className="flex gap-2">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0079F2] to-[#00c2ff] flex items-center justify-center shrink-0 mt-0.5">
+            <Bot size={12} className="text-white" />
+          </div>
+          <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-[#F5F5F3] text-[#1D2433] rounded-bl-sm">
+            <div className="whitespace-pre-wrap">{WELCOME_TEXT}</div>
+          </div>
+        </div>
+
         {chatMessages.map((msg) => {
           const text = getMessageText(msg);
           return (

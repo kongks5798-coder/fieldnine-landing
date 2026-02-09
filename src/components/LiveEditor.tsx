@@ -435,6 +435,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     "Server running on port 3000",
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "deployed">("idle");
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const [explorerTab, setExplorerTab] = useState<ExplorerTab>("files");
@@ -530,6 +531,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   useEffect(() => {
     if (!initialPrompt) return;
     setIsGenerating(true);
+    setGenerationError(null);
 
     const abortController = new AbortController();
 
@@ -617,7 +619,12 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           console.error("[LiveEditor] AI generation failed:", err);
-          // Fallback: use default files as-is
+          const msg = (err as Error).message || "";
+          if (msg.includes("503")) {
+            setGenerationError("API 키가 설정되지 않았습니다. OPENAI_API_KEY 또는 ANTHROPIC_API_KEY를 확인하세요.");
+          } else {
+            setGenerationError(`코드 생성 실패: ${msg}`);
+          }
         }
       } finally {
         setIsGenerating(false);
@@ -774,23 +781,27 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     }
   }, [files, activeFile, triggerAutoSave]);
 
-  /* ===== AI Code Insertion ===== */
+  /* ===== AI Code Insertion (replace mode) ===== */
   const handleInsertCode = useCallback((code: string, targetFile: string) => {
     setFiles((prev) => {
-      const file = prev[targetFile];
-      if (!file) return prev;
-      const next = { ...prev, [targetFile]: { ...file, content: file.content + "\n" + code } };
+      const existing = prev[targetFile];
+      const info = getFileInfo(targetFile);
+      const next = {
+        ...prev,
+        [targetFile]: {
+          name: targetFile,
+          language: info.language,
+          content: code,
+          icon: existing?.icon ?? info.icon,
+        },
+      };
       triggerAutoSave(next);
+      triggerAutoCommit(next);
       return next;
     });
     if (!openTabs.includes(targetFile)) setOpenTabs((prev) => [...prev, targetFile]);
     setActiveFile(targetFile);
-    if (autoRunRef.current) clearTimeout(autoRunRef.current);
-    autoRunRef.current = setTimeout(() => {
-      setConsoleLines([]);
-      setRenderedHTML(buildPreview());
-    }, 300);
-  }, [openTabs, buildPreview, triggerAutoSave]);
+  }, [openTabs, triggerAutoSave, triggerAutoCommit]);
 
   /* ===== Download ===== */
   const handleDownload = useCallback(() => {
@@ -1394,12 +1405,29 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         </div>
 
         {/* ===== Generating Overlay ===== */}
-        {isGenerating && (
+        {(isGenerating || generationError) && (
           <div className="absolute inset-0 z-40 bg-[#F9F9F7]/90 flex items-center justify-center">
-            <div className="text-center">
-              <Loader2 size={40} className="animate-spin text-[#0079f2] mx-auto mb-4" />
-              <h3 className="text-[18px] font-semibold text-[#1D2433] mb-2">Generating your app...</h3>
-              <p className="text-[13px] text-[#5F6B7A]">{initialPrompt}</p>
+            <div className="text-center max-w-md px-6">
+              {generationError ? (
+                <>
+                  <CloudOff size={40} className="text-[#f87171] mx-auto mb-4" />
+                  <h3 className="text-[18px] font-semibold text-[#1D2433] mb-2">Generation Failed</h3>
+                  <p className="text-[13px] text-[#f87171] mb-4">{generationError}</p>
+                  <button
+                    type="button"
+                    onClick={() => { setGenerationError(null); window.location.reload(); }}
+                    className="px-4 py-2 bg-[#0079f2] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0066cc] transition-colors"
+                  >
+                    Retry
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Loader2 size={40} className="animate-spin text-[#0079f2] mx-auto mb-4" />
+                  <h3 className="text-[18px] font-semibold text-[#1D2433] mb-2">Generating your app...</h3>
+                  <p className="text-[13px] text-[#5F6B7A]">{initialPrompt}</p>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1421,7 +1449,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             id="ai-chat"
             onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
           >
-            <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} onShadowCommit={handleShadowCommit} />
+            <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} />
           </Panel>
 
           <Separator className="splitter-handle-v" />
