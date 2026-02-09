@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/fieldnine-landing";
+const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
 const API = "https://api.github.com";
 
 const ALLOWED_FILES = ["index.html", "style.css", "app.js"];

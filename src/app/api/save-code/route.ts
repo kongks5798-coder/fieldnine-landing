@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/fieldnine-landing";
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "master";
+const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
 const API = "https://api.github.com";
 
 interface FileChange {
