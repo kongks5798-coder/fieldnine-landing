@@ -19,8 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const hue = (clickCount * 15) % 360;
     document.body.style.background =
       `linear-gradient(135deg, hsl(${hue}, 20%, 4%) 0%, hsl(${hue + 30}, 15%, 8%) 100%)`;
-    startBtn.classList.add('clicked');
-    setTimeout(() => startBtn.classList.remove('clicked'), 300);
   }
 
   function addCard() {
@@ -38,20 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
       <h3>${title}</h3>
       <p>${desc}</p>
       <div class="card-time">${now}에 생성됨</div>
-      <button class="btn btn-secondary remove-card">삭제</button>
     `;
     container.prepend(card);
-
-    card.querySelector('.remove-card').addEventListener('click', () => {
-      card.remove();
-      cardCount--;
-      if (cardCountEl) cardCountEl.textContent = cardCount;
-    });
   }
 
   if (startBtn) startBtn.addEventListener('click', handleStart);
   if (addCardBtn) addCardBtn.addEventListener('click', addCard);
 
+  // 초기 카드 3개 생성
   for (let i = 0; i < 3; i++) {
     setTimeout(() => addCard(), i * 200);
   }

@@ -5,6 +5,7 @@ body {
   background: #0a0a0a;
   color: #e2e8f0;
   min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .app {
@@ -13,12 +14,14 @@ body {
   padding: 0 24px;
 }
 
+/* --- Navigation --- */
 .nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 20px 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .nav-brand {
@@ -43,9 +46,11 @@ body {
 .nav-links a:hover,
 .nav-links a.active { color: #f1f5f9; }
 
+/* --- Hero --- */
 .hero {
   text-align: center;
   padding: 80px 0 60px;
+  animation: fadeIn 0.8s ease-out;
 }
 
 .hero-badge {
@@ -109,61 +114,51 @@ body {
 
 .btn-secondary {
   background: rgba(255,255,255,0.1);
-  color: #e2e8f0;
+  color: #f1f5f9;
 }
 
 .btn-secondary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+  background: rgba(255,255,255,0.2);
 }
 
-.cards {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  padding: 40px 0;
-}
-
+/* --- Cards --- */
 .card {
   background: #1a1a2e;
-  border: 1px solid #2f365f;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   padding: 20px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px);
 }
 
 .card-emoji {
-  font-size: 40px;
-}
-
-.card h3 {
-  font-size: 20px;
-  margin: 12px 0;
-}
-
-.card p {
-  font-size: 14px;
-  color: #94a3b8;
+  font-size: 32px;
+  margin-bottom: 12px;
 }
 
 .card-time {
-  font-size: 12px;
   color: #64748b;
+  font-size: 12px;
+  margin-top: 8px;
 }
 
-.footer {
-  text-align: center;
-  padding: 20px 0;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  font-size: 14px;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.heart {
-  color: #ec4899;
+/* --- Media Queries --- */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    font-size: 12px;
+  }
 }
