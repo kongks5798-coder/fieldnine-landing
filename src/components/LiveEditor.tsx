@@ -590,6 +590,13 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           setOpenTabs(Object.keys(newFiles));
           setActiveFile("index.html");
           triggerAutoSave(newFiles);
+
+          // Auto shadow commit → GitHub push → Vercel auto-deploy
+          const fileChanges = Object.entries(newFiles).map(([name, f]) => ({
+            path: name,
+            content: f.content,
+          }));
+          handleShadowCommit(fileChanges, `feat: AI generated — ${initialPrompt.slice(0, 60)}`);
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
@@ -602,7 +609,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     })();
 
     return () => abortController.abort();
-  }, [initialPrompt, triggerAutoSave]);
+  }, [initialPrompt, triggerAutoSave, handleShadowCommit]);
 
   /* ===== Build combined HTML ===== */
   const buildPreview = useCallback(() => {
