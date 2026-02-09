@@ -48,6 +48,8 @@ import {
   Copy,
   Link,
   GitCommitHorizontal,
+  Moon,
+  Sun,
 } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
 import { useProjectSave } from "@/hooks/useProjectSave";
@@ -56,6 +58,7 @@ import { useDeployStatus } from "@/hooks/useDeployStatus";
 import { deployProject } from "@/lib/deploy";
 import { parseAIResponse } from "@/lib/parseAIResponse";
 import { createZip } from "@/lib/zipExport";
+import { useTheme } from "@/lib/useTheme";
 
 /* ===== File System Types ===== */
 interface VFile {
@@ -419,6 +422,7 @@ interface LiveEditorProps {
 }
 
 export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: LiveEditorProps) {
+  const { resolved: theme, toggle: toggleTheme } = useTheme();
   const [files, setFiles] = useState<Record<string, VFile>>(() =>
     JSON.parse(JSON.stringify(DEFAULT_FILES))
   );
@@ -983,9 +987,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   }, [aiCollapsed]);
 
   return (
-    <div className={`flex h-screen bg-[#F9F9F7] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
+    <div className={`flex h-screen bg-[var(--r-bg)] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
       {/* ===== Left Sidebar (48px) — hidden on mobile ===== */}
-      <div className="hidden md:flex w-12 bg-white flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
+      <div className="hidden md:flex w-12 bg-[var(--r-surface)] flex-col items-center py-3 border-r border-[var(--r-border)] shrink-0">
         <button
           type="button"
           onClick={onGoHome}
@@ -1003,11 +1007,11 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 key={item.id}
                 type="button"
                 onClick={() => item.id === "home" && onGoHome?.()}
-                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
+                className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)] transition-all"
                 aria-label={item.label}
               >
                 <Icon size={18} strokeWidth={1.5} />
-                <span className="absolute left-full ml-2 px-2 py-1 bg-[#F0F0ED] text-xs text-[#1D2433] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[#E4E4E0]">
+                <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--r-sidebar)] text-xs text-[var(--r-text)] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[var(--r-border)]">
                   {item.label}
                 </span>
               </button>
@@ -1018,17 +1022,21 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         <div className="flex flex-col items-center gap-1">
           <button
             type="button"
-            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
+            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)] transition-all"
             aria-label="Help"
           >
             <HelpCircle size={18} strokeWidth={1.5} />
           </button>
           <button
             type="button"
-            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED] transition-all"
-            aria-label="Settings"
+            onClick={toggleTheme}
+            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)] transition-all"
+            aria-label="Toggle theme"
           >
-            <Settings size={18} strokeWidth={1.5} />
+            {theme === "dark" ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+            <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--r-sidebar)] text-xs text-[var(--r-text)] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[var(--r-border)]">
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </span>
           </button>
         </div>
       </div>
@@ -1040,14 +1048,14 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
       {/* ===== File Explorer / Assets Sidebar (overlay on mobile) ===== */}
       {showFileExplorer && (
-        <div className={`bg-[#F9F9F7] border-r border-[#E4E4E0] flex flex-col shrink-0 ${isMobile ? "fixed left-0 top-0 bottom-0 w-[260px] z-40 shadow-xl" : "w-[220px]"}`}>
+        <div className={`bg-[var(--r-bg)] border-r border-[var(--r-border)] flex flex-col shrink-0 ${isMobile ? "fixed left-0 top-0 bottom-0 w-[260px] z-40 shadow-xl" : "w-[220px]"}`}>
           {/* Tab header: Files | Assets */}
-          <div className="flex items-center border-b border-[#E4E4E0] shrink-0">
+          <div className="flex items-center border-b border-[var(--r-border)] shrink-0">
             <button
               type="button"
               onClick={() => setExplorerTab("files")}
               className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors relative ${
-                explorerTab === "files" ? "text-[#1D2433]" : "text-[#5F6B7A] hover:text-[#1D2433]"
+                explorerTab === "files" ? "text-[var(--r-text)]" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
               }`}
             >
               Files
@@ -1057,7 +1065,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               type="button"
               onClick={() => { setExplorerTab("assets"); loadAssets(); }}
               className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors relative ${
-                explorerTab === "assets" ? "text-[#1D2433]" : "text-[#5F6B7A] hover:text-[#1D2433]"
+                explorerTab === "assets" ? "text-[var(--r-text)]" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
               }`}
             >
               Assets
@@ -1066,7 +1074,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <button
               type="button"
               onClick={() => setShowFileExplorer(false)}
-              className="p-1 mr-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
+              className="p-1 mr-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
               aria-label="Close explorer"
             >
               <X size={13} />
@@ -1078,11 +1086,11 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <>
               {/* Actions row */}
               <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-[10px] text-[#9DA5B0]">{fileList.length} files</span>
+                <span className="text-[10px] text-[var(--r-text-muted)]">{fileList.length} files</span>
                 <button
                   type="button"
                   onClick={() => setShowNewFileInput(true)}
-                  className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
+                  className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
                   aria-label="New file"
                 >
                   <FilePlus2 size={13} />
@@ -1092,11 +1100,11 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               {/* Search */}
               <div className="px-2 pb-2">
                 <div className="relative">
-                  <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9DA5B0]" />
+                  <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--r-text-muted)]" />
                   <input
                     type="text"
                     placeholder="Search files..."
-                    className="w-full pl-7 pr-2 py-1 bg-white border border-[#E4E4E0] text-[11px] text-[#1D2433] placeholder-[#9DA5B0] rounded-md outline-none focus:border-[#0079f2] transition-colors"
+                    className="w-full pl-7 pr-2 py-1 bg-[var(--r-surface)] border border-[var(--r-border)] text-[11px] text-[var(--r-text)] placeholder-[#9DA5B0] rounded-md outline-none focus:border-[#0079f2] transition-colors"
                   />
                 </div>
               </div>
@@ -1110,7 +1118,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                       value={newFileName}
                       onChange={(e) => setNewFileName(e.target.value)}
                       placeholder="name.html / .css / .js"
-                      className="w-full bg-white text-[#1D2433] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
+                      className="w-full bg-[var(--r-surface)] text-[var(--r-text)] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
                       autoFocus
                       onBlur={() => { setShowNewFileInput(false); setNewFileName(""); }}
                       onKeyDown={(e) => { if (e.key === "Escape") { setShowNewFileInput(false); setNewFileName(""); }}}
@@ -1131,8 +1139,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                       onClick={() => openFile(fileName)}
                       className={`group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] cursor-pointer transition-colors mx-1 ${
                         isActive
-                          ? "bg-[#E8F2FF] text-[#1D2433]"
-                          : "text-[#5F6B7A] hover:bg-[#F5F5F3]"
+                          ? "bg-[var(--r-accent-light)] text-[var(--r-text)]"
+                          : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
                       }`}
                     >
                       <Icon size={14} className={info.color} />
@@ -1163,7 +1171,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 className={`mx-2 mt-2 border-2 border-dashed rounded-xl p-3 text-center transition-colors cursor-pointer ${
                   dragOver
                     ? "border-[#0079f2] bg-[#0079f2]/10"
-                    : "border-[#E4E4E0] hover:border-[#C8C8C4]"
+                    : "border-[var(--r-border)] hover:border-[#C8C8C4]"
                 }`}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -1186,8 +1194,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                   </div>
                 ) : (
                   <>
-                    <Upload size={18} className="text-[#9DA5B0] mx-auto mb-1" />
-                    <p className="text-[11px] text-[#5F6B7A]">Drop files or click to upload</p>
+                    <Upload size={18} className="text-[var(--r-text-muted)] mx-auto mb-1" />
+                    <p className="text-[11px] text-[var(--r-text-secondary)]">Drop files or click to upload</p>
                   </>
                 )}
               </div>
@@ -1197,31 +1205,31 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 {assets.length === 0 ? (
                   <div className="text-center py-6">
                     <ImageIcon size={24} className="text-[#E4E4E0] mx-auto mb-2" />
-                    <p className="text-[11px] text-[#9DA5B0]">No assets yet</p>
+                    <p className="text-[11px] text-[var(--r-text-muted)]">No assets yet</p>
                   </div>
                 ) : (
                   assets.map((asset: AssetFile) => (
                     <div
                       key={asset.url}
-                      className="group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] mx-1 hover:bg-[#F5F5F3] transition-colors"
+                      className="group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] mx-1 hover:bg-[var(--r-surface-hover)] transition-colors"
                     >
                       {asset.type.startsWith("image/") ? (
-                        <div className="w-6 h-6 rounded overflow-hidden bg-[#F0F0ED] flex items-center justify-center shrink-0">
+                        <div className="w-6 h-6 rounded overflow-hidden bg-[var(--r-sidebar)] flex items-center justify-center shrink-0">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
                         </div>
                       ) : (
-                        <ImageIcon size={14} className="text-[#5F6B7A] shrink-0" />
+                        <ImageIcon size={14} className="text-[var(--r-text-secondary)] shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="text-[11px] text-[#1D2433] truncate font-mono">{asset.name}</div>
-                        <div className="text-[9px] text-[#9DA5B0]">{formatFileSize(asset.size)}</div>
+                        <div className="text-[11px] text-[var(--r-text)] truncate font-mono">{asset.name}</div>
+                        <div className="text-[9px] text-[var(--r-text-muted)]">{formatFileSize(asset.size)}</div>
                       </div>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
                         <button
                           type="button"
                           onClick={() => handleCopyUrl(asset.url)}
-                          className="p-0.5 text-[#5F6B7A] hover:text-[#0079f2] rounded transition-colors"
+                          className="p-0.5 text-[var(--r-text-secondary)] hover:text-[#0079f2] rounded transition-colors"
                           title="Copy URL"
                         >
                           {copiedUrl === asset.url ? <Check size={11} className="text-[#00b894]" /> : <Copy size={11} />}
@@ -1229,7 +1237,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                         <button
                           type="button"
                           onClick={() => handleCopyUrl(asset.url)}
-                          className="p-0.5 text-[#5F6B7A] hover:text-[#0079f2] rounded transition-colors"
+                          className="p-0.5 text-[var(--r-text-secondary)] hover:text-[#0079f2] rounded transition-colors"
                           title="Insert URL"
                         >
                           <Link size={11} />
@@ -1237,7 +1245,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                         <button
                           type="button"
                           onClick={() => deleteAsset(asset.name)}
-                          className="p-0.5 text-[#5F6B7A] hover:text-[#f87171] rounded transition-colors"
+                          className="p-0.5 text-[var(--r-text-secondary)] hover:text-[#f87171] rounded transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={11} />
@@ -1248,7 +1256,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 )}
               </div>
 
-              <div className="px-3 py-2 border-t border-[#E4E4E0] text-[10px] text-[#9DA5B0]">
+              <div className="px-3 py-2 border-t border-[var(--r-border)] text-[10px] text-[var(--r-text-muted)]">
                 {assets.length} assets
               </div>
             </div>
@@ -1259,13 +1267,13 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       {/* ===== Main IDE Area ===== */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* ===== Top Header Bar ===== */}
-        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 bg-white border-b border-[#E4E4E0] shrink-0 overflow-x-auto">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 bg-[var(--r-surface)] border-b border-[var(--r-border)] shrink-0 overflow-x-auto">
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Mobile: Home button (replaces sidebar) */}
             <button
               type="button"
               onClick={onGoHome}
-              className="md:hidden p-1.5 rounded-md hover:bg-[#F0F0ED] transition-colors"
+              className="md:hidden p-1.5 rounded-md hover:bg-[var(--r-sidebar)] transition-colors"
               aria-label="Home"
             >
               <Home size={14} className="text-[#0079f2]" />
@@ -1275,7 +1283,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               <button
                 type="button"
                 onClick={() => setShowFileExplorer(true)}
-                className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
+                className="p-1.5 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded-md hover:bg-[var(--r-sidebar)] transition-colors"
                 aria-label="Show explorer"
               >
                 <FolderOpen size={14} />
@@ -1285,7 +1293,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <button
               type="button"
               onClick={toggleAiPanel}
-              className={`p-1.5 rounded-md transition-colors ${!aiCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5F6B7A] hover:text-[#1D2433] hover:bg-[#F0F0ED]"}`}
+              className={`p-1.5 rounded-md transition-colors ${!aiCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)]"}`}
               aria-label="AI Panel"
             >
               {aiCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
@@ -1294,7 +1302,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             {/* Save status */}
             <div className="flex items-center gap-1.5 ml-2">
               {saveStatus === "saving" && (
-                <span className="flex items-center gap-1 text-[11px] text-[#5F6B7A]">
+                <span className="flex items-center gap-1 text-[11px] text-[var(--r-text-secondary)]">
                   <Loader2 size={12} className="animate-spin" /> Saving...
                 </span>
               )}
@@ -1316,7 +1324,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <button
               type="button"
               onClick={() => manualSave(files)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[#5F6B7A] rounded-md hover:bg-[#F0F0ED] transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[var(--r-text-secondary)] rounded-md hover:bg-[var(--r-sidebar)] transition-colors"
               aria-label="Save"
             >
               <Save size={13} />
@@ -1401,7 +1409,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <button
               type="button"
               onClick={handleReset}
-              className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
+              className="p-1.5 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded-md hover:bg-[var(--r-sidebar)] transition-colors"
               aria-label="Reset"
             >
               <RotateCcw size={13} />
@@ -1411,7 +1419,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <button
               type="button"
               onClick={handleDownload}
-              className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
+              className="p-1.5 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded-md hover:bg-[var(--r-sidebar)] transition-colors"
               aria-label="Download"
             >
               <Download size={13} />
@@ -1429,7 +1437,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                   type="button"
                   onClick={() => setViewport(size)}
                   className={`p-1 rounded-md transition-colors ${
-                    viewport === size ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5F6B7A] hover:text-[#1D2433]"
+                    viewport === size ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
                   }`}
                   aria-label={`${size} view`}
                 >
@@ -1443,7 +1451,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               type="button"
               onClick={toggleConsole}
               className={`p-1.5 rounded-md transition-colors ${
-                !consoleCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[#5F6B7A] hover:text-[#1D2433]"
+                !consoleCollapsed ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
               }`}
               aria-label="Console"
             >
@@ -1454,7 +1462,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 text-[#5F6B7A] hover:text-[#1D2433] rounded-md hover:bg-[#F0F0ED] transition-colors"
+              className="p-1.5 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded-md hover:bg-[var(--r-sidebar)] transition-colors"
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
@@ -1464,12 +1472,12 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
         {/* ===== Generating Overlay ===== */}
         {(isGenerating || generationError) && (
-          <div className="absolute inset-0 z-40 bg-[#F9F9F7]/90 flex items-center justify-center">
+          <div className="absolute inset-0 z-40 bg-[var(--r-bg)]/90 flex items-center justify-center">
             <div className="text-center max-w-md px-6">
               {generationError ? (
                 <>
                   <CloudOff size={40} className="text-[#f87171] mx-auto mb-4" />
-                  <h3 className="text-[18px] font-semibold text-[#1D2433] mb-2">Generation Failed</h3>
+                  <h3 className="text-[18px] font-semibold text-[var(--r-text)] mb-2">Generation Failed</h3>
                   <p className="text-[13px] text-[#f87171] mb-4">{generationError}</p>
                   <button
                     type="button"
@@ -1482,8 +1490,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               ) : (
                 <>
                   <Loader2 size={40} className="animate-spin text-[#0079f2] mx-auto mb-4" />
-                  <h3 className="text-[18px] font-semibold text-[#1D2433] mb-2">Generating your app...</h3>
-                  <p className="text-[13px] text-[#5F6B7A]">{initialPrompt}</p>
+                  <h3 className="text-[18px] font-semibold text-[var(--r-text)] mb-2">Generating your app...</h3>
+                  <p className="text-[13px] text-[var(--r-text-secondary)]">{initialPrompt}</p>
                 </>
               )}
             </div>
@@ -1492,7 +1500,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
         {/* ===== Mobile Panel Switcher ===== */}
         {isMobile && (
-          <div className="flex items-center bg-white border-b border-[#E4E4E0] shrink-0 md:hidden">
+          <div className="flex items-center bg-[var(--r-surface)] border-b border-[var(--r-border)] shrink-0 md:hidden">
             {([
               ["editor", FileCode2, "Code"],
               ["preview", Monitor, "Preview"],
@@ -1503,7 +1511,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 type="button"
                 onClick={() => setMobilePanel(id)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium transition-colors relative ${
-                  mobilePanel === id ? "text-[#0079f2]" : "text-[#5F6B7A]"
+                  mobilePanel === id ? "text-[#0079f2]" : "text-[var(--r-text-secondary)]"
                 }`}
               >
                 <Icon size={14} />
@@ -1579,9 +1587,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
             {/* Mobile Preview */}
             {mobilePanel === "preview" && (
-              <div className="flex flex-col h-full bg-[#F9F9F7]">
-                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
-                  <button type="button" onClick={handleRun} className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors" aria-label="Refresh">
+              <div className="flex flex-col h-full bg-[var(--r-bg)]">
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--r-border)] shrink-0">
+                  <button type="button" onClick={handleRun} className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors" aria-label="Refresh">
                     <RefreshCw size={14} />
                   </button>
                   {(vercelUrl || deployedUrl) && (
@@ -1876,15 +1884,15 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               collapsible
               id="preview"
             >
-              <div className="flex flex-col h-full bg-[#F9F9F7]">
+              <div className="flex flex-col h-full bg-[var(--r-bg)]">
                 {/* Webview header */}
-                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
-                  <span className="text-[12px] font-medium text-[#5F6B7A]">Webview</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--r-border)] shrink-0">
+                  <span className="text-[12px] font-medium text-[var(--r-text-secondary)]">Webview</span>
                   {(() => {
                     const liveUrl = vercelUrl ?? deployedUrl;
                     return (
                       <div
-                        className={`flex-1 flex items-center gap-1.5 bg-white rounded-xl px-3 py-1 mx-2 border border-[#E4E4E0] ${liveUrl ? "cursor-pointer hover:border-[#0079f2] transition-colors" : ""}`}
+                        className={`flex-1 flex items-center gap-1.5 bg-[var(--r-surface)] rounded-xl px-3 py-1 mx-2 border border-[var(--r-border)] ${liveUrl ? "cursor-pointer hover:border-[#0079f2] transition-colors" : ""}`}
                         onClick={() => { if (liveUrl) window.open(liveUrl, "_blank"); }}
                         title={liveUrl ? `${liveUrl} (클릭하여 새 탭에서 열기)` : "로컬 프리뷰"}
                       >
@@ -1898,12 +1906,12 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                         ) : liveUrl ? (
                           <>
                             <Globe size={10} className="text-[#00b894] shrink-0" />
-                            <span className="text-[11px] text-[#1D2433] font-mono truncate">{liveUrl}</span>
+                            <span className="text-[11px] text-[var(--r-text)] font-mono truncate">{liveUrl}</span>
                           </>
                         ) : (
                           <>
-                            <Monitor size={10} className="text-[#9DA5B0] shrink-0" />
-                            <span className="text-[11px] text-[#9DA5B0] font-mono truncate">Local Preview</span>
+                            <Monitor size={10} className="text-[var(--r-text-muted)] shrink-0" />
+                            <span className="text-[11px] text-[var(--r-text-muted)] font-mono truncate">Local Preview</span>
                           </>
                         )}
                       </div>
@@ -1913,7 +1921,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                     <button
                       type="button"
                       onClick={handleRun}
-                      className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
+                      className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
                       aria-label="Refresh"
                     >
                       <RefreshCw size={12} />
@@ -1923,7 +1931,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                         href={vercelUrl ?? deployedUrl ?? "#"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
+                        className="p-1 text-[var(--r-text-secondary)] hover:text-[var(--r-text)] rounded transition-colors"
                         aria-label="Open deployed site"
                       >
                         <ExternalLink size={12} />

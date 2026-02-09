@@ -339,7 +339,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         {parsed.codeBlocks.map((block, idx) => {
           const blockId = `${messageId}-code-${idx}`;
           return (
-            <div key={blockId} className="mt-2 rounded-lg overflow-hidden border border-[#E4E4E0]">
+            <div key={blockId} className="mt-2 rounded-lg overflow-hidden border border-[var(--r-border)]">
               <div className="flex items-center justify-between px-2 py-1 bg-[#1E1E1E]">
                 <span className="text-[10px] text-[#858585] font-mono flex items-center gap-1">
                   <FileText size={9} />
@@ -382,13 +382,13 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     systemMessages.filter((sm) => sm.afterMessageId === messageId);
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-[#E4E4E0]">
+    <div className="flex flex-col h-full bg-[var(--r-surface)] border-r border-[var(--r-border)]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F9F9F7] border-b border-[#E4E4E0] shrink-0">
+      <div className="flex items-center gap-2 px-3 py-2.5 bg-[var(--r-bg)] border-b border-[var(--r-border)] shrink-0">
         <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#0079F2] to-[#00c2ff] flex items-center justify-center">
           <Sparkles size={10} className="text-white" />
         </div>
-        <span className="text-xs font-semibold text-[#1D2433]">AI Assistant</span>
+        <span className="text-xs font-semibold text-[var(--r-text)]">AI Assistant</span>
         {isCommitting && (
           <span className="flex items-center gap-1 text-[10px] text-[#F59E0B] ml-auto">
             <Loader2 size={10} className="animate-spin" /> Committing...
@@ -407,13 +407,13 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0 bg-white">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0 bg-[var(--r-surface)]">
         {/* Static welcome message */}
         <div className="flex gap-2">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0079F2] to-[#00c2ff] flex items-center justify-center shrink-0 mt-0.5">
             <Bot size={12} className="text-white" />
           </div>
-          <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-[#F5F5F3] text-[#1D2433] rounded-bl-sm">
+          <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-[#F5F5F3] text-[var(--r-text)] rounded-bl-sm">
             <div className="whitespace-pre-wrap">{WELCOME_TEXT}</div>
           </div>
         </div>
@@ -441,7 +441,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                   msg.role === "user"
                     ? "bg-[#0079F2] text-white rounded-br-sm"
-                    : "bg-[#F5F5F3] text-[#1D2433] rounded-bl-sm"
+                    : "bg-[#F5F5F3] text-[var(--r-text)] rounded-bl-sm"
                 }`}
               >
                 {msg.role === "assistant"
@@ -451,7 +451,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               </div>
               {msg.role === "user" && (
                 <div className="w-6 h-6 rounded-full bg-[#E4E4E0] flex items-center justify-center shrink-0 mt-0.5">
-                  <User size={12} className="text-[#5F6B7A]" />
+                  <User size={12} className="text-[var(--r-text-secondary)]" />
                 </div>
               )}
             </div>
@@ -462,7 +462,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 className={`mx-2 mt-2 px-3 py-2 rounded-xl text-[11px] leading-relaxed whitespace-pre-wrap ${
                   sm.type === "commit-report"
                     ? "bg-[#E6FAF5] border border-[#00B894]/20 text-[#065F46]"
-                    : "bg-[#F5F5F3] border border-[#E4E4E0] text-[#5F6B7A]"
+                    : "bg-[#F5F5F3] border border-[var(--r-border)] text-[var(--r-text-secondary)]"
                 }`}
               >
                 {sm.type === "commit-report" && (
@@ -472,7 +472,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                   </div>
                 )}
                 {sm.content}
-                <div className="text-[9px] text-[#9DA5B0] mt-1 text-right">{sm.timestamp}</div>
+                <div className="text-[9px] text-[var(--r-text-muted)] mt-1 text-right">{sm.timestamp}</div>
               </div>
             ))}
           </div>
@@ -495,7 +495,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         )}
 
         {isCommitting && (
-          <div className="flex items-center gap-2 mx-2 px-3 py-2 bg-[#E8F2FF] rounded-xl border border-[#0079F2]/15">
+          <div className="flex items-center gap-2 mx-2 px-3 py-2 bg-[var(--r-accent-light)] rounded-xl border border-[#0079F2]/15">
             <Loader2 size={12} className="animate-spin text-[#0079F2]" />
             <span className="text-[11px] text-[#0079F2]">GitHub에 커밋 중... Vercel 자동 빌드 트리거</span>
           </div>
@@ -523,7 +523,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       </div>
 
       {/* Input — no <form>, direct onClick + Enter key */}
-      <div className="px-3 py-2.5 border-t border-[#E4E4E0] bg-[#F9F9F7] shrink-0">
+      <div className="px-3 py-2.5 border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0">
         <div className="flex gap-2">
           <input
             type="text"
@@ -531,7 +531,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="기능을 지시하세요... (예: 빨간 버튼 만들어줘)"
-            className="flex-1 bg-white text-[#1D2433] text-xs px-3 py-2 rounded-xl border border-[#E4E4E0] focus:border-[#0079F2] focus:ring-1 focus:ring-[#0079F2]/20 outline-none placeholder-[#9DA5B0] transition-all"
+            className="flex-1 bg-[var(--r-surface)] text-[var(--r-text)] text-xs px-3 py-2 rounded-xl border border-[var(--r-border)] focus:border-[#0079F2] focus:ring-1 focus:ring-[#0079F2]/20 outline-none placeholder-[#9DA5B0] transition-all"
             disabled={isStreaming || isCommitting}
           />
           <button
@@ -544,7 +544,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             <Send size={12} />
           </button>
         </div>
-        <div className="text-[9px] text-[#9DA5B0] mt-1.5 text-center">
+        <div className="text-[9px] text-[var(--r-text-muted)] mt-1.5 text-center">
           Field Nine AI — Shadow Commit Engine v3.1
         </div>
       </div>
