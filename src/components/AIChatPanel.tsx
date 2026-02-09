@@ -16,6 +16,13 @@ import {
   FileText,
   AlertCircle,
   RefreshCw,
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Hammer,
+  Lightbulb,
+  Pencil,
 } from "lucide-react";
 
 interface FileChange {
@@ -33,13 +40,33 @@ interface SystemMessage {
   id: string;
   afterMessageId: string;
   content: string;
-  type: "commit-report" | "error" | "normal";
+  type: "commit-report" | "error" | "normal" | "checkpoint";
   timestamp: string;
+  commitSha?: string;
+  filesChanged?: string[];
 }
 
 interface CurrentFile {
   name: string;
   content: string;
+}
+
+/* ===== Agent Mode ===== */
+type AgentMode = "build" | "plan" | "edit";
+
+const AGENT_MODES: { id: AgentMode; label: string; icon: React.ElementType; desc: string }[] = [
+  { id: "build", label: "Build", icon: Hammer, desc: "코드 생성 + 자동 배포" },
+  { id: "plan", label: "Plan", icon: Lightbulb, desc: "설계만, 코드 없음" },
+  { id: "edit", label: "Edit", icon: Pencil, desc: "변경 파일만 출력" },
+];
+
+/* ===== Progress Events ===== */
+interface ProgressEvent {
+  id: string;
+  type: "stream-start" | "stream-end" | "file-insert" | "commit-start" | "commit-success" | "commit-fail";
+  message: string;
+  timestamp: string;
+  status: "done" | "pending" | "error";
 }
 
 interface AIChatPanelProps {
@@ -49,6 +76,7 @@ interface AIChatPanelProps {
   onShadowCommit?: (files: FileChange[], message: string) => Promise<boolean>;
   onDeployStatusChanged?: (status: string) => void;
   initialPrompt?: string;
+  onGitRestore?: (sha: string) => void;
 }
 
 function now() {
@@ -66,7 +94,7 @@ const AI_MODELS = [
 
 type AIModelId = (typeof AI_MODELS)[number]["id"];
 
-export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt }: AIChatPanelProps) {
+export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt, onGitRestore }: AIChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
@@ -81,14 +109,35 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const abortRef = useRef<AbortController | null>(null);
   const initialPromptSentRef = useRef(false);
 
+  /* ===== Agent Mode State ===== */
+  const [agentMode, setAgentMode] = useState<AgentMode>("build");
+
+  /* ===== Progress State ===== */
+  const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
+  const [showProgress, setShowProgress] = useState(false);
+
+  const addProgressEvent = useCallback((type: ProgressEvent["type"], message: string, status: ProgressEvent["status"]) => {
+    setProgressEvents((prev) => [
+      ...prev.slice(-19),
+      {
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        type,
+        message,
+        timestamp: now(),
+        status,
+      },
+    ]);
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, systemMessages, isStreaming, isCommitting]);
 
   const shadowCommit = useCallback(
-    async (fileChanges: FileChange[], commitMsg: string): Promise<boolean> => {
+    async (fileChanges: FileChange[], commitMsg: string): Promise<{ success: boolean; sha?: string }> => {
       if (onShadowCommit) {
-        return onShadowCommit(fileChanges, commitMsg);
+        const ok = await onShadowCommit(fileChanges, commitMsg);
+        return { success: ok };
       }
       try {
         const res = await fetch("/api/save-code", {
@@ -97,18 +146,18 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ files: fileChanges, message: commitMsg }),
         });
-        if (!res.ok) return false;
+        if (!res.ok) return { success: false };
         const data = await res.json();
-        return data.success === true;
+        return { success: data.success === true, sha: data.commitSha };
       } catch {
-        return false;
+        return { success: false };
       }
     },
     [onShadowCommit],
   );
 
   const addSystemMessage = useCallback(
-    (afterMessageId: string, content: string, type: SystemMessage["type"]) => {
+    (afterMessageId: string, content: string, type: SystemMessage["type"], extra?: { commitSha?: string; filesChanged?: string[] }) => {
       setSystemMessages((prev) => [
         ...prev,
         {
@@ -117,6 +166,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           content,
           type,
           timestamp: now(),
+          ...extra,
         },
       ]);
     },
@@ -125,30 +175,48 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
   const handleAIResponseComplete = useCallback(
     async (messageId: string, content: string) => {
+      // Plan mode: no code insertion or commit
+      if (agentMode === "plan") return;
+
       const parsed = parseAIResponse(content);
       if (parsed.codeBlocks.length === 0) return;
 
       for (const block of parsed.codeBlocks) {
         onInsertCode(block.code, block.targetFile);
+        addProgressEvent("file-insert", `${block.targetFile} 삽입 완료`, "done");
       }
 
+      addProgressEvent("commit-start", "GitHub 커밋 중...", "pending");
       setIsCommitting(true);
       const fileChanges = parsed.codeBlocks.map((b) => ({
         path: b.targetFile,
         content: b.code,
       }));
       const commitMsg = `feat(ai): ${parsed.explanation.slice(0, 50)}`;
-      const success = await shadowCommit(fileChanges, commitMsg);
+      const result = await shadowCommit(fileChanges, commitMsg);
       setIsCommitting(false);
 
-      if (success) {
-        const files = parsed.codeBlocks.map((b) => b.targetFile).join(", ");
+      if (result.success) {
+        addProgressEvent("commit-success", "GitHub 커밋 완료", "done");
+        const files = parsed.codeBlocks.map((b) => b.targetFile);
+        const filesStr = files.join(", ");
+
+        // Commit report
         addSystemMessage(
           messageId,
-          `📋 변경 리포트:\n• 수정 파일: ${files}\n• 커밋: ${commitMsg}\n• 상태: ✅ GitHub 커밋 완료 → Vercel 빌드 시작`,
+          `📋 변경 리포트:\n• 수정 파일: ${filesStr}\n• 커밋: ${commitMsg}\n• 상태: ✅ GitHub 커밋 완료 → Vercel 빌드 시작`,
           "commit-report",
         );
+
+        // Checkpoint card
+        addSystemMessage(
+          messageId,
+          commitMsg,
+          "checkpoint",
+          { commitSha: result.sha, filesChanged: files },
+        );
       } else {
+        addProgressEvent("commit-fail", "커밋 실패 — 로컬 삽입만 완료", "error");
         addSystemMessage(
           messageId,
           "코드가 에디터에 삽입되었습니다.",
@@ -156,7 +224,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         );
       }
     },
-    [onInsertCode, shadowCommit, addSystemMessage],
+    [agentMode, onInsertCode, shadowCommit, addSystemMessage, addProgressEvent],
   );
 
   const handleCopy = (code: string, id: string) => {
@@ -171,6 +239,15 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       console.log("[AIChatPanel] sendToAI called:", userText.slice(0, 50));
       setError(null);
       setIsStreaming(true);
+      addProgressEvent("stream-start", "AI 응답 스트리밍 시작", "pending");
+
+      // Mode-specific instruction prefix
+      let modePrefix = "";
+      if (agentMode === "plan") {
+        modePrefix = "[MODE: Plan] 코드 블록 없이 설계/구조/전략만 텍스트로 설명하세요.\n\n";
+      } else if (agentMode === "edit") {
+        modePrefix = "[MODE: Edit] 변경이 필요한 파일만 출력하세요. 변경 없는 파일은 생략.\n\n";
+      }
 
       // Build context with current files
       let contextPrefix = "";
@@ -203,7 +280,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         // Build conversation history for API (plain format)
         const apiMessages = [
           ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: "user" as const, content: contextPrefix + userText },
+          { role: "user" as const, content: modePrefix + contextPrefix + userText },
         ];
 
         console.log("[AIChatPanel] Fetching /api/chat, msgs:", apiMessages.length);
@@ -211,7 +288,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: apiMessages, model: selectedModel }),
+          body: JSON.stringify({ messages: apiMessages, model: selectedModel, mode: agentMode }),
           signal: abortController.signal,
         });
 
@@ -245,13 +322,16 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               ),
             );
             // Live preview: when a new code block closes (```), insert it immediately
-            const parsed = parseAIResponse(fullText);
-            if (parsed.codeBlocks.length > insertedBlocks) {
-              for (let i = insertedBlocks; i < parsed.codeBlocks.length; i++) {
-                const block = parsed.codeBlocks[i];
-                onInsertCode(block.code, block.targetFile);
+            // Skip live insertion in plan mode
+            if (agentMode !== "plan") {
+              const parsed = parseAIResponse(fullText);
+              if (parsed.codeBlocks.length > insertedBlocks) {
+                for (let i = insertedBlocks; i < parsed.codeBlocks.length; i++) {
+                  const block = parsed.codeBlocks[i];
+                  onInsertCode(block.code, block.targetFile);
+                }
+                insertedBlocks = parsed.codeBlocks.length;
               }
-              insertedBlocks = parsed.codeBlocks.length;
             }
           }
           if (obj.type === "error") {
@@ -290,6 +370,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
         console.log("[AIChatPanel] Stream done. Text length:", fullText.length);
         setIsStreaming(false);
+        addProgressEvent("stream-end", "AI 응답 완료", "done");
 
         // Process completed response
         if (fullText) {
@@ -300,6 +381,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[AIChatPanel] Error:", msg);
         setError(msg);
+        addProgressEvent("stream-end", `오류: ${msg}`, "error");
         // Remove empty assistant message on error
         setMessages((prev) => prev.filter((m) => !(m.id === assistantId && !m.content)));
       } finally {
@@ -307,7 +389,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         abortRef.current = null;
       }
     },
-    [messages, currentFiles, handleAIResponseComplete, selectedModel],
+    [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent],
   );
 
   // Auto-send initial prompt when transitioning from dashboard
@@ -389,6 +471,12 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const getSystemMessagesAfter = (messageId: string) =>
     systemMessages.filter((sm) => sm.afterMessageId === messageId);
 
+  const modePlaceholders: Record<AgentMode, string> = {
+    build: "기능을 지시하세요... (예: 빨간 버튼 만들어줘)",
+    plan: "설계를 요청하세요... (예: 로그인 기능 구조 설명해줘)",
+    edit: "수정할 부분을 지시하세요... (예: 헤더 색상 바꿔줘)",
+  };
+
   return (
     <div className="flex flex-col h-full bg-[var(--r-surface)] border-r border-[var(--r-border)]">
       {/* Header */}
@@ -442,6 +530,29 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         )}
       </div>
 
+      {/* Agent Mode Tabs */}
+      <div className="flex items-center border-b border-[var(--r-border)] bg-[var(--r-bg)] shrink-0">
+        {AGENT_MODES.map((mode) => {
+          const Icon = mode.icon;
+          const isActive = agentMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => setAgentMode(mode.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium transition-colors relative ${
+                isActive ? "text-[#0079F2]" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
+              }`}
+              title={mode.desc}
+            >
+              <Icon size={12} />
+              {mode.label}
+              {isActive && <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#0079F2] rounded-full" />}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0 bg-[var(--r-surface)]">
         {/* Static welcome message */}
@@ -489,22 +600,62 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             </div>
 
             {getSystemMessagesAfter(msg.id).map((sm) => (
-              <div
-                key={sm.id}
-                className={`mx-2 mt-2 px-3 py-2 rounded-xl text-[11px] leading-relaxed whitespace-pre-wrap ${
-                  sm.type === "commit-report"
-                    ? "bg-[#E6FAF5] border border-[#00B894]/20 text-[#065F46]"
-                    : "bg-[#F5F5F3] border border-[var(--r-border)] text-[var(--r-text-secondary)]"
-                }`}
-              >
-                {sm.type === "commit-report" && (
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <GitCommit size={11} className="text-[#00B894]" />
-                    <span className="font-semibold text-[#00B894]">Shadow Commit</span>
+              <div key={sm.id}>
+                {sm.type === "checkpoint" ? (
+                  /* ===== Checkpoint Card ===== */
+                  <div className="mx-2 mt-2 px-3 py-2 rounded-xl bg-[#EEF2FF] border border-[#0079F2]/20 text-[11px]">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <div className="w-2 h-2 rounded-full bg-[#0079F2]" />
+                      <span className="font-semibold text-[#0079F2]">Checkpoint</span>
+                      {sm.commitSha && (
+                        <span className="font-mono text-[10px] text-[var(--r-text-secondary)]">
+                          {sm.commitSha.slice(0, 7)}
+                        </span>
+                      )}
+                    </div>
+                    {sm.filesChanged && (
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {sm.filesChanged.map((f) => (
+                          <span key={f} className="px-1.5 py-0.5 bg-[#0079F2]/10 text-[#0079F2] rounded text-[9px] font-mono">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--r-text-secondary)]">{sm.content}</span>
+                      {sm.commitSha && onGitRestore && (
+                        <button
+                          type="button"
+                          onClick={() => onGitRestore(sm.commitSha!)}
+                          className="flex items-center gap-1 text-[10px] text-[#F59E0B] hover:text-[#D97706] transition-colors"
+                        >
+                          <RotateCcw size={10} />
+                          Rollback
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-[9px] text-[var(--r-text-muted)] mt-1 text-right">{sm.timestamp}</div>
+                  </div>
+                ) : (
+                  /* ===== Normal / Commit Report ===== */
+                  <div
+                    className={`mx-2 mt-2 px-3 py-2 rounded-xl text-[11px] leading-relaxed whitespace-pre-wrap ${
+                      sm.type === "commit-report"
+                        ? "bg-[#E6FAF5] border border-[#00B894]/20 text-[#065F46]"
+                        : "bg-[#F5F5F3] border border-[var(--r-border)] text-[var(--r-text-secondary)]"
+                    }`}
+                  >
+                    {sm.type === "commit-report" && (
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <GitCommit size={11} className="text-[#00B894]" />
+                        <span className="font-semibold text-[#00B894]">Shadow Commit</span>
+                      </div>
+                    )}
+                    {sm.content}
+                    <div className="text-[9px] text-[var(--r-text-muted)] mt-1 text-right">{sm.timestamp}</div>
                   </div>
                 )}
-                {sm.content}
-                <div className="text-[9px] text-[var(--r-text-muted)] mt-1 text-right">{sm.timestamp}</div>
               </div>
             ))}
           </div>
@@ -554,6 +705,38 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Progress Panel (collapsible) */}
+      {progressEvents.length > 0 && (
+        <div className="border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowProgress((v) => !v)}
+            className="flex items-center justify-between w-full px-3 py-1.5 text-[10px] text-[var(--r-text-secondary)] hover:text-[var(--r-text)] transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <Activity size={11} />
+              Progress ({progressEvents.filter((e) => e.status === "pending").length} active)
+            </span>
+            {showProgress ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+          </button>
+          {showProgress && (
+            <div className="max-h-[120px] overflow-y-auto px-3 pb-2 space-y-1">
+              {[...progressEvents].reverse().map((ev) => (
+                <div key={ev.id} className="flex items-center gap-2 text-[10px]">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    ev.status === "done" ? "bg-[#00B894]" :
+                    ev.status === "pending" ? "bg-[#F59E0B] animate-pulse" :
+                    "bg-[#EF4444]"
+                  }`} />
+                  <span className="text-[var(--r-text-secondary)] truncate flex-1">{ev.message}</span>
+                  <span className="text-[var(--r-text-muted)] shrink-0">{ev.timestamp}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Input — no <form>, direct onClick + Enter key */}
       <div className="px-3 py-2.5 border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0">
         <div className="flex gap-2">
@@ -562,7 +745,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="기능을 지시하세요... (예: 빨간 버튼 만들어줘)"
+            placeholder={modePlaceholders[agentMode]}
             className="flex-1 bg-[var(--r-surface)] text-[var(--r-text)] text-xs px-3 py-2 rounded-xl border border-[var(--r-border)] focus:border-[#0079F2] focus:ring-1 focus:ring-[#0079F2]/20 outline-none placeholder-[#9DA5B0] transition-all"
             disabled={isStreaming || isCommitting}
           />
@@ -577,7 +760,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           </button>
         </div>
         <div className="text-[9px] text-[var(--r-text-muted)] mt-1.5 text-center">
-          Field Nine AI — Shadow Commit Engine v3.1
+          Field Nine AI — {agentMode === "plan" ? "Plan Mode" : agentMode === "edit" ? "Edit Mode" : "Build Mode"} — Shadow Commit Engine v3.1
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import Editor from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import { X } from "lucide-react";
 import { getFileInfo } from "./FileExplorer";
 import type { VFile } from "./FileExplorer";
+import { useRef, useCallback } from "react";
 
 type EditorTheme = "vs-dark" | "light" | "hc-black";
 
@@ -28,6 +29,102 @@ export default function EditorTabs({
   onCodeChange,
   compact = false,
 }: EditorTabsProps) {
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
+  const autocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disposableRef = useRef<{ dispose: () => void } | null>(null);
+
+  const handleEditorMount: OnMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // Register AI inline completion provider
+    disposableRef.current?.dispose();
+    disposableRef.current = monaco.languages.registerInlineCompletionsProvider(
+      ["html", "css", "javascript", "typescript", "json"],
+      {
+        provideInlineCompletions: async (
+          model: InstanceType<typeof monaco.editor.EditorModel>,
+          position: InstanceType<typeof monaco.Position>,
+          _context: unknown,
+          token: { isCancellationRequested: boolean }
+        ) => {
+          // Debounce: wait 600ms of no typing
+          if (autocompleteTimerRef.current) clearTimeout(autocompleteTimerRef.current);
+
+          return new Promise((resolve) => {
+            autocompleteTimerRef.current = setTimeout(async () => {
+              if (token.isCancellationRequested) {
+                resolve({ items: [] });
+                return;
+              }
+
+              try {
+                const textUntilPosition = model.getValueInRange({
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: position.lineNumber,
+                  endColumn: position.column,
+                });
+                const textAfterPosition = model.getValueInRange({
+                  startLineNumber: position.lineNumber,
+                  startColumn: position.column,
+                  endLineNumber: model.getLineCount(),
+                  endColumn: model.getLineMaxColumn(model.getLineCount()),
+                });
+
+                // Only trigger after 3+ chars on current line
+                const currentLine = model.getLineContent(position.lineNumber);
+                if (currentLine.trim().length < 3) {
+                  resolve({ items: [] });
+                  return;
+                }
+
+                const res = await fetch("/api/autocomplete", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    prefix: textUntilPosition,
+                    suffix: textAfterPosition,
+                    language: model.getLanguageId(),
+                    fileName: activeFile,
+                  }),
+                  signal: AbortSignal.timeout(3000),
+                });
+
+                if (!res.ok || token.isCancellationRequested) {
+                  resolve({ items: [] });
+                  return;
+                }
+
+                const data = await res.json();
+                if (!data.completion) {
+                  resolve({ items: [] });
+                  return;
+                }
+
+                resolve({
+                  items: [{
+                    insertText: data.completion,
+                    range: {
+                      startLineNumber: position.lineNumber,
+                      startColumn: position.column,
+                      endLineNumber: position.lineNumber,
+                      endColumn: position.column,
+                    },
+                  }],
+                });
+              } catch {
+                resolve({ items: [] });
+              }
+            }, 600);
+          });
+        },
+        freeInlineCompletions: () => {},
+      }
+    );
+  }, [activeFile]);
+
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e]">
       {/* Tab Bar */}
@@ -75,6 +172,7 @@ export default function EditorTabs({
           value={files[activeFile]?.content ?? ""}
           onChange={onCodeChange}
           theme={editorTheme}
+          onMount={handleEditorMount}
           options={{
             fontSize: 13,
             lineHeight: 22,
@@ -96,6 +194,7 @@ export default function EditorTabs({
             folding: !compact,
             links: true,
             contextmenu: !compact,
+            inlineSuggest: { enabled: true },
             suggest: compact ? undefined : { showMethods: true, showFunctions: true, showVariables: true, showWords: true },
           }}
         />

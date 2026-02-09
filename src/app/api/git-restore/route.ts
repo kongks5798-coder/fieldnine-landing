@@ -4,7 +4,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
 const API = "https://api.github.com";
 
-const ALLOWED_FILES = ["index.html", "style.css", "app.js"];
+const ALLOWED_EXTENSIONS = /\.(html|htm|css|js|ts|json|md|txt|svg|xml)$/i;
 
 async function ghFetch(url: string) {
   return fetch(url, {
@@ -28,19 +28,23 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Get the tree for this commit
+    // Get the tree for this commit (recursive to support folders)
     const commitRes = await ghFetch(`${API}/repos/${GITHUB_REPO}/git/commits/${sha}`);
     if (!commitRes.ok) throw new Error(`Failed to get commit: ${commitRes.status}`);
     const commitData = await commitRes.json();
 
-    const treeRes = await ghFetch(`${API}/repos/${GITHUB_REPO}/git/trees/${commitData.tree.sha}`);
+    const treeRes = await ghFetch(`${API}/repos/${GITHUB_REPO}/git/trees/${commitData.tree.sha}?recursive=1`);
     if (!treeRes.ok) throw new Error(`Failed to get tree: ${treeRes.status}`);
     const treeData = await treeRes.json();
 
-    // Fetch only allowed files from the tree
+    // Fetch files with allowed extensions from the tree
     const files: Record<string, string> = {};
     for (const entry of treeData.tree) {
-      if (!ALLOWED_FILES.includes(entry.path)) continue;
+      if (entry.type !== "blob") continue;
+      if (!ALLOWED_EXTENSIONS.test(entry.path)) continue;
+      // Skip hidden files/directories
+      if (entry.path.startsWith(".") || entry.path.includes("/.")) continue;
+
       const blobRes = await ghFetch(`${API}/repos/${GITHUB_REPO}/git/blobs/${entry.sha}`);
       if (!blobRes.ok) continue;
       const blobData = await blobRes.json();

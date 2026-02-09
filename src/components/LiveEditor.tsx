@@ -41,6 +41,9 @@ import FileExplorer, { getFileInfo, type VFile, type ExplorerTab } from "./FileE
 import ConsolePanel, { type ConsoleLine, type ConsoleTab, type GitCommitEntry } from "./ConsolePanel";
 import PreviewPanel from "./PreviewPanel";
 import EditorTabs from "./EditorTabs";
+import CommandPalette from "./CommandPalette";
+import DiffPreview from "./DiffPreview";
+import CDNManager from "./CDNManager";
 import { ToastContainer, useToast } from "./Toast";
 import { useProjectSave } from "@/hooks/useProjectSave";
 import { useAssets } from "@/hooks/useAssets";
@@ -48,7 +51,7 @@ import { useDeployStatus } from "@/hooks/useDeployStatus";
 import { deployProject } from "@/lib/deploy";
 import { createZip } from "@/lib/zipExport";
 import { useTheme } from "@/lib/useTheme";
-import { FileCog, FileText } from "lucide-react";
+import { FileCog, FileText, Package } from "lucide-react";
 
 /* ===== Default Project Files ===== */
 const DEFAULT_FILES: Record<string, VFile> = {
@@ -392,6 +395,47 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [explorerTab, setExplorerTab] = useState<ExplorerTab>("files");
   const [gitHistory, setGitHistory] = useState<GitCommitEntry[]>([]);
   const [gitLoading, setGitLoading] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [cdnManagerOpen, setCdnManagerOpen] = useState(false);
+
+  /* ===== Diff Preview State ===== */
+  const [diffPreview, setDiffPreview] = useState<{ fileName: string; oldCode: string; newCode: string } | null>(null);
+
+  /* ===== Undo History Stack (per file, max 30 snapshots) ===== */
+  const undoHistoryRef = useRef<Record<string, string[]>>({});
+  const undoIndexRef = useRef<Record<string, number>>({});
+
+  const pushUndoSnapshot = useCallback((fileName: string, content: string) => {
+    if (!undoHistoryRef.current[fileName]) {
+      undoHistoryRef.current[fileName] = [];
+      undoIndexRef.current[fileName] = -1;
+    }
+    const history = undoHistoryRef.current[fileName];
+    const idx = undoIndexRef.current[fileName];
+    // Discard any redo entries after current index
+    history.splice(idx + 1);
+    history.push(content);
+    if (history.length > 30) history.shift();
+    undoIndexRef.current[fileName] = history.length - 1;
+  }, []);
+
+  const undoFile = useCallback((fileName: string) => {
+    const history = undoHistoryRef.current[fileName];
+    if (!history) return null;
+    const idx = undoIndexRef.current[fileName];
+    if (idx <= 0) return null;
+    undoIndexRef.current[fileName] = idx - 1;
+    return history[idx - 1];
+  }, []);
+
+  const redoFile = useCallback((fileName: string) => {
+    const history = undoHistoryRef.current[fileName];
+    if (!history) return null;
+    const idx = undoIndexRef.current[fileName];
+    if (idx >= history.length - 1) return null;
+    undoIndexRef.current[fileName] = idx + 1;
+    return history[idx + 1];
+  }, []);
 
   /* ===== Toast ===== */
   const { toasts, addToast, dismissToast, updateToast } = useToast();
@@ -555,6 +599,13 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     const consoleCapture = `
       <script>
         (function() {
+          // CSS Hot Inject listener
+          window.addEventListener('message', function(e) {
+            if (e.data && e.data.source === 'fn-hot-css') {
+              var style = document.getElementById('fn-hot-style');
+              if (style) { style.textContent = e.data.css; }
+            }
+          });
           const _post = (type, args) => {
             try {
               window.parent.postMessage({
@@ -581,7 +632,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     let combined = html;
     combined = combined.replace(
       /<link\s+rel="stylesheet"\s+href="style\.css"\s*\/?>/gi,
-      `<style>${css}</style>`
+      `<style id="fn-hot-style">${css}</style>`
     );
     combined = combined.replace(
       /<script\s+src="app\.js"\s*><\/script>/gi,
@@ -615,10 +666,25 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     return () => window.removeEventListener("message", handler);
   }, []);
 
+  /* ===== CSS Hot Inject via postMessage ===== */
+  const hotInjectCSS = useCallback((css: string) => {
+    try {
+      const iframe = iframeRef.current;
+      if (!iframe?.contentWindow) return false;
+      iframe.contentWindow.postMessage({ source: "fn-hot-css", css }, "*");
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   /* ===== Auto-run on code change ===== */
   const handleCodeChange = useCallback(
     (value: string | undefined) => {
       const newContent = value ?? "";
+      // Push undo snapshot (debounced — only on meaningful changes)
+      pushUndoSnapshot(activeFile, newContent);
+
       setFiles((prev) => {
         if (!prev[activeFile]) return prev;
         const next = { ...prev, [activeFile]: { ...prev[activeFile], content: newContent } };
@@ -627,13 +693,18 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         return next;
       });
 
+      // CSS Hot Inject: skip full reload for CSS-only changes
+      if (activeFile === "style.css" || activeFile.endsWith(".css")) {
+        if (hotInjectCSS(newContent)) return; // hot-injected, no full rebuild
+      }
+
       if (autoRunRef.current) clearTimeout(autoRunRef.current);
       autoRunRef.current = setTimeout(() => {
         setConsoleLines([]);
         setRenderedHTML(buildPreview());
       }, 300);
     },
-    [activeFile, buildPreview, triggerAutoSave, triggerAutoCommit]
+    [activeFile, buildPreview, triggerAutoSave, triggerAutoCommit, hotInjectCSS, pushUndoSnapshot]
   );
 
   useEffect(() => {
@@ -667,7 +738,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   /* ===== File CRUD ===== */
   const VALID_EXTENSIONS = /\.(html|htm|css|js|ts|json|md|txt|svg|xml)$/i;
   const createFile = useCallback((name: string) => {
+    // Allow forward slashes for folder paths, block unsafe patterns
     if (!name || files[name] || !VALID_EXTENSIONS.test(name)) return;
+    if (name.includes("..") || name.includes("\\") || name.startsWith("/")) return;
     const info = getFileInfo(name);
     setFiles((prev) => {
       const next = { ...prev, [name]: { name, language: info.language, content: `/* ${name} */\n`, icon: info.icon } };
@@ -695,8 +768,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     }
   }, [files, activeFile, triggerAutoSave]);
 
-  /* ===== AI Code Insertion (replace mode) ===== */
-  const handleInsertCode = useCallback((code: string, targetFile: string) => {
+  /* ===== AI Code Insertion (with optional diff preview) ===== */
+  const applyCodeDirect = useCallback((code: string, targetFile: string) => {
+    pushUndoSnapshot(targetFile, code);
     setFiles((prev) => {
       const existing = prev[targetFile];
       const info = getFileInfo(targetFile);
@@ -715,7 +789,60 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     });
     if (!openTabs.includes(targetFile)) setOpenTabs((prev) => [...prev, targetFile]);
     setActiveFile(targetFile);
-  }, [openTabs, triggerAutoSave, triggerAutoCommit]);
+  }, [openTabs, triggerAutoSave, triggerAutoCommit, pushUndoSnapshot]);
+
+  // Pending diff insertion (stored for accept/reject)
+  const pendingInsertRef = useRef<{ code: string; targetFile: string } | null>(null);
+
+  const handleInsertCode = useCallback((code: string, targetFile: string) => {
+    const existing = files[targetFile];
+    // Show diff if file exists and has meaningful content
+    if (existing && existing.content.trim().length > 10 && existing.content !== code) {
+      pendingInsertRef.current = { code, targetFile };
+      setDiffPreview({ fileName: targetFile, oldCode: existing.content, newCode: code });
+    } else {
+      applyCodeDirect(code, targetFile);
+    }
+  }, [files, applyCodeDirect]);
+
+  const handleDiffAccept = useCallback(() => {
+    if (pendingInsertRef.current) {
+      applyCodeDirect(pendingInsertRef.current.code, pendingInsertRef.current.targetFile);
+      pendingInsertRef.current = null;
+    }
+    setDiffPreview(null);
+  }, [applyCodeDirect]);
+
+  const handleDiffReject = useCallback(() => {
+    pendingInsertRef.current = null;
+    setDiffPreview(null);
+  }, []);
+
+  /* ===== CDN Tag Insertion ===== */
+  const handleCDNInsert = useCallback((tag: string) => {
+    setFiles((prev) => {
+      const html = prev["index.html"];
+      if (!html) return prev;
+      let content = html.content;
+      // Insert before </head>
+      const headClose = content.indexOf("</head>");
+      if (headClose !== -1) {
+        content = content.slice(0, headClose) + "  " + tag + "\n" + content.slice(headClose);
+      } else {
+        // Fallback: prepend
+        content = tag + "\n" + content;
+      }
+      pushUndoSnapshot("index.html", content);
+      const next = { ...prev, "index.html": { ...html, content } };
+      triggerAutoSave(next);
+      return next;
+    });
+    // Rebuild preview
+    setTimeout(() => {
+      setConsoleLines([]);
+      setRenderedHTML(buildPreview());
+    }, 100);
+  }, [buildPreview, triggerAutoSave, pushUndoSnapshot]);
 
   /* ===== Download as ZIP ===== */
   const handleDownload = useCallback(() => {
@@ -849,10 +976,35 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         toggleAiPanel();
         return;
       }
+      if (e.key === "k" && !e.shiftKey) {
+        e.preventDefault();
+        setCommandPaletteOpen((v) => !v);
+        return;
+      }
+      if (e.key === "i" && !e.shiftKey) {
+        e.preventDefault();
+        setCdnManagerOpen((v) => !v);
+        return;
+      }
+      if (e.key === "z" && e.shiftKey) {
+        // Ctrl+Shift+Z = Redo
+        e.preventDefault();
+        const content = redoFile(activeFile);
+        if (content !== null) {
+          setFiles((prev) => {
+            if (!prev[activeFile]) return prev;
+            const next = { ...prev, [activeFile]: { ...prev[activeFile], content } };
+            triggerAutoSave(next);
+            return next;
+          });
+          setRenderedHTML(buildPreview());
+        }
+        return;
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [files, manualSave, handleRun, handleDeploy, toggleConsole, toggleAiPanel]);
+  }, [files, activeFile, manualSave, handleRun, handleDeploy, toggleConsole, toggleAiPanel, redoFile, triggerAutoSave, buildPreview]);
 
   return (
     <div className={`flex h-screen bg-[var(--r-bg)] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
@@ -893,6 +1045,17 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         </div>
 
         <div className="flex flex-col items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setCdnManagerOpen(true)}
+            className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)] transition-all"
+            aria-label="CDN Libraries"
+          >
+            <Package size={18} strokeWidth={1.5} />
+            <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--r-sidebar)] text-xs text-[var(--r-text)] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-sm border border-[var(--r-border)]">
+              Libraries
+            </span>
+          </button>
           <button
             type="button"
             className="group relative w-9 h-9 rounded-lg flex items-center justify-center text-[var(--r-text-secondary)] hover:text-[var(--r-text)] hover:bg-[var(--r-sidebar)] transition-all"
@@ -1205,7 +1368,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
             {mobilePanel === "ai" && (
               <div className="flex-1 min-h-0">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} />
               </div>
             )}
           </div>
@@ -1227,7 +1390,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               id="ai-chat"
               onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
             >
-              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} />
+              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} />
             </Panel>
 
             <Separator className="splitter-handle-v" />
@@ -1313,6 +1476,33 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           </Group>
         )}
       </div>
+      {diffPreview && (
+        <DiffPreview
+          fileName={diffPreview.fileName}
+          oldCode={diffPreview.oldCode}
+          newCode={diffPreview.newCode}
+          onAccept={handleDiffAccept}
+          onReject={handleDiffReject}
+        />
+      )}
+      <CDNManager
+        isOpen={cdnManagerOpen}
+        onClose={() => setCdnManagerOpen(false)}
+        htmlContent={files["index.html"]?.content ?? ""}
+        onInsertTag={handleCDNInsert}
+      />
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        files={files}
+        onOpenFile={openFile}
+        onCreateFile={() => { setCommandPaletteOpen(false); setShowNewFileInput(true); }}
+        onDeploy={handleDeploy}
+        onToggleTheme={toggleTheme}
+        onToggleAI={toggleAiPanel}
+        onRun={handleRun}
+        theme={theme}
+      />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );

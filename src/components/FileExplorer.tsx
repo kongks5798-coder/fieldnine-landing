@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo, useCallback } from "react";
 import {
   X,
   FilePlus2,
@@ -15,6 +15,10 @@ import {
   FileCode2,
   FileText,
   FileCog,
+  ChevronRight,
+  ChevronDown,
+  Folder,
+  FolderOpen,
 } from "lucide-react";
 import type { AssetFile } from "@/hooks/useAssets";
 
@@ -48,6 +52,55 @@ export interface VFile {
 
 export type ExplorerTab = "files" | "assets";
 
+/* ===== Tree Types ===== */
+interface TreeNode {
+  name: string;
+  fullPath: string;
+  isFolder: boolean;
+  children: TreeNode[];
+}
+
+function buildTree(fileNames: string[]): TreeNode[] {
+  const root: TreeNode[] = [];
+
+  for (const filePath of fileNames) {
+    const parts = filePath.split("/");
+    let currentLevel = root;
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isFile = i === parts.length - 1;
+      const fullPath = parts.slice(0, i + 1).join("/");
+
+      let existing = currentLevel.find((n) => n.name === part && n.isFolder === !isFile);
+      if (!existing) {
+        existing = {
+          name: part,
+          fullPath: isFile ? filePath : fullPath,
+          isFolder: !isFile,
+          children: [],
+        };
+        currentLevel.push(existing);
+      }
+      currentLevel = existing.children;
+    }
+  }
+
+  // Sort: folders first, then files, alphabetically
+  const sortNodes = (nodes: TreeNode[]): TreeNode[] => {
+    nodes.sort((a, b) => {
+      if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const node of nodes) {
+      if (node.isFolder) sortNodes(node.children);
+    }
+    return nodes;
+  };
+
+  return sortNodes(root);
+}
+
 /* ===== Props ===== */
 interface FileExplorerProps {
   files: Record<string, VFile>;
@@ -78,6 +131,80 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/* ===== Tree Node Component ===== */
+function FileTreeNode({
+  node,
+  depth,
+  activeFile,
+  openFile,
+  deleteFile,
+  expandedFolders,
+  toggleFolder,
+}: {
+  node: TreeNode;
+  depth: number;
+  activeFile: string;
+  openFile: (name: string) => void;
+  deleteFile: (name: string) => void;
+  expandedFolders: Set<string>;
+  toggleFolder: (path: string) => void;
+}) {
+  const isExpanded = expandedFolders.has(node.fullPath);
+  const isActive = !node.isFolder && activeFile === node.fullPath;
+  const info = node.isFolder ? null : getFileInfo(node.name);
+  const Icon = node.isFolder
+    ? (isExpanded ? FolderOpen : Folder)
+    : (info?.icon ?? FileText);
+  const iconColor = node.isFolder ? "text-[#F59E0B]" : (info?.color ?? "text-[#858585]");
+  const isProtected = ["index.html", "style.css", "app.js"].includes(node.fullPath);
+
+  return (
+    <>
+      <div
+        onClick={() => node.isFolder ? toggleFolder(node.fullPath) : openFile(node.fullPath)}
+        className={`group flex items-center gap-1.5 py-[4px] rounded-md text-[12px] cursor-pointer transition-colors mx-1 ${
+          isActive
+            ? "bg-[var(--r-accent-light)] text-[var(--r-text)]"
+            : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
+        }`}
+        style={{ paddingLeft: `${8 + depth * 12}px`, paddingRight: "8px" }}
+      >
+        {node.isFolder && (
+          <span className="shrink-0 w-3 flex items-center justify-center">
+            {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+          </span>
+        )}
+        {!node.isFolder && <span className="w-3" />}
+        <Icon size={14} className={iconColor} />
+        <span className="truncate flex-1 font-mono">{node.name}</span>
+        {!node.isFolder && !isProtected && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); deleteFile(node.fullPath); }}
+            className="opacity-0 group-hover:opacity-100 hover:text-[#f87171] transition-all p-0.5"
+            aria-label={`Delete ${node.name}`}
+          >
+            <Trash2 size={11} />
+          </button>
+        )}
+      </div>
+      {node.isFolder && isExpanded && node.children.map((child) => (
+        <FileTreeNode
+          key={child.fullPath}
+          node={child}
+          depth={depth + 1}
+          activeFile={activeFile}
+          openFile={openFile}
+          deleteFile={deleteFile}
+          expandedFolders={expandedFolders}
+          toggleFolder={toggleFolder}
+        />
+      ))}
+    </>
+  );
+}
+
+/* ===== Main Component ===== */
 export default function FileExplorer({
   files,
   activeFile,
@@ -103,11 +230,26 @@ export default function FileExplorer({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const allFileNames = Object.keys(files);
   const fileList = fileSearchQuery
     ? allFileNames.filter((f) => f.toLowerCase().includes(fileSearchQuery.toLowerCase()))
     : allFileNames;
+
+  // Check if any files have folder paths
+  const hasFolders = allFileNames.some((f) => f.includes("/"));
+
+  // Build tree from file list
+  const tree = useMemo(() => buildTree(fileList), [fileList]);
+
+  const toggleFolder = useCallback((path: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path); else next.add(path);
+      return next;
+    });
+  }, []);
 
   const handleCopyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -183,7 +325,7 @@ export default function FileExplorer({
                   type="text"
                   value={newFileName}
                   onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder="name.html / .css / .js"
+                  placeholder="name.html or src/name.js"
                   className="w-full bg-[var(--r-surface)] text-[var(--r-text)] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
                   autoFocus
                   onBlur={() => { setShowNewFileInput(false); setNewFileName(""); }}
@@ -194,35 +336,52 @@ export default function FileExplorer({
           )}
 
           <div className="flex-1 overflow-y-auto px-1 py-1">
-            {fileList.map((fileName) => {
-              const info = getFileInfo(fileName);
-              const Icon = info.icon;
-              const isActive = activeFile === fileName;
-              return (
-                <div
-                  key={fileName}
-                  onClick={() => openFile(fileName)}
-                  className={`group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] cursor-pointer transition-colors mx-1 ${
-                    isActive
-                      ? "bg-[var(--r-accent-light)] text-[var(--r-text)]"
-                      : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
-                  }`}
-                >
-                  <Icon size={14} className={info.color} />
-                  <span className="truncate flex-1 font-mono">{fileName}</span>
-                  {!["index.html", "style.css", "app.js"].includes(fileName) && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); deleteFile(fileName); }}
-                      className="opacity-0 group-hover:opacity-100 hover:text-[#f87171] transition-all p-0.5"
-                      aria-label={`Delete ${fileName}`}
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+            {hasFolders || fileSearchQuery ? (
+              /* Tree view when folders exist or searching */
+              tree.map((node) => (
+                <FileTreeNode
+                  key={node.fullPath}
+                  node={node}
+                  depth={0}
+                  activeFile={activeFile}
+                  openFile={openFile}
+                  deleteFile={deleteFile}
+                  expandedFolders={expandedFolders}
+                  toggleFolder={toggleFolder}
+                />
+              ))
+            ) : (
+              /* Flat list when no folders */
+              fileList.map((fileName) => {
+                const info = getFileInfo(fileName);
+                const Icon = info.icon;
+                const isActive = activeFile === fileName;
+                return (
+                  <div
+                    key={fileName}
+                    onClick={() => openFile(fileName)}
+                    className={`group flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] cursor-pointer transition-colors mx-1 ${
+                      isActive
+                        ? "bg-[var(--r-accent-light)] text-[var(--r-text)]"
+                        : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
+                    }`}
+                  >
+                    <Icon size={14} className={info.color} />
+                    <span className="truncate flex-1 font-mono">{fileName}</span>
+                    {!["index.html", "style.css", "app.js"].includes(fileName) && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); deleteFile(fileName); }}
+                        className="opacity-0 group-hover:opacity-100 hover:text-[#f87171] transition-all p-0.5"
+                        aria-label={`Delete ${fileName}`}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </>
       ) : (

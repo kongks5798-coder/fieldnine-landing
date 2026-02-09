@@ -114,6 +114,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const rawMessages = body?.messages;
     const requestedModel = body?.model as string | undefined; // e.g. "gpt-4o", "gpt-4o-mini", "claude-sonnet"
+    const mode = (body?.mode as string) ?? "build"; // "build" | "plan" | "edit"
 
     // Input validation
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
@@ -167,9 +168,31 @@ export async function POST(req: Request) {
         : () => createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514");
     const model = modelFactory();
 
+    // Build mode-aware system prompt
+    let systemPrompt = SYSTEM_PROMPT;
+    if (mode === "plan") {
+      systemPrompt = `You are Field Nine AI — a senior full-stack architect inside a web-based IDE.
+The user is in PLAN mode. Your job is to explain architecture, structure, and strategy in Korean.
+
+## Critical Rules
+- NEVER output code blocks (no \`\`\`). Only text explanations.
+- Describe file structure, component hierarchy, data flow, API design, etc.
+- Use numbered lists, bullet points, and headers for clarity.
+- If the user asks you to build something, outline the plan step-by-step instead of writing code.
+- All explanations in Korean.`;
+    } else if (mode === "edit") {
+      systemPrompt = SYSTEM_PROMPT + `
+
+## Edit Mode Override
+- Only output code blocks for files that NEED changes.
+- Do NOT output unchanged files.
+- Each code block must still include the target comment and contain the COMPLETE file content.
+- Explain what changed and why in Korean (1-2 sentences per file).`;
+    }
+
     const result = streamText({
       model,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages,
       temperature: 0.7,
       maxOutputTokens: 4096,
