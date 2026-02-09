@@ -1,12 +1,16 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   Trash2,
   X,
   Loader2,
   GitCommitHorizontal,
+  Power,
 } from "lucide-react";
+
+const WebTerminal = dynamic(() => import("./WebTerminal"), { ssr: false });
 
 export interface ConsoleLine {
   type: "log" | "error" | "warn" | "info";
@@ -44,6 +48,11 @@ interface ConsolePanelProps {
   handleGitRestore: (sha: string) => void;
   onCollapse: () => void;
   onAIFix?: (errorText: string) => void;
+  /** WebContainer integration */
+  wcEnabled?: boolean;
+  onWcToggle?: () => void;
+  wcStatus?: string;
+  wcShellProcess?: import("@webcontainer/api").WebContainerProcess | null;
 }
 
 const consoleColorMap: Record<string, string> = {
@@ -69,6 +78,10 @@ export default function ConsolePanel({
   handleGitRestore,
   onCollapse,
   onAIFix,
+  wcEnabled,
+  onWcToggle,
+  wcStatus,
+  wcShellProcess,
 }: ConsolePanelProps) {
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
@@ -186,26 +199,65 @@ export default function ConsolePanel({
         </div>
       ) : consoleTab === "shell" ? (
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
-            {shellHistory.map((line, i) => (
-              <div key={i} className={`py-[1px] ${line.startsWith("$") ? "text-[#00b894]" : "text-[#d4d4d4]"}`}>
-                {line}
+          {/* WebContainer toggle bar */}
+          {onWcToggle && (
+            <div className="flex items-center gap-2 px-3 py-1 border-b border-[#404040] shrink-0">
+              <button
+                type="button"
+                onClick={onWcToggle}
+                className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-lg transition-colors ${
+                  wcEnabled
+                    ? "bg-[#00b894]/15 text-[#00b894] border border-[#00b894]/30"
+                    : "bg-[#333] text-[#858585] border border-[#404040] hover:text-[#d4d4d4]"
+                }`}
+              >
+                <Power size={9} />
+                {wcEnabled ? "Runtime ON" : "Runtime OFF"}
+              </button>
+              {wcStatus === "booting" && (
+                <span className="flex items-center gap-1 text-[10px] text-[#fbbf24]">
+                  <Loader2 size={9} className="animate-spin" /> Booting Node.js...
+                </span>
+              )}
+              {wcStatus === "ready" && (
+                <span className="text-[10px] text-[#00b894]">Node.js ready</span>
+              )}
+              {wcStatus === "error" && (
+                <span className="text-[10px] text-[#f87171]">Boot failed (COOP/COEP required)</span>
+              )}
+            </div>
+          )}
+
+          {/* Real terminal (WebContainer) or fallback shell */}
+          {wcEnabled && wcStatus === "ready" && wcShellProcess ? (
+            <div className="flex-1 min-h-0">
+              <WebTerminal shellProcess={wcShellProcess} />
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
+                {shellHistory.map((line, i) => (
+                  <div key={i} className={`py-[1px] ${line.startsWith("$") ? "text-[#00b894]" : "text-[#d4d4d4]"}`}>
+                    {line}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="flex items-center px-3 py-1.5 border-t border-[#404040] shrink-0">
-            <span className="text-[#00b894] text-[12px] font-mono mr-2">$</span>
-            <input
-              type="text"
-              value={shellInput}
-              onChange={(e) => setShellInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleShellSubmit(shellInput);
-              }}
-              placeholder="Type a command..."
-              className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
-            />
-          </div>
+              <div className="flex items-center px-3 py-1.5 border-t border-[#404040] shrink-0">
+                <span className="text-[#00b894] text-[12px] font-mono mr-2">$</span>
+                <input
+                  type="text"
+                  value={shellInput}
+                  onChange={(e) => setShellInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleShellSubmit(shellInput);
+                  }}
+                  placeholder={wcEnabled ? "Booting runtime..." : "Type a command..."}
+                  className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
+                  disabled={wcEnabled && wcStatus !== "ready"}
+                />
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">

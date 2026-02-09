@@ -24,6 +24,8 @@ interface PreviewPanelProps {
   deployedUrl: string | null;
   inspectorMode?: boolean;
   onInspectorToggle?: () => void;
+  /** WebContainer dev server URL (when runtime is active) */
+  wcServerUrl?: string | null;
 }
 
 const viewportWidths: Record<ViewportSize, string> = {
@@ -41,6 +43,7 @@ export default function PreviewPanel({
   deployedUrl,
   inspectorMode,
   onInspectorToggle,
+  wcServerUrl,
 }: PreviewPanelProps) {
   const liveUrl = vercelUrl ?? deployedUrl;
 
@@ -109,14 +112,25 @@ export default function PreviewPanel({
 
       {/* iframe */}
       <div className="flex-1 min-h-0 flex justify-center bg-white overflow-auto">
-        <iframe
-          ref={iframeRef}
-          srcDoc={renderedHTML}
-          title="Live Preview"
-          className="bg-white border-0 h-full transition-all duration-300"
-          style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
-          sandbox="allow-scripts allow-modals"
-        />
+        {wcServerUrl ? (
+          <iframe
+            ref={iframeRef}
+            src={wcServerUrl}
+            title="WebContainer Preview"
+            className="bg-white border-0 h-full transition-all duration-300"
+            style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
+            allow="cross-origin-isolated"
+          />
+        ) : (
+          <iframe
+            ref={iframeRef}
+            srcDoc={renderedHTML}
+            title="Live Preview"
+            className="bg-white border-0 h-full transition-all duration-300"
+            style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
+            sandbox="allow-scripts allow-modals"
+          />
+        )}
       </div>
     </div>
   );

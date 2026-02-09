@@ -55,7 +55,10 @@ import { createZip } from "@/lib/zipExport";
 import { useTheme } from "@/lib/useTheme";
 import { FileCog, FileText, Package } from "lucide-react";
 import { useUndoHistory } from "@/hooks/useUndoHistory";
+import { useWebContainer } from "@/hooks/useWebContainer";
 import { ErrorBoundary } from "./providers";
+
+const WebTerminal = dynamic(() => import("./WebTerminal"), { ssr: false });
 
 /* ===== Default Project Files ===== */
 const DEFAULT_FILES: Record<string, VFile> = {
@@ -405,6 +408,44 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [splitView, setSplitView] = useState(false);
   const [splitFile, setSplitFile] = useState("style.css");
   const [aiFixMessage, setAIFixMessage] = useState<string | undefined>(undefined);
+
+  /* ===== WebContainer Runtime ===== */
+  const {
+    status: wcStatus,
+    boot: wcBoot,
+    writeFiles: wcWriteFiles,
+    serverUrl: wcServerUrl,
+    shellProcess: wcShellProcess,
+    startShell: wcStartShell,
+    runCommand: wcRunCommand,
+  } = useWebContainer();
+  const [wcEnabled, setWcEnabled] = useState(false);
+  const wcSyncRef = useRef(false);
+
+  // Boot WebContainer when enabled
+  useEffect(() => {
+    if (wcEnabled && wcStatus === "idle") {
+      wcBoot();
+    }
+  }, [wcEnabled, wcStatus, wcBoot]);
+
+  // Start shell when WebContainer is ready
+  useEffect(() => {
+    if (wcStatus === "ready" && !wcShellProcess) {
+      wcStartShell();
+    }
+  }, [wcStatus, wcShellProcess, wcStartShell]);
+
+  // Sync files to WebContainer when ready
+  useEffect(() => {
+    if (wcStatus !== "ready" || wcSyncRef.current) return;
+    wcSyncRef.current = true;
+    const flatFiles: Record<string, string> = {};
+    for (const [name, f] of Object.entries(files)) {
+      flatFiles[name] = f.content;
+    }
+    wcWriteFiles(flatFiles);
+  }, [wcStatus, files, wcWriteFiles]);
 
   /* ===== Diff Preview State ===== */
   const [diffPreview, setDiffPreview] = useState<{ fileName: string; oldCode: string; newCode: string } | null>(null);
@@ -929,9 +970,37 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
   }, [files, projectSlug, manualSave, buildPreview, handleShadowCommit, addToast, updateToast]);
 
   /* ===== Shell commands ===== */
-  const handleShellSubmit = useCallback((cmd: string) => {
+  const handleShellSubmit = useCallback(async (cmd: string) => {
     if (!cmd.trim()) return;
     setShellHistory((prev) => [...prev, `$ ${cmd}`]);
+    setShellInput("");
+
+    // If WebContainer is active, run real commands
+    if (wcEnabled && wcStatus === "ready") {
+      try {
+        const lower = cmd.toLowerCase().trim();
+        if (lower === "clear") {
+          setShellHistory([]);
+          return;
+        }
+        // Sync current files before running
+        const flatFiles: Record<string, string> = {};
+        for (const [name, f] of Object.entries(files)) {
+          flatFiles[name] = f.content;
+        }
+        await wcWriteFiles(flatFiles);
+
+        const output = await wcRunCommand(cmd);
+        if (output.trim()) {
+          setShellHistory((prev) => [...prev, ...output.trim().split("\n")]);
+        }
+      } catch (err) {
+        setShellHistory((prev) => [...prev, `Error: ${err instanceof Error ? err.message : String(err)}`]);
+      }
+      return;
+    }
+
+    // Fallback: simulated shell
     const lower = cmd.toLowerCase().trim();
     if (lower === "ls") {
       setShellHistory((prev) => [...prev, Object.keys(files).join("  ")]);
@@ -942,16 +1011,15 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     } else if (lower === "pwd") {
       setShellHistory((prev) => [...prev, "/home/user/project"]);
     } else if (lower === "node -v") {
-      setShellHistory((prev) => [...prev, "v20.11.0"]);
+      setShellHistory((prev) => [...prev, "v20.11.0 (simulated)"]);
     } else if (lower === "npm -v") {
-      setShellHistory((prev) => [...prev, "10.2.4"]);
+      setShellHistory((prev) => [...prev, "10.2.4 (simulated)"]);
     } else if (lower === "help") {
-      setShellHistory((prev) => [...prev, "Commands: ls, pwd, echo, clear, node -v, npm -v, help"]);
+      setShellHistory((prev) => [...prev, "Enable WebContainer for real Node.js runtime. Commands: ls, pwd, echo, clear, help"]);
     } else {
-      setShellHistory((prev) => [...prev, `bash: ${cmd}: command not found`]);
+      setShellHistory((prev) => [...prev, `bash: ${cmd}: command not found (enable WebContainer for real runtime)`]);
     }
-    setShellInput("");
-  }, [files]);
+  }, [files, wcEnabled, wcStatus, wcWriteFiles, wcRunCommand]);
 
   const handleTabClick = (fileName: string) => {
     setActiveFile(fileName);
@@ -1541,6 +1609,10 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                       handleGitRestore={handleGitRestore}
                       onCollapse={() => consolePanelRef.current?.collapse()}
                       onAIFix={handleAIFix}
+                      wcEnabled={wcEnabled}
+                      onWcToggle={() => setWcEnabled((v) => !v)}
+                      wcStatus={wcStatus}
+                      wcShellProcess={wcShellProcess}
                     />
                   </ErrorBoundary>
                 </Panel>
@@ -1569,6 +1641,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                   deployedUrl={deployedUrl}
                   inspectorMode={inspectorMode}
                   onInspectorToggle={() => setInspectorMode((v) => !v)}
+                  wcServerUrl={wcServerUrl}
                 />
               </ErrorBoundary>
             </Panel>
