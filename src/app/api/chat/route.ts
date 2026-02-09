@@ -93,8 +93,13 @@ export async function POST(req: Request) {
 
     const { messages: rawMessages } = await req.json();
 
-    // Convert UIMessage format (from useChat) to ModelMessage format (for streamText)
-    const messages = await convertToModelMessages(rawMessages);
+    // useChat sends UIMessage format (with parts array),
+    // but initial generation sends plain format (with content string).
+    // Detect and convert accordingly.
+    const isUIMessage = rawMessages.some((m: Record<string, unknown>) => Array.isArray(m.parts));
+    const messages = isUIMessage
+      ? await convertToModelMessages(rawMessages)
+      : rawMessages;
 
     const model =
       provider === "openai"
