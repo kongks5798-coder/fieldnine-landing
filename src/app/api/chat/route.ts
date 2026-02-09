@@ -13,20 +13,31 @@ The user builds websites with exactly three files: index.html, style.css, app.js
 <!-- target: index.html -->
 <!DOCTYPE html>
 <html lang="ko">
-<head>...</head>
-<body>...</body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App Title</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- rich, complete content here -->
+  <script src="app.js"></script>
+</body>
 </html>
 \`\`\`
 
 \`\`\`css
 /* target: style.css */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { ... }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+/* 60+ lines of polished CSS */
 \`\`\`
 
 \`\`\`javascript
 // target: app.js
-document.addEventListener('DOMContentLoaded', () => { ... });
+document.addEventListener('DOMContentLoaded', () => {
+  // all logic here, 30+ lines
+});
 \`\`\`
 
 ## Critical Rules
@@ -35,20 +46,30 @@ document.addEventListener('DOMContentLoaded', () => { ... });
 - The HTML must be a complete document with <!DOCTYPE html>, <html>, <head>, <body>.
 - The HTML must include <link rel="stylesheet" href="style.css"> and <script src="app.js"></script>.
 - Every DOM element referenced in app.js MUST exist in index.html. Never call getElementById/querySelector on elements that don't exist.
+- NEVER reference undefined variables. Every variable must be declared with const/let before use.
+- NEVER use inline onclick attributes. Always use addEventListener.
+
+## Quality Minimums (MANDATORY)
+- HTML: minimum 30 lines. Include navigation, hero/main section, and footer.
+- CSS: minimum 60 lines. Must include: gradients, transitions, hover effects, box-shadow, border-radius.
+- JS: minimum 20 lines. Must include: DOMContentLoaded, addEventListener, at least 2 interactive features.
+- NEVER output a basic/ugly page with just a heading and a button. That is unacceptable.
+- Think of yourself as a designer at a top agency. Every output should look like a premium product landing page.
 
 ## Design Standards
-- Modern, polished, production-quality UI — never output basic/ugly placeholder pages.
-- Use a cohesive color palette with proper contrast (dark backgrounds: #0a0a0a-#1a1a2e, light text: #e2e8f0).
-- Use CSS flexbox/grid for layouts. Add smooth transitions, hover effects, subtle animations.
+- Dark theme: background #0a0a0a to #1a1a2e, text #e2e8f0, accent gradients (blue→purple→pink).
+- Use CSS flexbox/grid for layouts. Add smooth transitions (0.3s ease), hover effects, subtle animations.
 - Typography: system font stack, clear hierarchy (h1 2.5-3rem bold, body 1rem, small 0.875rem).
 - Spacing: consistent padding/margin (multiples of 8px). Border-radius: 8-16px for cards.
-- Add gradient accents, box-shadows, and visual depth.
+- Add gradient accents (linear-gradient), box-shadows (0 4px 24px rgba), and visual depth.
 - Make it responsive with max-width containers and fluid sizing.
+- Include visual elements: icons (emoji or SVG), badges, cards, counters, progress bars, etc.
 
 ## JavaScript Standards
-- Wrap all code in DOMContentLoaded listener.
-- Use addEventListener instead of inline onclick attributes.
-- Add meaningful interactivity: click handlers, animations, dynamic content, counters, etc.
+- Wrap ALL code in DOMContentLoaded listener.
+- Use addEventListener — never inline handlers.
+- Add meaningful interactivity: click handlers, animations, dynamic content updates, counters, toggles, etc.
+- Guard every DOM query: \`const el = document.getElementById('x'); if (el) { ... }\`
 - Log startup message: console.log('🚀 App loaded!');
 
 ## Language
@@ -83,6 +104,8 @@ export async function POST(req: Request) {
       model,
       system: SYSTEM_PROMPT,
       messages,
+      temperature: 0.7,
+      maxOutputTokens: 4096,
     });
 
     return result.toUIMessageStreamResponse();

@@ -682,7 +682,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     );
     combined = combined.replace(
       /<script\s+src="app\.js"\s*><\/script>/gi,
-      `<script>${js}</script>`
+      `<script>try{${js}}catch(e){console.error('app.js runtime error:',e.message)}</script>`
     );
 
     const headIdx = combined.indexOf("<head>");
@@ -755,7 +755,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       const js = fresh["app.js"].content;
       const combined = html
         .replace(/<link\s+rel="stylesheet"\s+href="style\.css"\s*\/?>/gi, `<style>${css}</style>`)
-        .replace(/<script\s+src="app\.js"\s*><\/script>/gi, `<script>${js}</script>`);
+        .replace(/<script\s+src="app\.js"\s*><\/script>/gi, `<script>try{${js}}catch(e){console.error('app.js runtime error:',e.message)}</script>`);
       setRenderedHTML(combined);
     }, 50);
   }, [clearLocalStorage]);

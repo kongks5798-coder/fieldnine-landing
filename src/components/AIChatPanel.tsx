@@ -138,7 +138,7 @@ export default function AIChatPanel({ onInsertCode, activeFile, currentFiles, on
       // Shadow Commit
       setIsCommitting(true);
       const fileChanges = parsed.codeBlocks.map((b) => ({
-        path: `public/${b.targetFile}`,
+        path: b.targetFile,
         content: b.code,
       }));
       const commitMsg = `feat(ai): ${parsed.explanation.slice(0, 50)}`;
