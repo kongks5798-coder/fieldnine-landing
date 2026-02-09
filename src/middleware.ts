@@ -60,11 +60,31 @@ export function middleware(req: NextRequest) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 4. 그 외 전부 차단
+  // 4. POST로 비밀번호 제출 처리
+  if (req.method === "POST") {
+    try {
+      const body = await req.text();
+      const params = new URLSearchParams(body);
+      const pw = params.get("password");
+      if (pw === ACCESS_TOKEN) {
+        const url = req.nextUrl.clone();
+        const res = NextResponse.redirect(url);
+        res.cookies.set(COOKIE_NAME, ACCESS_TOKEN, {
+          httpOnly: true,
+          secure: req.nextUrl.protocol === "https:",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24,
+        });
+        return addSecurityHeaders(res);
+      }
+    } catch {}
+  }
+
+  // 5. 로그인 페이지 표시
   return addSecurityHeaders(
     new NextResponse(
       `<!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -77,15 +97,32 @@ export function middleware(req: NextRequest) {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh;
     }
-    .container { text-align: center; padding: 2rem; }
-    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
-    p { color: #86868b; font-size: 1rem; }
+    .container { text-align: center; padding: 2rem; max-width: 360px; }
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    p { color: #86868b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    form { display: flex; flex-direction: column; gap: 0.75rem; }
+    input {
+      padding: 0.75rem 1rem; border: 1px solid #d1d1d6; border-radius: 12px;
+      font-size: 0.95rem; outline: none; text-align: center;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #0079f2; }
+    button {
+      padding: 0.75rem; background: #0079f2; color: white; border: none;
+      border-radius: 12px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: #0066cc; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>F9 OS</h1>
-    <p>Access Restricted. Authorized personnel only.</p>
+    <p>Access Restricted</p>
+    <form method="POST">
+      <input type="password" name="password" placeholder="Access Code" autocomplete="off" autofocus />
+      <button type="submit">Enter</button>
+    </form>
   </div>
 </body>
 </html>`,
