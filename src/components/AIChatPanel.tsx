@@ -23,6 +23,7 @@ import {
   Hammer,
   Lightbulb,
   Pencil,
+  Trash2,
 } from "lucide-react";
 
 interface FileChange {
@@ -70,13 +71,15 @@ interface ProgressEvent {
 }
 
 interface AIChatPanelProps {
-  onInsertCode: (code: string, fileName: string) => void;
+  onInsertCode: (code: string, fileName: string, auto?: boolean) => void;
   activeFile: string;
   currentFiles?: Record<string, CurrentFile>;
   onShadowCommit?: (files: FileChange[], message: string) => Promise<boolean>;
   onDeployStatusChanged?: (status: string) => void;
   initialPrompt?: string;
   onGitRestore?: (sha: string) => void;
+  externalMessage?: string;
+  onExternalMessageConsumed?: () => void;
 }
 
 function now() {
@@ -94,7 +97,7 @@ const AI_MODELS = [
 
 type AIModelId = (typeof AI_MODELS)[number]["id"];
 
-export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt, onGitRestore }: AIChatPanelProps) {
+export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt, onGitRestore, externalMessage, onExternalMessageConsumed }: AIChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
@@ -116,6 +119,18 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [showProgress, setShowProgress] = useState(false);
 
+  /* ===== Auto-Inserted Block Tracking ===== */
+  const [autoInsertedBlocks, setAutoInsertedBlocks] = useState<Set<string>>(new Set());
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
+  const toggleBlockExpand = useCallback((blockId: string) => {
+    setExpandedBlocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(blockId)) next.delete(blockId);
+      else next.add(blockId);
+      return next;
+    });
+  }, []);
+
   const addProgressEvent = useCallback((type: ProgressEvent["type"], message: string, status: ProgressEvent["status"]) => {
     setProgressEvents((prev) => [
       ...prev.slice(-19),
@@ -128,6 +143,33 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       },
     ]);
   }, []);
+
+  /* ===== Chat History Persistence (localStorage) ===== */
+  const chatStorageKey = "f9-chat-history";
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(chatStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (messages.length > 0) {
+      try { localStorage.setItem(chatStorageKey, JSON.stringify(messages.slice(-50))); } catch {}
+    }
+  }, [messages, chatStorageKey]);
+
+  /* ===== External Message Handler (for AI Fix) ===== */
+  useEffect(() => {
+    if (externalMessage && !isStreaming && !isCommitting) {
+      sendToAI(externalMessage);
+      onExternalMessageConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalMessage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -182,9 +224,17 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       if (parsed.codeBlocks.length === 0) return;
 
       for (const block of parsed.codeBlocks) {
-        onInsertCode(block.code, block.targetFile);
-        addProgressEvent("file-insert", `${block.targetFile} 삽입 완료`, "done");
+        onInsertCode(block.code, block.targetFile, true);
+        addProgressEvent("file-insert", `${block.targetFile} 자동 삽입`, "done");
       }
+
+      // Mark blocks as auto-inserted in UI
+      const blockIds = parsed.codeBlocks.map((_, idx) => `${messageId}-code-${idx}`);
+      setAutoInsertedBlocks((prev) => {
+        const next = new Set(prev);
+        for (const id of blockIds) next.add(id);
+        return next;
+      });
 
       addProgressEvent("commit-start", "GitHub 커밋 중...", "pending");
       setIsCommitting(true);
@@ -328,7 +378,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               if (parsed.codeBlocks.length > insertedBlocks) {
                 for (let i = insertedBlocks; i < parsed.codeBlocks.length; i++) {
                   const block = parsed.codeBlocks[i];
-                  onInsertCode(block.code, block.targetFile);
+                  onInsertCode(block.code, block.targetFile, true);
                 }
                 insertedBlocks = parsed.codeBlocks.length;
               }
@@ -426,41 +476,75 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         {parsed.explanation && (
           <div className="whitespace-pre-wrap">{parsed.explanation}</div>
         )}
+        {/* Auto-insert summary badge */}
+        {parsed.codeBlocks.length > 0 && parsed.codeBlocks.every((_, idx) => autoInsertedBlocks.has(`${messageId}-code-${idx}`)) && (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#00B894] bg-[#00B894]/8 px-2.5 py-1.5 rounded-lg">
+            <Check size={11} />
+            <span>{parsed.codeBlocks.length}개 파일 자동 삽입 완료</span>
+          </div>
+        )}
         {parsed.codeBlocks.map((block, idx) => {
           const blockId = `${messageId}-code-${idx}`;
+          const isInserted = autoInsertedBlocks.has(blockId);
+          const isExpanded = expandedBlocks.has(blockId);
           return (
-            <div key={blockId} className="mt-2 rounded-lg overflow-hidden border border-[var(--r-border)]">
+            <div key={blockId} className={`mt-2 rounded-lg overflow-hidden border ${isInserted ? "border-[#00B894]/30" : "border-[var(--r-border)]"}`}>
               <div className="flex items-center justify-between px-2 py-1 bg-[#1E1E1E]">
                 <span className="text-[10px] text-[#858585] font-mono flex items-center gap-1">
                   <FileText size={9} />
                   {block.targetFile}
                 </span>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(block.code, blockId)}
-                    className="text-[#858585] hover:text-white p-0.5 transition-colors"
-                    aria-label="Copy code"
-                  >
-                    {copiedId === blockId ? (
-                      <Check size={11} className="text-[#00B894]" />
-                    ) : (
-                      <Copy size={11} />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onInsertCode(block.code, block.targetFile)}
-                    className="flex items-center gap-1 text-[10px] bg-[#0079F2] text-white px-1.5 py-0.5 rounded hover:bg-[#0066CC] transition-colors"
-                  >
-                    <Code2 size={9} />
-                    삽입
-                  </button>
+                <div className="flex items-center gap-1">
+                  {isInserted ? (
+                    <>
+                      <span className="flex items-center gap-1 text-[10px] text-[#00B894] px-1 py-0.5">
+                        <Check size={9} />
+                        삽입됨
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(block.code, blockId)}
+                        className="text-[#858585] hover:text-white p-0.5 transition-colors"
+                        aria-label="Copy code"
+                      >
+                        {copiedId === blockId ? <Check size={11} className="text-[#00B894]" /> : <Copy size={11} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleBlockExpand(blockId)}
+                        className="text-[#858585] hover:text-white p-0.5 transition-colors"
+                        aria-label={isExpanded ? "Collapse" : "Expand"}
+                      >
+                        {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(block.code, blockId)}
+                        className="text-[#858585] hover:text-white p-0.5 transition-colors"
+                        aria-label="Copy code"
+                      >
+                        {copiedId === blockId ? <Check size={11} className="text-[#00B894]" /> : <Copy size={11} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onInsertCode(block.code, block.targetFile)}
+                        className="flex items-center gap-1 text-[10px] bg-[#0079F2] text-white px-1.5 py-0.5 rounded hover:bg-[#0066CC] transition-colors"
+                      >
+                        <Code2 size={9} />
+                        삽입
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-              <pre className="px-2 py-2 bg-[#0d1117] text-[11px] text-[#e6edf3] overflow-x-auto max-h-[200px] overflow-y-auto leading-5">
-                {block.code}
-              </pre>
+              {(!isInserted || isExpanded) && (
+                <pre className="px-2 py-2 bg-[#0d1117] text-[11px] text-[#e6edf3] overflow-x-auto max-h-[200px] overflow-y-auto leading-5">
+                  {block.code}
+                </pre>
+              )}
             </div>
           );
         })}
@@ -527,6 +611,16 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           <span className="text-[10px] bg-[#00B894]/10 text-[#00B894] px-1.5 py-0.5 rounded-full ml-auto font-medium">
             Ready
           </span>
+        )}
+        {messages.length > 0 && !isStreaming && (
+          <button
+            type="button"
+            onClick={() => { setMessages([]); setSystemMessages([]); setProgressEvents([]); try { localStorage.removeItem(chatStorageKey); } catch {} }}
+            className="text-[var(--r-text-muted)] hover:text-[var(--r-text-secondary)] p-1 transition-colors"
+            title="대화 내역 삭제"
+          >
+            <Trash2 size={10} />
+          </button>
         )}
       </div>
 

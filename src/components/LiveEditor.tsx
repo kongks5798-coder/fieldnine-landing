@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Panel,
   Group,
@@ -41,9 +41,11 @@ import FileExplorer, { getFileInfo, type VFile, type ExplorerTab } from "./FileE
 import ConsolePanel, { type ConsoleLine, type ConsoleTab, type GitCommitEntry } from "./ConsolePanel";
 import PreviewPanel from "./PreviewPanel";
 import EditorTabs from "./EditorTabs";
-import CommandPalette from "./CommandPalette";
-import DiffPreview from "./DiffPreview";
-import CDNManager from "./CDNManager";
+import dynamic from "next/dynamic";
+
+const CommandPalette = dynamic(() => import("./CommandPalette"), { ssr: false });
+const DiffPreview = dynamic(() => import("./DiffPreview"), { ssr: false });
+const CDNManager = dynamic(() => import("./CDNManager"), { ssr: false });
 import { ToastContainer, useToast } from "./Toast";
 import { useProjectSave } from "@/hooks/useProjectSave";
 import { useAssets } from "@/hooks/useAssets";
@@ -52,6 +54,7 @@ import { deployProject } from "@/lib/deploy";
 import { createZip } from "@/lib/zipExport";
 import { useTheme } from "@/lib/useTheme";
 import { FileCog, FileText, Package } from "lucide-react";
+import { useUndoHistory } from "@/hooks/useUndoHistory";
 
 /* ===== Default Project Files ===== */
 const DEFAULT_FILES: Record<string, VFile> = {
@@ -397,45 +400,16 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [gitLoading, setGitLoading] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [cdnManagerOpen, setCdnManagerOpen] = useState(false);
+  const [inspectorMode, setInspectorMode] = useState(false);
+  const [splitView, setSplitView] = useState(false);
+  const [splitFile, setSplitFile] = useState("style.css");
+  const [aiFixMessage, setAIFixMessage] = useState<string | undefined>(undefined);
 
   /* ===== Diff Preview State ===== */
   const [diffPreview, setDiffPreview] = useState<{ fileName: string; oldCode: string; newCode: string } | null>(null);
 
-  /* ===== Undo History Stack (per file, max 30 snapshots) ===== */
-  const undoHistoryRef = useRef<Record<string, string[]>>({});
-  const undoIndexRef = useRef<Record<string, number>>({});
-
-  const pushUndoSnapshot = useCallback((fileName: string, content: string) => {
-    if (!undoHistoryRef.current[fileName]) {
-      undoHistoryRef.current[fileName] = [];
-      undoIndexRef.current[fileName] = -1;
-    }
-    const history = undoHistoryRef.current[fileName];
-    const idx = undoIndexRef.current[fileName];
-    // Discard any redo entries after current index
-    history.splice(idx + 1);
-    history.push(content);
-    if (history.length > 30) history.shift();
-    undoIndexRef.current[fileName] = history.length - 1;
-  }, []);
-
-  const undoFile = useCallback((fileName: string) => {
-    const history = undoHistoryRef.current[fileName];
-    if (!history) return null;
-    const idx = undoIndexRef.current[fileName];
-    if (idx <= 0) return null;
-    undoIndexRef.current[fileName] = idx - 1;
-    return history[idx - 1];
-  }, []);
-
-  const redoFile = useCallback((fileName: string) => {
-    const history = undoHistoryRef.current[fileName];
-    if (!history) return null;
-    const idx = undoIndexRef.current[fileName];
-    if (idx >= history.length - 1) return null;
-    undoIndexRef.current[fileName] = idx + 1;
-    return history[idx + 1];
-  }, []);
+  /* ===== Undo History (extracted hook) ===== */
+  const { pushUndoSnapshot, undoFile, redoFile } = useUndoHistory();
 
   /* ===== Toast ===== */
   const { toasts, addToast, dismissToast, updateToast } = useToast();
@@ -649,7 +623,22 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     return combined;
   }, [files]);
 
-  /* ===== Console messages from iframe ===== */
+  /* ===== Inspector-aware preview (injects element picker script) ===== */
+  const previewHTML = useMemo(() => {
+    if (!inspectorMode) return renderedHTML;
+    const inspectorScript = `<script>(function(){
+if(window.__f9Ins)return;window.__f9Ins=1;
+var ov=document.createElement('div');ov.style.cssText='position:fixed;pointer-events:none;z-index:99999;border:2px solid #0079F2;background:rgba(0,121,242,0.08);transition:all .1s;display:none;';
+document.body.appendChild(ov);
+var lb=document.createElement('div');lb.style.cssText='position:fixed;z-index:100000;pointer-events:none;background:#0079F2;color:#fff;font:10px/1 monospace;padding:2px 6px;border-radius:3px;display:none;';
+document.body.appendChild(lb);
+document.addEventListener('mousemove',function(e){var el=document.elementFromPoint(e.clientX,e.clientY);if(!el||el===ov||el===lb)return;var r=el.getBoundingClientRect();ov.style.display='block';ov.style.left=r.left+'px';ov.style.top=r.top+'px';ov.style.width=r.width+'px';ov.style.height=r.height+'px';lb.style.display='block';lb.style.left=r.left+'px';lb.style.top=Math.max(0,r.top-18)+'px';lb.textContent=el.tagName.toLowerCase()+(el.id?'#'+el.id:'')+(el.className?'.'+String(el.className).trim().split(/\\s+/).join('.'):'');});
+document.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var el=e.target;window.parent.postMessage({source:'f9-inspector',tag:el.tagName.toLowerCase(),id:el.id||'',classes:String(el.className||''),text:(el.textContent||'').slice(0,80)},'*');},true);
+})();</script>`;
+    return renderedHTML.replace("</body>", inspectorScript + "</body>");
+  }, [renderedHTML, inspectorMode]);
+
+  /* ===== Console + Inspector messages from iframe ===== */
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.source === "fn-preview") {
@@ -661,10 +650,31 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           { type: e.data.type, text: e.data.text, time: now },
         ]);
       }
+      // Inspector element click → navigate to code
+      if (e.data?.source === "f9-inspector") {
+        const { tag, id, classes, text } = e.data;
+        // Search for the element in HTML files
+        const htmlContent = files["index.html"]?.content ?? "";
+        const searchTerms = [
+          id ? `id="${id}"` : null,
+          classes ? `class="${classes}"` : null,
+          text ? text.slice(0, 30) : null,
+          `<${tag}`,
+        ].filter(Boolean) as string[];
+        for (const term of searchTerms) {
+          const idx = htmlContent.indexOf(term);
+          if (idx !== -1) {
+            setActiveFile("index.html");
+            if (!openTabs.includes("index.html")) setOpenTabs((prev) => [...prev, "index.html"]);
+            break;
+          }
+        }
+        setInspectorMode(false);
+      }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [files, openTabs]);
 
   /* ===== CSS Hot Inject via postMessage ===== */
   const hotInjectCSS = useCallback((css: string) => {
@@ -794,9 +804,14 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   // Pending diff insertion (stored for accept/reject)
   const pendingInsertRef = useRef<{ code: string; targetFile: string } | null>(null);
 
-  const handleInsertCode = useCallback((code: string, targetFile: string) => {
+  const handleInsertCode = useCallback((code: string, targetFile: string, auto?: boolean) => {
+    // Auto mode (AI streaming/auto-insert): always apply directly, skip diff preview
+    if (auto) {
+      applyCodeDirect(code, targetFile);
+      return;
+    }
     const existing = files[targetFile];
-    // Show diff if file exists and has meaningful content
+    // Manual insert: show diff if file exists and has meaningful content
     if (existing && existing.content.trim().length > 10 && existing.content !== code) {
       pendingInsertRef.current = { code, targetFile };
       setDiffPreview({ fileName: targetFile, oldCode: existing.content, newCode: code });
@@ -816,6 +831,35 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const handleDiffReject = useCallback(() => {
     pendingInsertRef.current = null;
     setDiffPreview(null);
+  }, []);
+
+  /* ===== Split Editor Code Change ===== */
+  const handleSplitCodeChange = useCallback(
+    (value: string | undefined) => {
+      const newContent = value ?? "";
+      pushUndoSnapshot(splitFile, newContent);
+      setFiles((prev) => {
+        if (!prev[splitFile]) return prev;
+        const next = { ...prev, [splitFile]: { ...prev[splitFile], content: newContent } };
+        triggerAutoSave(next);
+        triggerAutoCommit(next);
+        return next;
+      });
+      if (splitFile === "style.css" || splitFile.endsWith(".css")) {
+        if (hotInjectCSS(newContent)) return;
+      }
+      if (autoRunRef.current) clearTimeout(autoRunRef.current);
+      autoRunRef.current = setTimeout(() => {
+        setConsoleLines([]);
+        setRenderedHTML(buildPreview());
+      }, 300);
+    },
+    [splitFile, buildPreview, triggerAutoSave, triggerAutoCommit, hotInjectCSS, pushUndoSnapshot]
+  );
+
+  /* ===== AI Fix Handler ===== */
+  const handleAIFix = useCallback((errorText: string) => {
+    setAIFixMessage(`다음 콘솔 에러를 분석하고 수정 코드를 생성해줘:\n\n\`\`\`\n${errorText}\n\`\`\``);
   }, []);
 
   /* ===== CDN Tag Insertion ===== */
@@ -984,6 +1028,24 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       if (e.key === "i" && !e.shiftKey) {
         e.preventDefault();
         setCdnManagerOpen((v) => !v);
+        return;
+      }
+      if (e.key === "C" && e.shiftKey) {
+        // Ctrl+Shift+C = Inspector
+        e.preventDefault();
+        setInspectorMode((v) => !v);
+        return;
+      }
+      if (e.key === "\\") {
+        // Ctrl+\ = Split editor
+        e.preventDefault();
+        setSplitView((v) => {
+          if (!v) {
+            const other = openTabs.find((t) => t !== activeFile);
+            if (other) setSplitFile(other);
+          }
+          return !v;
+        });
         return;
       }
       if (e.key === "z" && e.shiftKey) {
@@ -1357,7 +1419,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 <div className="flex-1 min-h-0 bg-white">
                   <iframe
                     ref={iframeRef}
-                    srcDoc={renderedHTML}
+                    srcDoc={previewHTML}
                     title="Live Preview"
                     className="w-full h-full bg-white border-0"
                     sandbox="allow-scripts allow-modals"
@@ -1368,7 +1430,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
             {mobilePanel === "ai" && (
               <div className="flex-1 min-h-0">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} />
               </div>
             )}
           </div>
@@ -1390,7 +1452,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               id="ai-chat"
               onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
             >
-              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} />
+              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} />
             </Panel>
 
             <Separator className="splitter-handle-v" />
@@ -1404,17 +1466,44 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 className="h-full"
                 id="replit-v"
               >
-                {/* Editor */}
+                {/* Editor (supports split view) */}
                 <Panel defaultSize="70" minSize="30" id="editor">
-                  <EditorTabs
-                    files={files}
-                    activeFile={activeFile}
-                    openTabs={openTabs}
-                    editorTheme={editorTheme}
-                    onTabClick={handleTabClick}
-                    onTabClose={handleTabClose}
-                    onCodeChange={handleCodeChange}
-                  />
+                  {splitView ? (
+                    <div className="flex h-full">
+                      <div className="flex-1 min-w-0 border-r border-[#404040]">
+                        <EditorTabs
+                          files={files}
+                          activeFile={activeFile}
+                          openTabs={openTabs}
+                          editorTheme={editorTheme}
+                          onTabClick={handleTabClick}
+                          onTabClose={handleTabClose}
+                          onCodeChange={handleCodeChange}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <EditorTabs
+                          files={files}
+                          activeFile={splitFile}
+                          openTabs={openTabs}
+                          editorTheme={editorTheme}
+                          onTabClick={(f) => setSplitFile(f)}
+                          onTabClose={handleTabClose}
+                          onCodeChange={handleSplitCodeChange}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <EditorTabs
+                      files={files}
+                      activeFile={activeFile}
+                      openTabs={openTabs}
+                      editorTheme={editorTheme}
+                      onTabClick={handleTabClick}
+                      onTabClose={handleTabClose}
+                      onCodeChange={handleCodeChange}
+                    />
+                  )}
                 </Panel>
 
                 <Separator className="splitter-handle-h" />
@@ -1447,6 +1536,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                     restoringCommit={restoringCommit}
                     handleGitRestore={handleGitRestore}
                     onCollapse={() => consolePanelRef.current?.collapse()}
+                    onAIFix={handleAIFix}
                   />
                 </Panel>
               </Group>
@@ -1463,7 +1553,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               id="preview"
             >
               <PreviewPanel
-                renderedHTML={renderedHTML}
+                renderedHTML={previewHTML}
                 viewport={viewport}
                 iframeRef={iframeRef}
                 handleRun={handleRun}
@@ -1471,6 +1561,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                 vercelUrl={vercelUrl}
                 vercelCommitMsg={vercelCommitMsg}
                 deployedUrl={deployedUrl}
+                inspectorMode={inspectorMode}
+                onInspectorToggle={() => setInspectorMode((v) => !v)}
               />
             </Panel>
           </Group>

@@ -32,6 +32,7 @@ export default function EditorTabs({
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
   const autocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autocompleteAbortRef = useRef<AbortController | null>(null);
   const disposableRef = useRef<{ dispose: () => void } | null>(null);
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
@@ -80,6 +81,11 @@ export default function EditorTabs({
                   return;
                 }
 
+                // Cancel previous in-flight request
+                autocompleteAbortRef.current?.abort();
+                const controller = new AbortController();
+                autocompleteAbortRef.current = controller;
+
                 const res = await fetch("/api/autocomplete", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -89,7 +95,7 @@ export default function EditorTabs({
                     language: model.getLanguageId(),
                     fileName: activeFile,
                   }),
-                  signal: AbortSignal.timeout(3000),
+                  signal: controller.signal,
                 });
 
                 if (!res.ok || token.isCancellationRequested) {

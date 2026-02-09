@@ -33,15 +33,24 @@ const NAV_ITEMS = [
 ];
 
 /* ===== Prompt Templates ===== */
-const TEMPLATES = [
-  "Build a SaaS landing page with pricing table and FAQ",
-  "Create a todo app with local storage and dark mode",
-  "Make a personal portfolio with project cards and contact form",
-  "Build a weather dashboard with city search",
-  "Create a blog with markdown posts and sidebar navigation",
-  "Build a Pomodoro timer with sound notifications",
-  "Make an image gallery with lightbox and grid layout",
-  "Create a calculator app with history",
+interface ProjectTemplate {
+  name: string;
+  emoji: string;
+  description: string;
+  prompt: string;
+}
+
+const TEMPLATES: ProjectTemplate[] = [
+  { name: "Landing Page", emoji: "🚀", description: "히어로 + 가격표 + FAQ", prompt: "Build a modern SaaS landing page with hero section, pricing table, testimonials and FAQ" },
+  { name: "Todo App", emoji: "✅", description: "할 일 관리 + 로컬 저장", prompt: "Create a todo app with categories, local storage persistence, and dark mode toggle" },
+  { name: "Portfolio", emoji: "🎨", description: "프로젝트 카드 + 연락 폼", prompt: "Make a personal portfolio with animated project cards, skills section and contact form" },
+  { name: "Dashboard", emoji: "📊", description: "차트 + 통계 카드 + 테이블", prompt: "Build a modern analytics dashboard with Chart.js charts, KPI stat cards and data table" },
+  { name: "E-Commerce", emoji: "🛒", description: "상품 그리드 + 장바구니", prompt: "Create an e-commerce product listing page with shopping cart, filters and checkout" },
+  { name: "Blog", emoji: "📝", description: "마크다운 포스트 + 사이드바", prompt: "Create a blog with markdown rendering, sidebar navigation and post categories" },
+  { name: "Game", emoji: "🎮", description: "캔버스 게임 + 점수 추적", prompt: "Build a fun canvas-based snake game with score tracking, levels and animations" },
+  { name: "Chat UI", emoji: "💬", description: "채팅 버블 + 타이핑 표시", prompt: "Build a modern chat interface with message bubbles, typing indicator and emoji picker" },
+  { name: "Weather", emoji: "🌤", description: "도시 검색 + 날씨 시각화", prompt: "Build a weather dashboard with city search, forecast cards and animated weather icons" },
+  { name: "Pomodoro", emoji: "⏱", description: "타이머 + 알림 + 통계", prompt: "Build a Pomodoro timer with session tracking, sound notifications and daily statistics" },
 ];
 
 /* ===== Time formatting ===== */
@@ -309,16 +318,18 @@ export default function ReplitApp({ onStartProject, onOpenProject, refreshKey }:
               </div>
             </div>
 
-            {/* Quick Templates */}
-            <div className="flex flex-wrap gap-2 mt-4">
+            {/* Template Gallery */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4">
               {TEMPLATES.map((tpl) => (
                 <button
-                  key={tpl}
+                  key={tpl.name}
                   type="button"
-                  onClick={() => setPromptText(tpl)}
-                  className="px-3 py-1.5 bg-[var(--r-surface)] border border-[var(--r-border)] text-[12px] text-[var(--r-text-secondary)] rounded-full hover:text-[var(--r-text)] hover:border-[#C8C8C4] transition-colors"
+                  onClick={() => setPromptText(tpl.prompt)}
+                  className="flex flex-col items-start gap-1 p-3 bg-[var(--r-surface)] border border-[var(--r-border)] rounded-xl hover:border-[#0079F2]/40 hover:bg-[#0079F2]/5 transition-all text-left group"
                 >
-                  {tpl}
+                  <span className="text-lg">{tpl.emoji}</span>
+                  <span className="text-[12px] font-semibold text-[var(--r-text)] group-hover:text-[#0079F2] transition-colors">{tpl.name}</span>
+                  <span className="text-[10px] text-[var(--r-text-muted)] leading-tight">{tpl.description}</span>
                 </button>
               ))}
             </div>

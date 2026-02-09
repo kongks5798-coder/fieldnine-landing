@@ -43,6 +43,7 @@ interface ConsolePanelProps {
   restoringCommit: string | null;
   handleGitRestore: (sha: string) => void;
   onCollapse: () => void;
+  onAIFix?: (errorText: string) => void;
 }
 
 const consoleColorMap: Record<string, string> = {
@@ -67,6 +68,7 @@ export default function ConsolePanel({
   restoringCommit,
   handleGitRestore,
   onCollapse,
+  onAIFix,
 }: ConsolePanelProps) {
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
@@ -164,9 +166,18 @@ export default function ConsolePanel({
               consoleLines
                 .filter((l) => consoleFilter === "all" || l.type === consoleFilter)
                 .map((line, i) => (
-                  <div key={i} className={`flex gap-2 py-[2px] border-b border-[#333333] ${consoleColorMap[line.type]}`}>
+                  <div key={i} className={`flex items-start gap-2 py-[2px] border-b border-[#333333] ${consoleColorMap[line.type]}`}>
                     <span className="text-[#858585] shrink-0 select-none">{line.time}</span>
-                    <span className="break-all">{line.text}</span>
+                    <span className="break-all flex-1">{line.text}</span>
+                    {line.type === "error" && onAIFix && (
+                      <button
+                        type="button"
+                        onClick={() => onAIFix(line.text)}
+                        className="shrink-0 text-[10px] text-[#0079f2] bg-[#0079f2]/10 px-1.5 py-0.5 rounded hover:bg-[#0079f2]/20 transition-colors whitespace-nowrap"
+                      >
+                        AI Fix
+                      </button>
+                    )}
                   </div>
                 ))
             )}

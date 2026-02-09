@@ -8,6 +8,7 @@ import {
   CloudOff,
   RefreshCw,
   ExternalLink,
+  MousePointer,
 } from "lucide-react";
 
 type ViewportSize = "desktop" | "tablet" | "mobile";
@@ -21,6 +22,8 @@ interface PreviewPanelProps {
   vercelUrl: string | null;
   vercelCommitMsg: string | null;
   deployedUrl: string | null;
+  inspectorMode?: boolean;
+  onInspectorToggle?: () => void;
 }
 
 const viewportWidths: Record<ViewportSize, string> = {
@@ -36,6 +39,8 @@ export default function PreviewPanel({
   vercelUrl,
   vercelCommitMsg,
   deployedUrl,
+  inspectorMode,
+  onInspectorToggle,
 }: PreviewPanelProps) {
   const liveUrl = vercelUrl ?? deployedUrl;
 
@@ -69,6 +74,17 @@ export default function PreviewPanel({
           )}
         </div>
         <div className="flex items-center gap-0.5">
+          {onInspectorToggle && (
+            <button
+              type="button"
+              onClick={onInspectorToggle}
+              className={`p-1 rounded transition-colors ${inspectorMode ? "text-[#0079f2] bg-[#0079f2]/10" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"}`}
+              aria-label="Inspector"
+              title="Element Inspector (Ctrl+Shift+C)"
+            >
+              <MousePointer size={12} />
+            </button>
+          )}
           <button
             type="button"
             onClick={handleRun}
