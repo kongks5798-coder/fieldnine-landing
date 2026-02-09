@@ -1,7 +1,10 @@
-import { streamText, convertToModelMessages } from "ai";
+import { streamText, convertToModelMessages, type SystemModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { checkRateLimit } from "@/lib/rateLimit";
+
+/** Anthropic cache control marker — cached for 5 min, saves up to 90% cost */
+const ANTHROPIC_CACHE = { anthropic: { cacheControl: { type: "ephemeral" as const } } };
 
 const SYSTEM_PROMPT = `You are Field Nine AI — a senior full-stack developer inside a web-based IDE.
 The user builds websites with exactly three files: index.html, style.css, app.js.
@@ -115,6 +118,7 @@ export async function POST(req: Request) {
     const rawMessages = body?.messages;
     const requestedModel = body?.model as string | undefined; // e.g. "gpt-4o", "gpt-4o-mini", "claude-sonnet"
     const mode = (body?.mode as string) ?? "build"; // "build" | "plan" | "edit"
+    const fileContext = body?.fileContext as Record<string, string> | undefined;
 
     // Input validation
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
@@ -190,9 +194,46 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
 - Explain what changed and why in Korean (1-2 sentences per file).`;
     }
 
+    // Determine if using Anthropic (for prompt caching)
+    const isAnthropicModel = requestedModel === "claude-sonnet"
+      || (!requestedModel && provider === "anthropic");
+
+    // Build system messages with Anthropic prompt caching
+    // Breakpoint 1: System instructions (static per mode, cached ~5min)
+    // Breakpoint 2: File context (changes per project state, cached ~5min)
+    const systemMessages: SystemModelMessage[] = [];
+
+    if (fileContext && Object.keys(fileContext).length > 0) {
+      // Build file context string
+      const contextText = Object.entries(fileContext)
+        .map(([name, content]) => `--- ${name} ---\n${content}`)
+        .join("\n\n");
+
+      // Part 1: Instructions (cached)
+      systemMessages.push({
+        role: "system",
+        content: systemPrompt,
+        ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
+      });
+
+      // Part 2: File context (cached separately — changes less often than user messages)
+      systemMessages.push({
+        role: "system",
+        content: `[Current Project Files]\n${contextText}`,
+        ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
+      });
+    } else {
+      // No file context — just cache the system prompt
+      systemMessages.push({
+        role: "system",
+        content: systemPrompt,
+        ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
+      });
+    }
+
     const result = streamText({
       model,
-      system: systemPrompt,
+      system: systemMessages,
       messages,
       temperature: 0.7,
       maxOutputTokens: 4096,

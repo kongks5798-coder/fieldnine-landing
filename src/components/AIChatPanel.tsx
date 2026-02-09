@@ -299,14 +299,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         modePrefix = "[MODE: Edit] 변경이 필요한 파일만 출력하세요. 변경 없는 파일은 생략.\n\n";
       }
 
-      // Build context with current files
-      let contextPrefix = "";
-      if (currentFiles && Object.keys(currentFiles).length > 0) {
-        const snippets = Object.entries(currentFiles)
-          .map(([, f]) => `--- ${f.name} ---\n${f.content.slice(0, 2000)}`)
-          .join("\n\n");
-        contextPrefix = `[현재 프로젝트 코드]\n${snippets}\n\n[사용자 요청]\n`;
-      }
+      // Build file context map for server-side caching
+      // Files are sent separately (not inside user message) for prompt caching
+      const fileContext: Record<string, string> | undefined =
+        currentFiles && Object.keys(currentFiles).length > 0
+          ? Object.fromEntries(
+              Object.entries(currentFiles).map(([, f]) => [f.name, f.content.slice(0, 3000)])
+            )
+          : undefined;
 
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -330,15 +330,15 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         // Build conversation history for API (plain format)
         const apiMessages = [
           ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: "user" as const, content: modePrefix + contextPrefix + userText },
+          { role: "user" as const, content: modePrefix + userText },
         ];
 
-        console.log("[AIChatPanel] Fetching /api/chat, msgs:", apiMessages.length);
+        console.log("[AIChatPanel] Fetching /api/chat, msgs:", apiMessages.length, fileContext ? `(+${Object.keys(fileContext).length} cached files)` : "");
         const res = await fetch("/api/chat", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: apiMessages, model: selectedModel, mode: agentMode }),
+          body: JSON.stringify({ messages: apiMessages, model: selectedModel, mode: agentMode, fileContext }),
           signal: abortController.signal,
         });
 
