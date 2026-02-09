@@ -2,6 +2,7 @@ import { streamText, convertToModelMessages, type SystemModelMessage } from "ai"
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { indexProject, searchCode, isIndexed } from "@/lib/semanticIndex";
 
 /** Anthropic cache control marker — cached for 5 min, saves up to 90% cost */
 const ANTHROPIC_CACHE = { anthropic: { cacheControl: { type: "ephemeral" as const } } };
@@ -197,6 +198,42 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
 - Explain what changed and why in Korean (1-2 sentences per file).`;
     }
 
+    // ===== Semantic Vector Indexing =====
+    // Index files (incremental — fast if unchanged) and search for relevant chunks
+    let semanticContext = "";
+    const hasEmbeddingKey = !!process.env.OPENAI_API_KEY;
+
+    if (fileContext && Object.keys(fileContext).length > 0 && hasEmbeddingKey) {
+      try {
+        await indexProject(rateLimitKey, fileContext);
+      } catch (e) {
+        console.warn("[semantic] Indexing failed:", e instanceof Error ? e.message : e);
+      }
+    }
+
+    if (isIndexed(rateLimitKey) && hasEmbeddingKey) {
+      // Extract user's latest query text
+      const lastMsg = rawMessages[rawMessages.length - 1];
+      const userQuery = typeof lastMsg?.content === "string"
+        ? lastMsg.content
+        : Array.isArray(lastMsg?.parts)
+          ? lastMsg.parts.filter((p: Record<string, unknown>) => p.type === "text").map((p: Record<string, unknown>) => p.text).join(" ")
+          : "";
+
+      if (userQuery.length > 5) {
+        try {
+          const results = await searchCode(rateLimitKey, userQuery, 3, 0.3);
+          if (results.length > 0) {
+            semanticContext = results
+              .map((r) => `[${r.chunk.file}:${r.chunk.startLine}-${r.chunk.endLine}] (relevance: ${r.score.toFixed(2)})\n${r.chunk.content}`)
+              .join("\n\n");
+          }
+        } catch (e) {
+          console.warn("[semantic] Search failed:", e instanceof Error ? e.message : e);
+        }
+      }
+    }
+
     // Determine if using Anthropic (for prompt caching)
     const isAnthropicModel = requestedModel === "claude-sonnet"
       || (!requestedModel && provider === "anthropic");
@@ -225,6 +262,14 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
         content: `[Current Project Files]\n${contextText}`,
         ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
       });
+
+      // Part 3: Semantic search results (most relevant code chunks for the user's query)
+      if (semanticContext) {
+        systemMessages.push({
+          role: "system",
+          content: `[Semantic Search — Most Relevant Code Chunks]\nThe following code sections are most relevant to the user's current request. Reference these when generating your response:\n\n${semanticContext}`,
+        });
+      }
     } else {
       // No file context — just cache the system prompt
       systemMessages.push({
