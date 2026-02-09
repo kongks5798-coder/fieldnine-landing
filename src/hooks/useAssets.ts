@@ -4,6 +4,43 @@ import { useCallback, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 const BUCKET = "assets";
+const MAX_IMAGE_WIDTH = 1920;
+const MAX_IMAGE_SIZE = 500_000; // 500KB — compress above this
+
+/** Compress/resize image files using Canvas API */
+async function optimizeImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") return file;
+  if (file.size <= MAX_IMAGE_SIZE) return file;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > MAX_IMAGE_WIDTH) {
+        height = Math.round(height * (MAX_IMAGE_WIDTH / width));
+        width = MAX_IMAGE_WIDTH;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+          } else {
+            resolve(file); // Original was smaller, keep it
+          }
+        },
+        "image/webp",
+        0.82,
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 export interface AssetFile {
   name: string;
@@ -62,7 +99,9 @@ export function useAssets(projectSlug: string | null) {
       const results: AssetFile[] = [];
       const failedNames: string[] = [];
 
-      for (const file of files) {
+      for (let file of files) {
+        // Auto-optimize images (resize + WebP conversion)
+        file = await optimizeImage(file);
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const path = `${projectSlug}/${Date.now()}-${safeName}`;
 

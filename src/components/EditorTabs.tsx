@@ -1,10 +1,15 @@
 "use client";
 
-import Editor, { type OnMount } from "@monaco-editor/react";
+import Editor, { type OnMount, loader } from "@monaco-editor/react";
 import { X } from "lucide-react";
 import { getFileInfo } from "./FileExplorer";
 import type { VFile } from "./FileExplorer";
 import { useRef, useCallback } from "react";
+
+// Configure Monaco to only load needed languages (reduces CDN fetch)
+loader.config({
+  "vs/nls": { availableLanguages: { "*": "ko" } },
+});
 
 type EditorTheme = "vs-dark" | "light" | "hc-black";
 

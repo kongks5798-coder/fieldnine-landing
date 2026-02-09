@@ -1,10 +1,32 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  compress: true,
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
   turbopack: {
     root: process.cwd(),
   },
+  headers: async () => [
+    {
+      source: "/(.*)",
+      headers: [
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      ],
+    },
+    {
+      source: "/api/:path*",
+      headers: [
+        { key: "Cache-Control", value: "no-store, max-age=0" },
+      ],
+    },
+    {
+      source: "/_next/static/(.*)",
+      headers: [
+        { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+      ],
+    },
+  ],
 };
 
 export default nextConfig;
