@@ -102,5 +102,16 @@ export function createZip(entries: ZipEntry[]): Blob {
     0x00, 0x00,             // comment length
   ]);
 
-  return new Blob([...parts, ...centralDir, eocd], { type: "application/zip" });
+  // Concatenate all parts into a single ArrayBuffer for Blob compatibility
+  let totalLen = 0;
+  const allParts = [...parts, ...centralDir, eocd];
+  for (const p of allParts) totalLen += p.length;
+  const result = new Uint8Array(totalLen);
+  let pos = 0;
+  for (const p of allParts) {
+    result.set(p, pos);
+    pos += p.length;
+  }
+
+  return new Blob([result.buffer], { type: "application/zip" });
 }

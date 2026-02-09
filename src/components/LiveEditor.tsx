@@ -47,6 +47,7 @@ import {
   Upload,
   Copy,
   Link,
+  GitCommitHorizontal,
 } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
 import { useProjectSave } from "@/hooks/useProjectSave";
@@ -366,13 +367,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 type ViewportSize = "desktop" | "tablet" | "mobile";
 type EditorTheme = "vs-dark" | "light" | "hc-black";
-type ConsoleTab = "console" | "shell";
+type ConsoleTab = "console" | "shell" | "history";
 type ExplorerTab = "files" | "assets";
 
 interface ConsoleLine {
   type: "log" | "error" | "warn" | "info";
   text: string;
   time: string;
+}
+
+interface GitCommitEntry {
+  sha: string;
+  fullSha: string;
+  message: string;
+  author: string;
+  date: string;
+  url: string;
 }
 
 const FILE_ICON_MAP: Record<string, { icon: React.ElementType; color: string }> = {
@@ -437,6 +447,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "deployed">("idle");
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const [explorerTab, setExplorerTab] = useState<ExplorerTab>("files");
+  const [gitHistory, setGitHistory] = useState<GitCommitEntry[]>([]);
+  const [gitLoading, setGitLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
@@ -496,6 +508,20 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     },
     [handleShadowCommit],
   );
+
+  /* ===== Fetch Git History ===== */
+  const fetchGitHistory = useCallback(async () => {
+    setGitLoading(true);
+    try {
+      const res = await fetch("/api/git-history?per_page=30");
+      const data = await res.json();
+      setGitHistory(data.commits ?? []);
+    } catch {
+      setGitHistory([]);
+    } finally {
+      setGitLoading(false);
+    }
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -1726,6 +1752,16 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                           Shell
                           {consoleTab === "shell" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => { setConsoleTab("history"); fetchGitHistory(); }}
+                          className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
+                            consoleTab === "history" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
+                          }`}
+                        >
+                          History
+                          {consoleTab === "history" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
+                        </button>
                       </div>
                       <div className="ml-auto flex items-center gap-1 pr-2">
                         {consoleTab === "console" && consoleLines.length > 0 && (
@@ -1765,7 +1801,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                           ))
                         )}
                       </div>
-                    ) : (
+                    ) : consoleTab === "shell" ? (
                       <div className="flex-1 flex flex-col min-h-0">
                         <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
                           {shellHistory.map((line, i) => (
@@ -1787,6 +1823,42 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                             className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
                           />
                         </div>
+                      </div>
+                    ) : (
+                      /* ===== Git History Tab ===== */
+                      <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
+                        {gitLoading ? (
+                          <div className="flex items-center gap-2 py-3 text-[#858585]">
+                            <Loader2 size={12} className="animate-spin" /> Loading commits...
+                          </div>
+                        ) : gitHistory.length === 0 ? (
+                          <div className="text-[#858585] py-3 italic">No commits found</div>
+                        ) : (
+                          gitHistory.map((commit) => (
+                            <a
+                              key={commit.fullSha}
+                              href={commit.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-start gap-2 py-1.5 border-b border-[#333333] hover:bg-[#2d2d2d] rounded px-1 transition-colors group"
+                            >
+                              <GitCommitHorizontal size={12} className="text-[#0079f2] mt-0.5 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[#e1e8f0] truncate group-hover:text-[#60a5fa]">
+                                  {commit.message.split("\n")[0]}
+                                </div>
+                                <div className="text-[#858585] text-[10px] mt-0.5">
+                                  <span className="text-[#0079f2]">{commit.sha}</span>
+                                  {" · "}
+                                  {new Date(commit.date).toLocaleString("ko-KR", {
+                                    month: "short", day: "numeric",
+                                    hour: "2-digit", minute: "2-digit",
+                                  })}
+                                </div>
+                              </div>
+                            </a>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
