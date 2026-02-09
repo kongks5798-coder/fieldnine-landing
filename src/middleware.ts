@@ -22,7 +22,7 @@ export function isAuthenticated(req: NextRequest): boolean {
   return req.cookies.get(COOKIE_NAME)?.value === ACCESS_TOKEN;
 }
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   // 0. Fail-closed: if token not configured, block everything
   if (!ACCESS_TOKEN) {
     return addSecurityHeaders(
