@@ -142,8 +142,8 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
 
   return (
     <div className="flex h-screen bg-[#F9F9F7] text-[#1D2433]">
-      {/* ===== Left Sidebar (48px) ===== */}
-      <div className="w-12 bg-white flex flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
+      {/* ===== Left Sidebar (48px) — hidden on mobile ===== */}
+      <div className="hidden md:flex w-12 bg-white flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0079f2] to-[#00c2ff] flex items-center justify-center mb-6">
           <Sparkles size={14} className="text-white" />
         </div>
@@ -194,10 +194,10 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
       </div>
 
       {/* ===== Main Content ===== */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
         {activeNav === "home" && (
-          <div className="max-w-[720px] mx-auto px-6 pt-16 pb-12">
-            <h1 className="text-[28px] font-semibold text-[#1D2433] mb-8">
+          <div className="max-w-[720px] mx-auto px-4 sm:px-6 pt-8 sm:pt-16 pb-12">
+            <h1 className="text-[22px] sm:text-[28px] font-semibold text-[#1D2433] mb-6 sm:mb-8">
               Hi, what do you want to make?
             </h1>
 
@@ -318,25 +318,25 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
             </div>
 
             {/* Recent Projects */}
-            <div className="mt-12">
-              <div className="flex items-center justify-between mb-4">
+            <div className="mt-8 sm:mt-12">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <h2 className="text-[15px] font-semibold text-[#1D2433]">Recent Apps</h2>
                 <div className="flex items-center gap-2">
-                  <div className="relative">
+                  <div className="relative flex-1 sm:flex-none">
                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9DA5B0]" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search apps..."
-                      className="pl-8 pr-3 py-1.5 bg-white border border-[#E4E4E0] text-[12px] text-[#1D2433] placeholder-[#9DA5B0] rounded-xl outline-none focus:border-[#0079F2] transition-colors w-[180px]"
+                      className="pl-8 pr-3 py-1.5 bg-white border border-[#E4E4E0] text-[12px] text-[#1D2433] placeholder-[#9DA5B0] rounded-xl outline-none focus:border-[#0079F2] transition-colors w-full sm:w-[180px]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleNewBlank}
                     disabled={creating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-xl hover:bg-[#0066CC] disabled:opacity-50 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0079F2] text-white text-[12px] font-medium rounded-xl hover:bg-[#0066CC] disabled:opacity-50 transition-colors shrink-0"
                   >
                     <Plus size={13} />
                     New App
@@ -428,7 +428,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
         )}
 
         {activeNav === "apps" && (
-          <div className="max-w-[720px] mx-auto px-6 pt-16 pb-12">
+          <div className="max-w-[720px] mx-auto px-4 sm:px-6 pt-8 sm:pt-16 pb-12">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-[22px] font-semibold text-[#1D2433]">My Apps</h1>
               <button
@@ -476,7 +476,7 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
         )}
 
         {activeNav === "published" && (
-          <div className="max-w-[720px] mx-auto px-6 pt-16 pb-12">
+          <div className="max-w-[720px] mx-auto px-4 sm:px-6 pt-8 sm:pt-16 pb-12">
             <h1 className="text-[22px] font-semibold text-[#1D2433] mb-6">Published Apps</h1>
             {publishedProjects.length === 0 ? (
               <div className="text-center py-16">
@@ -518,6 +518,27 @@ export default function ReplitApp({ onStartProject, onOpenProject }: ReplitAppPr
             )}
           </div>
         )}
+      </div>
+
+      {/* ===== Mobile Bottom Navigation ===== */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E4E4E0] flex items-center justify-around py-2 z-50">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeNav === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveNav(item.id)}
+              className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+                isActive ? "text-[#0079F2]" : "text-[#5F6B7A]"
+              }`}
+            >
+              <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -95,8 +95,8 @@ const DEFAULT_FILES: Record<string, VFile> = {
       <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
       <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" onclick="handleStart()">시작하기</button>
-        <button class="btn btn-secondary" onclick="addCard()">카드 추가</button>
+        <button class="btn btn-primary" id="startBtn">시작하기</button>
+        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
       </div>
       <div class="counter-display">
         클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
@@ -306,64 +306,59 @@ body {
     name: "app.js",
     language: "javascript",
     content: `// === Field Nine App Logic ===
+document.addEventListener('DOMContentLoaded', () => {
+  let clickCount = 0;
+  let cardCount = 0;
 
-let clickCount = 0;
-let cardCount = 0;
+  const emojis = ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'];
+  const titles = ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'];
+  const descs = ['Field Nine으로 빠르게 구축했습니다.', 'AI가 코드를 최적화했습니다.', '전 세계에 배포 완료.'];
 
-const emojis = ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'];
-const titles = [
-  '새로운 프로젝트', 'AI 분석 완료', '배포 성공!',
-  '성능 최적화', '버그 수정됨', '팀 협업 시작',
-  '데이터 동기화', 'API 연결됨', '테스트 통과', '릴리즈 준비'
-];
-const descs = [
-  'Field Nine으로 빠르게 구축했습니다.',
-  'AI가 자동으로 코드를 최적화했습니다.',
-  '글로벌 CDN으로 전 세계에 배포 완료.',
-  '응답 속도가 3배 빨라졌습니다.',
-  '자동 탐지 시스템이 문제를 해결했습니다.',
-];
-
-function handleStart() {
-  clickCount++;
-  document.getElementById('count').textContent = clickCount;
-
-  const hue = (clickCount * 15) % 360;
-  document.body.style.background =
-    \`linear-gradient(135deg, hsl(\${hue}, 20%, 4%) 0%, hsl(\${hue + 30}, 15%, 8%) 100%)\`;
-}
-
-function addCard() {
-  cardCount++;
-  document.getElementById('cardCount').textContent = cardCount;
-
+  const countEl = document.getElementById('count');
+  const cardCountEl = document.getElementById('cardCount');
   const container = document.getElementById('cardContainer');
-  const card = document.createElement('div');
-  card.className = 'card';
+  const startBtn = document.getElementById('startBtn');
+  const addCardBtn = document.getElementById('addCardBtn');
 
-  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-  const title = titles[Math.floor(Math.random() * titles.length)];
-  const desc = descs[Math.floor(Math.random() * descs.length)];
-  const now = new Date().toLocaleTimeString('ko-KR');
+  function handleStart() {
+    clickCount++;
+    if (countEl) countEl.textContent = clickCount;
+    const hue = (clickCount * 15) % 360;
+    document.body.style.background =
+      \\\`linear-gradient(135deg, hsl(\\\${hue}, 20%, 4%) 0%, hsl(\\\${hue + 30}, 15%, 8%) 100%)\\\`;
+  }
 
-  card.innerHTML = \`
-    <div class="card-emoji">\${emoji}</div>
-    <h3>\${title}</h3>
-    <p>\${desc}</p>
-    <div class="card-time">\${now}에 생성됨</div>
-  \`;
+  function addCard() {
+    cardCount++;
+    if (cardCountEl) cardCountEl.textContent = cardCount;
+    if (!container) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const title = titles[Math.floor(Math.random() * titles.length)];
+    const desc = descs[Math.floor(Math.random() * descs.length)];
+    const now = new Date().toLocaleTimeString('ko-KR');
+    card.innerHTML = \\\`
+      <div class="card-emoji">\\\${emoji}</div>
+      <h3>\\\${title}</h3>
+      <p>\\\${desc}</p>
+      <div class="card-time">\\\${now}에 생성됨</div>
+    \\\`;
+    container.prepend(card);
+  }
 
-  container.prepend(card);
-}
+  if (startBtn) startBtn.addEventListener('click', handleStart);
+  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
 
-// 초기 카드 3개 생성
-for (let i = 0; i < 3; i++) {
-  setTimeout(() => addCard(), i * 200);
-}
+  // 초기 카드 3개 생성
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => addCard(), i * 200);
+  }
 
-console.log('🚀 Field Nine App loaded!');
-console.log('📦 Files: index.html, style.css, app.js');
-console.log('✅ Ready to dev!');`,
+  console.log('🚀 Field Nine App loaded!');
+  console.log('📦 Files: index.html, style.css, app.js');
+  console.log('✅ Ready to dev!');
+});`,
     icon: FileCog,
   },
 };
@@ -426,6 +421,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [showNewFileInput, setShowNewFileInput] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [showFileExplorer, setShowFileExplorer] = useState(true);
+  const [mobilePanel, setMobilePanel] = useState<"editor" | "preview" | "ai">("editor");
+  const [isMobile, setIsMobile] = useState(false);
   const [consoleTab, setConsoleTab] = useState<ConsoleTab>("console");
   const [shellInput, setShellInput] = useState("");
   const [shellHistory, setShellHistory] = useState<string[]>([
@@ -513,6 +510,18 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
   const [aiCollapsed, setAiCollapsed] = useState(false);
   const [consoleCollapsed, setConsoleCollapsed] = useState(false);
+
+  /* ===== Mobile detection ===== */
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(e.matches);
+      if (e.matches) setShowFileExplorer(false);
+    };
+    handler(mq);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   /* ===== Load saved project on mount ===== */
   useEffect(() => {
@@ -752,8 +761,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   }, [clearLocalStorage]);
 
   /* ===== File CRUD ===== */
+  const VALID_EXTENSIONS = /\.(html|htm|css|js|ts|json|md|txt|svg|xml)$/i;
   const createFile = useCallback((name: string) => {
-    if (!name || files[name]) return;
+    if (!name || files[name] || !VALID_EXTENSIONS.test(name)) return;
     const info = getFileInfo(name);
     setFiles((prev) => {
       const next = { ...prev, [name]: { name, language: info.language, content: `/* ${name} */\n`, icon: info.icon } };
@@ -941,8 +951,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
   return (
     <div className={`flex h-screen bg-[#F9F9F7] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
-      {/* ===== Left Sidebar (48px) — Replit-style ===== */}
-      <div className="w-12 bg-white flex flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
+      {/* ===== Left Sidebar (48px) — hidden on mobile ===== */}
+      <div className="hidden md:flex w-12 bg-white flex-col items-center py-3 border-r border-[#E4E4E0] shrink-0">
         <button
           type="button"
           onClick={onGoHome}
@@ -990,9 +1000,14 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         </div>
       </div>
 
-      {/* ===== File Explorer / Assets Sidebar ===== */}
+      {/* ===== Mobile File Explorer Backdrop ===== */}
+      {isMobile && showFileExplorer && (
+        <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setShowFileExplorer(false)} />
+      )}
+
+      {/* ===== File Explorer / Assets Sidebar (overlay on mobile) ===== */}
       {showFileExplorer && (
-        <div className="w-[220px] bg-[#F9F9F7] border-r border-[#E4E4E0] flex flex-col shrink-0">
+        <div className={`bg-[#F9F9F7] border-r border-[#E4E4E0] flex flex-col shrink-0 ${isMobile ? "fixed left-0 top-0 bottom-0 w-[260px] z-40 shadow-xl" : "w-[220px]"}`}>
           {/* Tab header: Files | Assets */}
           <div className="flex items-center border-b border-[#E4E4E0] shrink-0">
             <button
@@ -1061,7 +1076,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
                       type="text"
                       value={newFileName}
                       onChange={(e) => setNewFileName(e.target.value)}
-                      placeholder="filename.ext"
+                      placeholder="name.html / .css / .js"
                       className="w-full bg-white text-[#1D2433] text-[11px] px-2 py-1.5 rounded-md border border-[#0079f2] outline-none font-mono"
                       autoFocus
                       onBlur={() => { setShowNewFileInput(false); setNewFileName(""); }}
@@ -1211,8 +1226,18 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       {/* ===== Main IDE Area ===== */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* ===== Top Header Bar ===== */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-white border-b border-[#E4E4E0] shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 bg-white border-b border-[#E4E4E0] shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Mobile: Home button (replaces sidebar) */}
+            <button
+              type="button"
+              onClick={onGoHome}
+              className="md:hidden p-1.5 rounded-md hover:bg-[#F0F0ED] transition-colors"
+              aria-label="Home"
+            >
+              <Home size={14} className="text-[#0079f2]" />
+            </button>
+
             {!showFileExplorer && (
               <button
                 type="button"
@@ -1432,284 +1457,417 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           </div>
         )}
 
-        {/* ===== 3-Panel Layout ===== */}
-        <Group
-          orientation="horizontal"
-          defaultLayout={horizontalLayout.defaultLayout}
-          onLayoutChanged={horizontalLayout.onLayoutChanged}
-          className="flex-1 min-h-0"
-          id="replit-h"
-        >
-          {/* --- AI Chat Panel --- */}
-          <Panel
-            panelRef={aiPanelRef}
-            defaultSize="22"
-            minSize="15"
-            collapsible
-            id="ai-chat"
-            onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
-          >
-            <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} />
-          </Panel>
-
-          <Separator className="splitter-handle-v" />
-
-          {/* --- Editor + Console --- */}
-          <Panel defaultSize="43" minSize="25" id="editor-console">
-            <Group
-              orientation="vertical"
-              defaultLayout={verticalLayout.defaultLayout}
-              onLayoutChanged={verticalLayout.onLayoutChanged}
-              className="h-full"
-              id="replit-v"
-            >
-              {/* Editor */}
-              <Panel defaultSize="70" minSize="30" id="editor">
-                <div className="flex flex-col h-full bg-[#1e1e1e]">
-                  {/* Tab Bar — stays dark (Monaco editor tabs) */}
-                  <div className="flex items-center bg-[#252526] pl-1 overflow-x-auto shrink-0 border-b border-[#404040]">
-                    {openTabs.map((tab) => {
-                      const file = files[tab];
-                      if (!file) return null;
-                      const info = getFileInfo(tab);
-                      const Icon = info.icon;
-                      const isActive = activeFile === tab;
-                      return (
-                        <div
-                          key={tab}
-                          onClick={() => handleTabClick(tab)}
-                          className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] cursor-pointer shrink-0 transition-all rounded-t-lg mt-1 mx-0.5 ${
-                            isActive
-                              ? "bg-[#1e1e1e] text-[#e1e8f0]"
-                              : "text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d]"
-                          }`}
-                        >
-                          <Icon size={13} className={info.color} />
-                          <span className="font-mono">{tab}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => handleTabClose(tab, e)}
-                            className={`ml-1 rounded p-0.5 transition-all ${
-                              isActive
-                                ? "text-[#858585] hover:text-[#e1e8f0] hover:bg-[#404040]"
-                                : "opacity-0 group-hover:opacity-100 hover:bg-[#404040]"
-                            }`}
-                            aria-label={`Close ${tab}`}
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Monaco Editor */}
-                  <div className="flex-1 min-h-0">
-                    <Editor
-                      height="100%"
-                      language={files[activeFile]?.language ?? "html"}
-                      value={files[activeFile]?.content ?? ""}
-                      onChange={handleCodeChange}
-                      theme={editorTheme}
-                      options={{
-                        fontSize: 13,
-                        lineHeight: 22,
-                        minimap: { enabled: false },
-                        scrollBeyondLastLine: false,
-                        padding: { top: 12 },
-                        fontFamily: "var(--font-geist-mono), 'Fira Code', 'Cascadia Code', monospace",
-                        fontLigatures: true,
-                        wordWrap: "on",
-                        tabSize: 2,
-                        automaticLayout: true,
-                        bracketPairColorization: { enabled: true },
-                        smoothScrolling: true,
-                        cursorBlinking: "smooth",
-                        cursorSmoothCaretAnimation: "on",
-                        renderLineHighlight: "line",
-                        lineNumbers: "on",
-                        glyphMargin: false,
-                        folding: true,
-                        links: true,
-                        contextmenu: true,
-                        suggest: { showMethods: true, showFunctions: true, showVariables: true, showWords: true },
-                      }}
-                    />
-                  </div>
-                </div>
-              </Panel>
-
-              <Separator className="splitter-handle-h" />
-
-              {/* Console/Shell Panel — stays dark (terminal) */}
-              <Panel
-                panelRef={consolePanelRef}
-                defaultSize="30"
-                minSize="10"
-                collapsible
-                collapsedSize="0"
-                id="console"
-                onResize={(size) => setConsoleCollapsed(size.asPercentage < 1)}
+        {/* ===== Mobile Panel Switcher ===== */}
+        {isMobile && (
+          <div className="flex items-center bg-white border-b border-[#E4E4E0] shrink-0 md:hidden">
+            {([
+              ["editor", FileCode2, "Code"],
+              ["preview", Monitor, "Preview"],
+              ["ai", Sparkles, "AI"],
+            ] as [typeof mobilePanel, typeof FileCode2, string][]).map(([id, Icon, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setMobilePanel(id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium transition-colors relative ${
+                  mobilePanel === id ? "text-[#0079f2]" : "text-[#5F6B7A]"
+                }`}
               >
-                <div className="h-full bg-[#1e1e1e] flex flex-col">
-                  <div className="flex items-center border-b border-[#404040] shrink-0">
-                    <div className="flex">
-                      <button
-                        type="button"
-                        onClick={() => setConsoleTab("console")}
-                        className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                          consoleTab === "console" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
+                <Icon size={14} />
+                {label}
+                {mobilePanel === id && <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#0079f2] rounded-full" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ===== Mobile: Single Panel View ===== */}
+        {isMobile ? (
+          <div className="flex-1 min-h-0 flex flex-col">
+            {/* Mobile Editor */}
+            {mobilePanel === "editor" && (
+              <div className="flex flex-col h-full bg-[#1e1e1e]">
+                <div className="flex items-center bg-[#252526] pl-1 overflow-x-auto shrink-0 border-b border-[#404040]">
+                  {openTabs.map((tab) => {
+                    const file = files[tab];
+                    if (!file) return null;
+                    const info = getFileInfo(tab);
+                    const Icon = info.icon;
+                    const isActive = activeFile === tab;
+                    return (
+                      <div
+                        key={tab}
+                        onClick={() => handleTabClick(tab)}
+                        className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] cursor-pointer shrink-0 transition-all rounded-t-lg mt-1 mx-0.5 ${
+                          isActive ? "bg-[#1e1e1e] text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d]"
                         }`}
                       >
-                        Console
-                        {consoleTab === "console" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConsoleTab("shell")}
-                        className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
-                          consoleTab === "shell" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
-                        }`}
-                      >
-                        Shell
-                        {consoleTab === "shell" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
-                      </button>
-                    </div>
-                    <div className="ml-auto flex items-center gap-1 pr-2">
-                      {consoleTab === "console" && consoleLines.length > 0 && (
-                        <span className="text-[10px] bg-[#0079f2]/20 text-[#0079f2] px-1.5 py-0.5 rounded-full font-mono">
-                          {consoleLines.length}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => consoleTab === "console" ? setConsoleLines([]) : setShellHistory([])}
-                        className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
-                        aria-label="Clear"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => consolePanelRef.current?.collapse()}
-                        className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
-                        aria-label="Close"
-                      >
-                        <X size={11} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {consoleTab === "console" ? (
-                    <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
-                      {consoleLines.length === 0 ? (
-                        <div className="text-[#858585] py-3 italic">No console output yet...</div>
-                      ) : (
-                        consoleLines.map((line, i) => (
-                          <div key={i} className={`flex gap-2 py-[2px] border-b border-[#333333] ${consoleColorMap[line.type]}`}>
-                            <span className="text-[#858585] shrink-0 select-none">{line.time}</span>
-                            <span className="break-all">{line.text}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex flex-col min-h-0">
-                      <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
-                        {shellHistory.map((line, i) => (
-                          <div key={i} className={`py-[1px] ${line.startsWith("$") ? "text-[#00b894]" : "text-[#d4d4d4]"}`}>
-                            {line}
-                          </div>
-                        ))}
+                        <Icon size={13} className={info.color} />
+                        <span className="font-mono">{tab}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleTabClose(tab, e)}
+                          className={`ml-1 rounded p-0.5 transition-all ${
+                            isActive ? "text-[#858585] hover:text-[#e1e8f0] hover:bg-[#404040]" : "opacity-0 group-hover:opacity-100 hover:bg-[#404040]"
+                          }`}
+                          aria-label={`Close ${tab}`}
+                        >
+                          <X size={10} />
+                        </button>
                       </div>
-                      <div className="flex items-center px-3 py-1.5 border-t border-[#404040] shrink-0">
-                        <span className="text-[#00b894] text-[12px] font-mono mr-2">$</span>
-                        <input
-                          type="text"
-                          value={shellInput}
-                          onChange={(e) => setShellInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleShellSubmit(shellInput);
-                          }}
-                          placeholder="Type a command..."
-                          className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              </Panel>
-            </Group>
-          </Panel>
-
-          <Separator className="splitter-handle-v" />
-
-          {/* --- Preview Panel --- */}
-          <Panel
-            panelRef={previewPanelRef}
-            defaultSize="35"
-            minSize="15"
-            collapsible
-            id="preview"
-          >
-            <div className="flex flex-col h-full bg-[#F9F9F7]">
-              {/* Webview header */}
-              <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
-                <span className="text-[12px] font-medium text-[#5F6B7A]">Webview</span>
-                <div className="flex-1 flex items-center gap-1.5 bg-white rounded-xl px-3 py-1 mx-2 border border-[#E4E4E0]">
-                  {vercelState === "building" ? (
-                    <>
-                      <Loader2 size={10} className="text-[#f59e0b] animate-spin" />
-                      <span className="text-[11px] text-[#f59e0b] font-mono truncate">
-                        Building... {vercelCommitMsg ? `(${vercelCommitMsg})` : ""}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock size={10} className={vercelState === "ready" ? "text-[#00b894]" : "text-[#9DA5B0]"} />
-                      <span className="text-[11px] text-[#5F6B7A] font-mono truncate">
-                        {vercelUrl ?? deployedUrl ?? `https://${projectSlug ?? "preview"}.fieldnine.app`}
-                      </span>
-                    </>
-                  )}
+                <div className="flex-1 min-h-0">
+                  <Editor
+                    height="100%"
+                    language={files[activeFile]?.language ?? "html"}
+                    value={files[activeFile]?.content ?? ""}
+                    onChange={handleCodeChange}
+                    theme={editorTheme}
+                    options={{
+                      fontSize: 13,
+                      lineHeight: 22,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      padding: { top: 8 },
+                      fontFamily: "var(--font-geist-mono), 'Fira Code', 'Cascadia Code', monospace",
+                      wordWrap: "on",
+                      tabSize: 2,
+                      automaticLayout: true,
+                      lineNumbers: "on",
+                      glyphMargin: false,
+                      folding: false,
+                    }}
+                  />
                 </div>
-                <div className="flex items-center gap-0.5">
-                  <button
-                    type="button"
-                    onClick={handleRun}
-                    className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
-                    aria-label="Refresh"
-                  >
-                    <RefreshCw size={12} />
+              </div>
+            )}
+
+            {/* Mobile Preview */}
+            {mobilePanel === "preview" && (
+              <div className="flex flex-col h-full bg-[#F9F9F7]">
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
+                  <button type="button" onClick={handleRun} className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors" aria-label="Refresh">
+                    <RefreshCw size={14} />
                   </button>
                   {(vercelUrl || deployedUrl) && (
-                    <a
-                      href={vercelUrl ?? deployedUrl ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
-                      aria-label="Open deployed site"
-                    >
-                      <ExternalLink size={12} />
+                    <a href={vercelUrl ?? deployedUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#00b894] truncate flex items-center gap-1">
+                      <Globe size={11} /> {vercelUrl ?? deployedUrl}
                     </a>
                   )}
                 </div>
+                <div className="flex-1 min-h-0 bg-white">
+                  <iframe
+                    ref={iframeRef}
+                    srcDoc={renderedHTML}
+                    title="Live Preview"
+                    className="w-full h-full bg-white border-0"
+                    sandbox="allow-scripts allow-modals"
+                  />
+                </div>
               </div>
+            )}
 
-              {/* iframe */}
-              <div className="flex-1 min-h-0 flex justify-center bg-white overflow-auto">
-                <iframe
-                  ref={iframeRef}
-                  srcDoc={renderedHTML}
-                  title="Live Preview"
-                  className="bg-white border-0 h-full transition-all duration-300"
-                  style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
-                  sandbox="allow-scripts allow-modals"
-                />
+            {/* Mobile AI Chat */}
+            {mobilePanel === "ai" && (
+              <div className="flex-1 min-h-0">
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} />
               </div>
-            </div>
-          </Panel>
-        </Group>
+            )}
+          </div>
+        ) : (
+          /* ===== Desktop: 3-Panel Resizable Layout ===== */
+          <Group
+            orientation="horizontal"
+            defaultLayout={horizontalLayout.defaultLayout}
+            onLayoutChanged={horizontalLayout.onLayoutChanged}
+            className="flex-1 min-h-0"
+            id="replit-h"
+          >
+            {/* --- AI Chat Panel --- */}
+            <Panel
+              panelRef={aiPanelRef}
+              defaultSize="22"
+              minSize="15"
+              collapsible
+              id="ai-chat"
+              onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
+            >
+              <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} />
+            </Panel>
+
+            <Separator className="splitter-handle-v" />
+
+            {/* --- Editor + Console --- */}
+            <Panel defaultSize="43" minSize="25" id="editor-console">
+              <Group
+                orientation="vertical"
+                defaultLayout={verticalLayout.defaultLayout}
+                onLayoutChanged={verticalLayout.onLayoutChanged}
+                className="h-full"
+                id="replit-v"
+              >
+                {/* Editor */}
+                <Panel defaultSize="70" minSize="30" id="editor">
+                  <div className="flex flex-col h-full bg-[#1e1e1e]">
+                    {/* Tab Bar — stays dark (Monaco editor tabs) */}
+                    <div className="flex items-center bg-[#252526] pl-1 overflow-x-auto shrink-0 border-b border-[#404040]">
+                      {openTabs.map((tab) => {
+                        const file = files[tab];
+                        if (!file) return null;
+                        const info = getFileInfo(tab);
+                        const Icon = info.icon;
+                        const isActive = activeFile === tab;
+                        return (
+                          <div
+                            key={tab}
+                            onClick={() => handleTabClick(tab)}
+                            className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] cursor-pointer shrink-0 transition-all rounded-t-lg mt-1 mx-0.5 ${
+                              isActive
+                                ? "bg-[#1e1e1e] text-[#e1e8f0]"
+                                : "text-[#858585] hover:text-[#cccccc] hover:bg-[#2d2d2d]"
+                            }`}
+                          >
+                            <Icon size={13} className={info.color} />
+                            <span className="font-mono">{tab}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleTabClose(tab, e)}
+                              className={`ml-1 rounded p-0.5 transition-all ${
+                                isActive
+                                  ? "text-[#858585] hover:text-[#e1e8f0] hover:bg-[#404040]"
+                                  : "opacity-0 group-hover:opacity-100 hover:bg-[#404040]"
+                              }`}
+                              aria-label={`Close ${tab}`}
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Monaco Editor */}
+                    <div className="flex-1 min-h-0">
+                      <Editor
+                        height="100%"
+                        language={files[activeFile]?.language ?? "html"}
+                        value={files[activeFile]?.content ?? ""}
+                        onChange={handleCodeChange}
+                        theme={editorTheme}
+                        options={{
+                          fontSize: 13,
+                          lineHeight: 22,
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          padding: { top: 12 },
+                          fontFamily: "var(--font-geist-mono), 'Fira Code', 'Cascadia Code', monospace",
+                          fontLigatures: true,
+                          wordWrap: "on",
+                          tabSize: 2,
+                          automaticLayout: true,
+                          bracketPairColorization: { enabled: true },
+                          smoothScrolling: true,
+                          cursorBlinking: "smooth",
+                          cursorSmoothCaretAnimation: "on",
+                          renderLineHighlight: "line",
+                          lineNumbers: "on",
+                          glyphMargin: false,
+                          folding: true,
+                          links: true,
+                          contextmenu: true,
+                          suggest: { showMethods: true, showFunctions: true, showVariables: true, showWords: true },
+                        }}
+                      />
+                    </div>
+                  </div>
+                </Panel>
+
+                <Separator className="splitter-handle-h" />
+
+                {/* Console/Shell Panel — stays dark (terminal) */}
+                <Panel
+                  panelRef={consolePanelRef}
+                  defaultSize="30"
+                  minSize="10"
+                  collapsible
+                  collapsedSize="0"
+                  id="console"
+                  onResize={(size) => setConsoleCollapsed(size.asPercentage < 1)}
+                >
+                  <div className="h-full bg-[#1e1e1e] flex flex-col">
+                    <div className="flex items-center border-b border-[#404040] shrink-0">
+                      <div className="flex">
+                        <button
+                          type="button"
+                          onClick={() => setConsoleTab("console")}
+                          className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
+                            consoleTab === "console" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
+                          }`}
+                        >
+                          Console
+                          {consoleTab === "console" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConsoleTab("shell")}
+                          className={`px-4 py-1.5 text-[12px] font-medium transition-colors relative ${
+                            consoleTab === "shell" ? "text-[#e1e8f0]" : "text-[#858585] hover:text-[#cccccc]"
+                          }`}
+                        >
+                          Shell
+                          {consoleTab === "shell" && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0079f2]" />}
+                        </button>
+                      </div>
+                      <div className="ml-auto flex items-center gap-1 pr-2">
+                        {consoleTab === "console" && consoleLines.length > 0 && (
+                          <span className="text-[10px] bg-[#0079f2]/20 text-[#0079f2] px-1.5 py-0.5 rounded-full font-mono">
+                            {consoleLines.length}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => consoleTab === "console" ? setConsoleLines([]) : setShellHistory([])}
+                          className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
+                          aria-label="Clear"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => consolePanelRef.current?.collapse()}
+                          className="text-[#858585] hover:text-[#cccccc] p-0.5 rounded transition-colors"
+                          aria-label="Close"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {consoleTab === "console" ? (
+                      <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
+                        {consoleLines.length === 0 ? (
+                          <div className="text-[#858585] py-3 italic">No console output yet...</div>
+                        ) : (
+                          consoleLines.map((line, i) => (
+                            <div key={i} className={`flex gap-2 py-[2px] border-b border-[#333333] ${consoleColorMap[line.type]}`}>
+                              <span className="text-[#858585] shrink-0 select-none">{line.time}</span>
+                              <span className="break-all">{line.text}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col min-h-0">
+                        <div className="flex-1 overflow-y-auto px-3 py-1 font-mono text-[12px] min-h-0">
+                          {shellHistory.map((line, i) => (
+                            <div key={i} className={`py-[1px] ${line.startsWith("$") ? "text-[#00b894]" : "text-[#d4d4d4]"}`}>
+                              {line}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center px-3 py-1.5 border-t border-[#404040] shrink-0">
+                          <span className="text-[#00b894] text-[12px] font-mono mr-2">$</span>
+                          <input
+                            type="text"
+                            value={shellInput}
+                            onChange={(e) => setShellInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleShellSubmit(shellInput);
+                            }}
+                            placeholder="Type a command..."
+                            className="flex-1 bg-transparent text-[12px] text-[#e1e8f0] placeholder-[#858585] outline-none font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Panel>
+              </Group>
+            </Panel>
+
+            <Separator className="splitter-handle-v" />
+
+            {/* --- Preview Panel --- */}
+            <Panel
+              panelRef={previewPanelRef}
+              defaultSize="35"
+              minSize="15"
+              collapsible
+              id="preview"
+            >
+              <div className="flex flex-col h-full bg-[#F9F9F7]">
+                {/* Webview header */}
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#E4E4E0] shrink-0">
+                  <span className="text-[12px] font-medium text-[#5F6B7A]">Webview</span>
+                  {(() => {
+                    const liveUrl = vercelUrl ?? deployedUrl;
+                    return (
+                      <div
+                        className={`flex-1 flex items-center gap-1.5 bg-white rounded-xl px-3 py-1 mx-2 border border-[#E4E4E0] ${liveUrl ? "cursor-pointer hover:border-[#0079f2] transition-colors" : ""}`}
+                        onClick={() => { if (liveUrl) window.open(liveUrl, "_blank"); }}
+                        title={liveUrl ? `${liveUrl} (클릭하여 새 탭에서 열기)` : "로컬 프리뷰"}
+                      >
+                        {vercelState === "building" ? (
+                          <>
+                            <Loader2 size={10} className="text-[#f59e0b] animate-spin" />
+                            <span className="text-[11px] text-[#f59e0b] font-mono truncate">
+                              Building... {vercelCommitMsg ? `(${vercelCommitMsg})` : ""}
+                            </span>
+                          </>
+                        ) : liveUrl ? (
+                          <>
+                            <Globe size={10} className="text-[#00b894] shrink-0" />
+                            <span className="text-[11px] text-[#1D2433] font-mono truncate">{liveUrl}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Monitor size={10} className="text-[#9DA5B0] shrink-0" />
+                            <span className="text-[11px] text-[#9DA5B0] font-mono truncate">Local Preview</span>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={handleRun}
+                      className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
+                      aria-label="Refresh"
+                    >
+                      <RefreshCw size={12} />
+                    </button>
+                    {(vercelUrl || deployedUrl) && (
+                      <a
+                        href={vercelUrl ?? deployedUrl ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-[#5F6B7A] hover:text-[#1D2433] rounded transition-colors"
+                        aria-label="Open deployed site"
+                      >
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* iframe */}
+                <div className="flex-1 min-h-0 flex justify-center bg-white overflow-auto">
+                  <iframe
+                    ref={iframeRef}
+                    srcDoc={renderedHTML}
+                    title="Live Preview"
+                    className="bg-white border-0 h-full transition-all duration-300"
+                    style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
+                    sandbox="allow-scripts allow-modals"
+                  />
+                </div>
+              </div>
+            </Panel>
+          </Group>
+        )}
       </div>
     </div>
   );
