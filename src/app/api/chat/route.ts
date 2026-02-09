@@ -1,6 +1,7 @@
 import { streamText, convertToModelMessages } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const SYSTEM_PROMPT = `You are Field Nine AI — a senior full-stack developer inside a web-based IDE.
 The user builds websites with exactly three files: index.html, style.css, app.js.
@@ -77,6 +78,22 @@ document.addEventListener('DOMContentLoaded', () => {
 - Code: English (variable names, comments, HTML content can mix Korean for UI text)`;
 
 export async function POST(req: Request) {
+  // Rate limiting (15 requests per minute per IP)
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = checkRateLimit(ip, { limit: 15, windowSec: 60 });
+  if (!rl.allowed) {
+    return new Response(
+      JSON.stringify({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(rl.retryAfterSec),
+        },
+      },
+    );
+  }
+
   // Auto-detect provider: explicit setting > available key > error
   const explicit = process.env.AI_PROVIDER;
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
