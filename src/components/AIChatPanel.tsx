@@ -154,6 +154,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   /* ===== Direct fetch streaming (no useChat) ===== */
   const sendToAI = useCallback(
     async (userText: string) => {
+      console.log("[AIChatPanel] sendToAI called:", userText.slice(0, 50));
       setError(null);
       setIsStreaming(true);
 
@@ -191,12 +192,15 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           { role: "user" as const, content: contextPrefix + userText },
         ];
 
+        console.log("[AIChatPanel] Fetching /api/chat ...");
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: apiMessages }),
           signal: abortController.signal,
         });
+
+        console.log("[AIChatPanel] Response:", res.status, res.statusText);
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
@@ -208,18 +212,22 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
+        let sseBuffer = ""; // Buffer for partial SSE lines across chunks
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
+          sseBuffer += decoder.decode(value, { stream: true });
 
-          // Parse SSE lines
-          for (const line of chunk.split("\n")) {
+          // Split into complete lines; keep last (potentially partial) line in buffer
+          const lines = sseBuffer.split("\n");
+          sseBuffer = lines.pop() || "";
+
+          for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed.startsWith("data:")) continue;
             const payload = trimmed.slice(5).trim();
-            if (payload === "[DONE]") break;
+            if (payload === "[DONE]") continue;
             try {
               const obj = JSON.parse(payload);
               if (obj.type === "text-delta" && typeof obj.delta === "string") {
@@ -231,27 +239,41 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                   ),
                 );
               }
-              if (obj.type === "error" && obj.errorText) {
-                throw new Error(obj.errorText);
+              if (obj.type === "error") {
+                throw new Error(obj.errorText || obj.message || "API stream error");
               }
             } catch (e) {
-              if (e instanceof Error && e.message.includes("API key")) throw e;
-              if (e instanceof Error && e.message.includes("Incorrect")) throw e;
-              // skip non-JSON lines
+              // Re-throw API errors; skip JSON parse errors (partial lines)
+              if (e instanceof SyntaxError) continue;
+              throw e;
             }
           }
         }
 
+        // Flush any remaining buffered data
+        if (sseBuffer.trim().startsWith("data:")) {
+          const payload = sseBuffer.trim().slice(5).trim();
+          if (payload && payload !== "[DONE]") {
+            try {
+              const obj = JSON.parse(payload);
+              if (obj.type === "text-delta" && typeof obj.delta === "string") {
+                fullText += obj.delta;
+              }
+            } catch { /* skip trailing partial */ }
+          }
+        }
+
+        console.log("[AIChatPanel] Stream done. Text length:", fullText.length);
         setIsStreaming(false);
 
         // Process completed response
         if (fullText) {
           await handleAIResponseComplete(assistantId, fullText);
         }
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-        const msg = (err as Error).message || "Unknown error";
-        console.error("[AIChatPanel] fetch error:", msg);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[AIChatPanel] Error:", msg);
         setError(msg);
         // Remove empty assistant message on error
         setMessages((prev) => prev.filter((m) => !(m.id === assistantId && !m.content)));
@@ -265,10 +287,15 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[AIChatPanel] Form submit. input:", inputValue, "streaming:", isStreaming, "committing:", isCommitting);
     if (!inputValue.trim() || isStreaming || isCommitting) return;
     const text = inputValue.trim();
     setInputValue("");
-    sendToAI(text);
+    sendToAI(text).catch((err: unknown) => {
+      console.error("[AIChatPanel] Unhandled error:", err);
+      setError(err instanceof Error ? err.message : String(err));
+      setIsStreaming(false);
+    });
   };
 
   const renderMessageContent = (content: string, messageId: string) => {
