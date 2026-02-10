@@ -28,11 +28,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // SSE stream
+    // SSE stream with safety timeout
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        let closed = false;
+        const safeClose = () => {
+          if (closed) return;
+          closed = true;
+          try {
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          } catch { /* already closed */ }
+        };
+
+        // 100s safety timeout
+        const timer = setTimeout(() => {
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Pipeline timeout (100s)" })}\n\n`));
+          } catch { /* ignore */ }
+          safeClose();
+        }, 100000);
+
         const emit = (event: AgentEvent) => {
+          if (closed) return;
           try {
             const data = JSON.stringify(event);
             controller.enqueue(encoder.encode(`data: ${data}\n\n`));
@@ -41,11 +60,15 @@ export async function POST(req: Request) {
           }
         };
 
-        await runAgentPipeline(userRequest, fileContext, emit);
+        try {
+          await runAgentPipeline(userRequest, fileContext, emit);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Pipeline error";
+          emit({ type: "error", message: msg });
+        }
 
-        // Close stream
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
+        clearTimeout(timer);
+        safeClose();
       },
     });
 

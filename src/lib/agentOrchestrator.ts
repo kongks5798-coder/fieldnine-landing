@@ -34,20 +34,19 @@ type SSEWriter = (event: AgentEvent) => void;
 
 // ===== Model Helpers =====
 
-function getModel(complexity: "simple" | "complex") {
-  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+function getModel(_complexity: "simple" | "complex") {
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+  const provider = process.env.AI_PROVIDER ?? (hasAnthropic ? "anthropic" : "openai");
 
-  const modelId = selectModel(complexity, "auto");
-
-  if (modelId === "gpt-4o-mini" && hasOpenAI) {
+  if (provider === "anthropic" && hasAnthropic) {
+    return createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514");
+  }
+  if (hasOpenAI) {
     return createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o-mini");
   }
   if (hasAnthropic) {
     return createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514");
-  }
-  if (hasOpenAI) {
-    return createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o");
   }
   throw new Error("No AI provider configured");
 }
@@ -78,6 +77,7 @@ async function plannerAgent(
   const result = await generateObject({
     model,
     schema: PlanSchema,
+    abortSignal: AbortSignal.timeout(30000),
     prompt: `You are a senior full-stack planner. Break down the user's request into subtasks.
 
 Available files: ${fileList}
@@ -124,6 +124,7 @@ async function coderAgent(
 
   const result = streamText({
     model,
+    abortSignal: AbortSignal.timeout(45000),
     prompt: `You are a senior developer. Generate COMPLETE file content for: ${subtask.targetFile}
 
 Task: ${subtask.description}
@@ -176,6 +177,7 @@ async function reviewerAgent(
   const result = await generateObject({
     model,
     schema: ReviewSchema,
+    abortSignal: AbortSignal.timeout(30000),
     prompt: `You are a senior code reviewer. Review the generated code for quality and correctness.
 
 User request: ${userRequest}
@@ -219,6 +221,7 @@ async function fixerAgent(
 
   const result = streamText({
     model,
+    abortSignal: AbortSignal.timeout(45000),
     prompt: `You are a senior developer fixing code issues.
 
 Current files:

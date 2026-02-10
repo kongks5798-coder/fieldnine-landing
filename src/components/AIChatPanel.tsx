@@ -487,13 +487,16 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [agentSubtasks, setAgentSubtasks] = useState<{ id: string; description: string; status: string }[]>([]);
   const [agentStage, setAgentStage] = useState<string | null>(null);
 
+  const agentAbortRef = useRef<AbortController | null>(null);
+
   const sendToAgent = useCallback(
     async (userText: string) => {
       setError(null);
       setIsStreaming(true);
       setAgentSubtasks([]);
       setAgentStage("planning");
-      addProgressEvent("stream-start", "에이전트 파이프라인 시작", "pending");
+      // Reset progress for this new run
+      setProgressEvents([]);
 
       const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: userText };
       const assistantId = `ai-agent-${Date.now()}`;
@@ -505,12 +508,18 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         ? Object.fromEntries(Object.entries(currentFiles).map(([, f]) => [f.name, f.content]))
         : {};
 
+      // Abort controller with 120s safety timeout
+      const ctrl = new AbortController();
+      agentAbortRef.current = ctrl;
+      const safetyTimer = setTimeout(() => ctrl.abort("Agent timeout (120s)"), 120000);
+
       try {
         const res = await fetch("/api/agent/run", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: userText, fileContext }),
+          signal: ctrl.signal,
         });
 
         if (!res.ok) {
@@ -576,7 +585,6 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                   evt.file,
                   true,
                 );
-                addProgressEvent("file-insert", `${evt.file} 삽입`, "done");
               }
 
               if (evt.type === "review" && evt.issues?.length > 0) {
@@ -598,14 +606,11 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                       new Promise<false>((r) => setTimeout(() => r(false), 15000)),
                     ]);
                     if (ok) {
-                      addProgressEvent("commit-success", "GitHub 커밋 완료", "done");
                       statusText += "\nGitHub 커밋 완료!";
                     } else {
-                      addProgressEvent("commit-fail", "커밋 실패", "error");
                       statusText += "\n커밋 실패 — 로컬 삽입만 완료";
                     }
                   } catch {
-                    addProgressEvent("commit-fail", "커밋 오류", "error");
                     statusText += "\n커밋 오류 — 로컬 삽입만 완료";
                   }
                   setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
@@ -619,22 +624,24 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             } catch { /* partial JSON */ }
           }
         }
-
-        addProgressEvent("stream-end", "에이전트 파이프라인 완료", "done");
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(msg);
-        addProgressEvent("stream-end", `에이전트 오류: ${msg}`, "error");
+        if (err instanceof Error && err.name === "AbortError") {
+          setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: m.content + "\n⏱️ 시간 초과 — 파이프라인 중단됨" } : m));
+          completeAllStages(assistantId);
+        } else {
+          const msg = err instanceof Error ? err.message : String(err);
+          setError(msg);
+        }
       } finally {
+        clearTimeout(safetyTimer);
+        agentAbortRef.current = null;
         setIsStreaming(false);
         setAgentStage(null);
-        // Clear all stuck "pending" progress events
-        setProgressEvents((prev) => prev.map((e) =>
-          e.status === "pending" ? { ...e, status: "done" as const } : e
-        ));
+        // Always clear progress — pipeline is done
+        setProgressEvents([]);
       }
     },
-    [currentFiles, onInsertCode, onShadowCommit, addProgressEvent, initStages, advanceStage, completeAllStages],
+    [currentFiles, onInsertCode, onShadowCommit, initStages, advanceStage, completeAllStages],
   );
 
   /* ===== Direct fetch streaming (no useChat) ===== */
@@ -651,7 +658,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       console.log("[AIChatPanel] sendToAI called:", userText.slice(0, 50));
       setError(null);
       setIsStreaming(true);
-      addProgressEvent("stream-start", "AI 응답 스트리밍 시작", "pending");
+      setProgressEvents([]);
 
       // Mode-specific instruction prefix
       let modePrefix = "";
@@ -878,10 +885,8 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       } finally {
         setIsStreaming(false);
         abortRef.current = null;
-        // Clear all stuck "pending" progress events
-        setProgressEvents((prev) => prev.map((e) =>
-          e.status === "pending" ? { ...e, status: "done" as const } : e
-        ));
+        // Always clear progress — stream is done
+        setProgressEvents([]);
       }
     },
     [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent, initStages, advanceStage, completeAllStages, lastSentAt],
@@ -1402,35 +1407,13 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Progress Panel (collapsible) */}
-      {progressEvents.length > 0 && (
-        <div className="border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowProgress((v) => !v)}
-            className="flex items-center justify-between w-full px-3 py-1.5 text-[10px] text-[var(--r-text-secondary)] hover:text-[var(--r-text)] transition-colors"
-          >
-            <span className="flex items-center gap-1.5">
-              <Activity size={11} />
-              Progress ({progressEvents.filter((e) => e.status === "pending").length} active)
-            </span>
-            {showProgress ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
-          </button>
-          {showProgress && (
-            <div className="max-h-[120px] overflow-y-auto px-3 pb-2 space-y-1">
-              {[...progressEvents].reverse().map((ev) => (
-                <div key={ev.id} className="flex items-center gap-2 text-[10px]">
-                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    ev.status === "done" ? "bg-[#00B894]" :
-                    ev.status === "pending" ? "bg-[#F59E0B] animate-pulse" :
-                    "bg-[#EF4444]"
-                  }`} />
-                  <span className="text-[var(--r-text-secondary)] truncate flex-1">{ev.message}</span>
-                  <span className="text-[var(--r-text-muted)] shrink-0">{ev.timestamp}</span>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Progress Panel — only visible while streaming */}
+      {isStreaming && (
+        <div className="border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0 px-3 py-1.5">
+          <span className="flex items-center gap-1.5 text-[10px] text-[#0079F2]">
+            <Activity size={11} className="animate-pulse" />
+            처리 중...
+          </span>
         </div>
       )}
 
