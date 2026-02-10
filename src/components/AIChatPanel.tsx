@@ -91,9 +91,9 @@ const WELCOME_TEXT =
   "무엇을 만들까요? 기능을 지시하면 코드 생성 → 자동 배포합니다.";
 
 const AI_MODELS = [
+  { id: "claude-sonnet", label: "Claude Sonnet" },
   { id: "gpt-4o", label: "GPT-4o" },
   { id: "gpt-4o-mini", label: "GPT-4o Mini" },
-  { id: "claude-sonnet", label: "Claude Sonnet" },
 ] as const;
 
 type AIModelId = (typeof AI_MODELS)[number]["id"];
@@ -107,7 +107,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [systemMessages, setSystemMessages] = useState<SystemMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [apiStatus, setApiStatus] = useState<"ok" | "error">("ok");
-  const [selectedModel, setSelectedModel] = useState<AIModelId>("gpt-4o");
+  const [selectedModel, setSelectedModel] = useState<AIModelId>("claude-sonnet");
   const [showModelMenu, setShowModelMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -352,7 +352,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       const fileContext: Record<string, string> | undefined =
         currentFiles && Object.keys(currentFiles).length > 0
           ? Object.fromEntries(
-              Object.entries(currentFiles).map(([, f]) => [f.name, f.content.slice(0, 3000)])
+              Object.entries(currentFiles).map(([, f]) => [f.name, f.content.slice(0, 1500)])
             )
           : undefined;
 

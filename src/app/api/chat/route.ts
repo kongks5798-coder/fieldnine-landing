@@ -108,7 +108,7 @@ export async function POST(req: Request) {
   const explicit = process.env.AI_PROVIDER;
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
-  const provider = explicit || (hasOpenAI ? "openai" : hasAnthropic ? "anthropic" : "none");
+  const provider = explicit || (hasAnthropic ? "anthropic" : hasOpenAI ? "openai" : "none");
 
   try {
     if (provider === "none" || (provider === "anthropic" && !hasAnthropic) || (provider === "openai" && !hasOpenAI)) {
