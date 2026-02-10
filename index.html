@@ -14,56 +14,55 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
 </head>
 <body>
   <div class="app">
-    <!-- Global Traffic Monitor -->
+    <!-- Real Traffic Monitor -->
     <div class="traffic-monitor" id="trafficMonitor">
       <div class="monitor-header">
         <div class="monitor-title">
-          <span class="monitor-icon">🌐</span>
-          Global Traffic Monitor
+          <span class="monitor-icon">📊</span>
+          Real Traffic Monitor
         </div>
         <div class="monitor-status" id="systemStatus">
           <span class="status-dot online"></span>
-          ONLINE
+          LIVE DATA
         </div>
       </div>
       
       <div class="monitor-stats">
         <div class="stat-row">
           <span class="stat-label">실시간 방문자</span>
-          <span class="stat-value" id="liveVisitors">247</span>
+          <span class="stat-value" id="liveVisitors">
+            <span class="loading-dots">•••</span>
+          </span>
         </div>
         <div class="stat-row">
           <span class="stat-label">오늘 총 방문</span>
-          <span class="stat-value" id="todayVisits">3,842</span>
+          <span class="stat-value" id="todayVisits">
+            <span class="loading-dots">•••</span>
+          </span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">서버 응답시간</span>
-          <span class="stat-value" id="responseTime">23ms</span>
+          <span class="stat-label">페이지뷰</span>
+          <span class="stat-value" id="pageViews">
+            <span class="loading-dots">•••</span>
+          </span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">활성 세션</span>
-          <span class="stat-value" id="activeSessions">189</span>
+          <span class="stat-label">데이터 상태</span>
+          <span class="stat-value" id="dataStatus">DEMO MODE</span>
         </div>
       </div>
       
-      <div class="monitor-chart">
-        <div class="chart-title">24시간 트래픽</div>
-        <div class="chart-bars" id="trafficChart">
-          <div class="chart-bar" style="height: 60%"></div>
-          <div class="chart-bar" style="height: 40%"></div>
-          <div class="chart-bar" style="height: 80%"></div>
-          <div class="chart-bar" style="height: 90%"></div>
-          <div class="chart-bar" style="height: 70%"></div>
-          <div class="chart-bar" style="height: 85%"></div>
-          <div class="chart-bar" style="height: 95%"></div>
-          <div class="chart-bar" style="height: 100%"></div>
-        </div>
+      <div class="monitor-notice">
+        <div class="notice-icon">ℹ️</div>
+        <div class="notice-text">현재 데모 데이터가 표시됩니다</div>
       </div>
       
-      <div class="monitor-toggle" id="monitorToggle">⚡</div>
+      <div class="monitor-toggle" id="monitorToggle">📊</div>
     </div>
 
     <nav class="nav">
@@ -215,10 +214,10 @@
           </div>
         </div>
         <div class="contact-item">
-          <div class="contact-icon">🚀</div>
+          <div class="contact-icon">📊</div>
           <div class="contact-details">
-            <h4>System Status</h4>
-            <p id="siteStatus">All Systems Operational</p>
+            <h4>Analytics</h4>
+            <p id="analyticsStatus">Demo Data Active</p>
           </div>
         </div>
       </div>
@@ -231,7 +230,7 @@
           <span>Field Nine</span>
         </div>
         <div class="footer-text">
-          © 2024 fieldnine.io • Powered by AI • Building the Future
+          © 2024 fieldnine.io • Demo Environment • Building the Future
         </div>
       </div>
     </footer>

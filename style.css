@@ -32,13 +32,13 @@ body {
   flex-direction: column;
 }
 
-/* --- Global Traffic Monitor --- */
+/* --- Real Traffic Monitor --- */
 .traffic-monitor {
   position: fixed;
   top: 20px;
   right: 20px;
   width: 320px;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
@@ -57,7 +57,7 @@ body {
 
 .traffic-monitor.collapsed .monitor-header,
 .traffic-monitor.collapsed .monitor-stats,
-.traffic-monitor.collapsed .monitor-chart {
+.traffic-monitor.collapsed .monitor-notice {
   display: none;
 }
 
@@ -90,19 +90,19 @@ body {
   gap: 6px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--success-green);
+  color: var(--warning-yellow);
 }
 
 .status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--success-green);
+  background: var(--warning-yellow);
   animation: pulse 2s infinite;
 }
 
-.status-dot.warning { background: var(--warning-yellow); }
-.status-dot.error { background: var(--error-red); }
+.status-dot.online { background: var(--success-green); color: var(--success-green); }
+.status-dot.error { background: var(--error-red); color: var(--error-red); }
 
 .monitor-stats {
   margin-bottom: 16px;
@@ -126,35 +126,35 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.monitor-chart {
+.loading-dots {
+  color: var(--warning-yellow);
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+.monitor-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
   margin-bottom: 12px;
 }
 
-.chart-title {
+.notice-icon {
+  font-size: 14px;
+}
+
+.notice-text {
   font-size: 11px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.chart-bars {
-  display: flex;
-  align-items: end;
-  gap: 3px;
-  height: 40px;
-}
-
-.chart-bar {
-  flex: 1;
-  background: linear-gradient(to top, var(--accent-blue), var(--accent-purple));
-  border-radius: 2px 2px 0 0;
-  min-height: 4px;
-  transition: all 0.3s ease;
-  opacity: 0.7;
-}
-
-.chart-bar:hover {
-  opacity: 1;
-  transform: scaleY(1.1);
+  color: var(--warning-yellow);
+  font-weight: 500;
 }
 
 .monitor-toggle {
@@ -174,8 +174,8 @@ body {
 }
 
 .traffic-monitor:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.1);
 }
 
 /* --- Navigation --- */
@@ -645,8 +645,8 @@ body {
   font-size: 14px;
 }
 
-#siteStatus {
-  color: var(--success-green) !important;
+#analyticsStatus {
+  color: var(--warning-yellow) !important;
   font-weight: 500;
 }
 
