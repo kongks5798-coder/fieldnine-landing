@@ -3,120 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — Advanced Web Builder</title>
+  <title>My App — Field Nine</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
-    <nav class="nav" role="navigation">
+    <nav class="nav">
       <div class="nav-brand">
         <span class="logo">⚡</span>
-        <span>Field Nine</span>
+        <span>Field Nine App</span>
       </div>
       <div class="nav-links">
-        <a href="#home" class="nav-link active" aria-current="page">Home</a>
-        <a href="#features" class="nav-link">Features</a>
-        <a href="#about" class="nav-link">About</a>
-        <a href="#contact" class="nav-link">Contact</a>
+        <a href="#" class="active">Home</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
       </div>
-      <button class="theme-toggle" id="themeToggle" aria-label="테마 변경">🌙</button>
     </nav>
 
-    <main class="hero" id="home">
-      <div class="hero-badge animate-fade-in">🚀 AI-Powered Development Platform</div>
-      <h1 class="animate-slide-up">
-        Build Anything,<br/>
-        <span class="gradient-text">Ship Everywhere</span>
-      </h1>
-      <p class="hero-description animate-slide-up">
-        Field Nine에서 직접 코드를 수정하고 실시간으로 결과를 확인하세요.<br/>
-        AI 기반 개발 도구로 더 빠르고 효율적인 개발을 경험해보세요.
-      </p>
-      
-      <div class="hero-actions animate-slide-up">
-        <button class="btn btn-primary" id="startBtn" aria-describedby="counter">
-          <span class="btn-icon">🚀</span>
-          시작하기
-        </button>
-        <button class="btn btn-secondary" id="addCardBtn">
-          <span class="btn-icon">➕</span>
-          카드 추가
-        </button>
-        <button class="btn btn-outline" id="clearBtn">
-          <span class="btn-icon">🗑️</span>
-          모두 삭제
-        </button>
+    <main class="hero">
+      <div class="hero-badge">🚀 AI-Powered Development</div>
+      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
+      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="startBtn">시작하기</button>
+        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
       </div>
-
-      <div class="stats-grid animate-fade-in">
-        <div class="stat-card">
-          <div class="stat-number" id="count">0</div>
-          <div class="stat-label">총 클릭</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="cardCount">0</div>
-          <div class="stat-label">생성된 카드</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="sessionTime">00:00</div>
-          <div class="stat-label">세션 시간</div>
-        </div>
+      <div class="counter-display">
+        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
       </div>
     </main>
 
-    <section class="features-section" id="features">
-      <div class="section-header">
-        <h2>주요 기능</h2>
-        <p>Field Nine의 강력한 기능들을 확인해보세요</p>
-      </div>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h3>실시간 미리보기</h3>
-          <p>코드 변경사항을 즉시 확인</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🤖</div>
-          <h3>AI 코드 분석</h3>
-          <p>인공지능이 코드를 최적화</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🎨</div>
-          <h3>반응형 디자인</h3>
-          <p>모든 디바이스에 최적화</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="cards-section">
-      <div class="section-header">
-        <h2>동적 카드</h2>
-        <p id="cardStatus">카드를 추가해보세요!</p>
-      </div>
-      <div class="cards-container" id="cardContainer" role="grid">
-        <!-- Dynamic cards will be inserted here -->
-      </div>
+    <section class="cards" id="cardContainer">
     </section>
 
     <footer class="footer">
-      <div class="footer-content">
-        <div class="footer-brand">
-          <span class="logo">⚡</span>
-          <span>Field Nine</span>
-        </div>
-        <p>Built with <span class="heart">♥</span> using advanced web technologies</p>
-        <div class="footer-links">
-          <a href="#privacy">Privacy</a>
-          <a href="#terms">Terms</a>
-          <a href="#support">Support</a>
-        </div>
-      </div>
+      <p>Built with <span class="heart">♥</span> on Field Nine</p>
     </footer>
-  </div>
-
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner"></div>
-    <p>Loading...</p>
   </div>
 
   <script src="app.js"></script>
