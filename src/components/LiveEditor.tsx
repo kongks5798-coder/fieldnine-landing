@@ -668,14 +668,20 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   useEffect(() => {
     loadFromStorage().then((loaded) => {
       if (loaded) {
-        setFiles(loaded);
-        setOpenTabs(Object.keys(loaded));
-        setActiveFile(Object.keys(loaded)[0] ?? "index.html");
+        // Validate: ensure at least index.html has non-empty content
+        const htmlContent = loaded["index.html"]?.content ?? "";
+        if (htmlContent.trim().length > 10) {
+          setFiles(loaded);
+          setOpenTabs(Object.keys(loaded));
+          setActiveFile(Object.keys(loaded)[0] ?? "index.html");
+        } else {
+          console.warn("[LiveEditor] Loaded files invalid (empty index.html), using defaults");
+        }
       }
-      // Force preview refresh after files settle (buildPreview ref will have latest files after re-render)
+      // Force preview refresh after files settle
       setTimeout(() => {
         if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current());
-      }, 150);
+      }, 200);
     });
     loadAssets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -746,6 +752,10 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       combined = consoleCapture + combined;
     }
 
+    // Safety: never return empty — ensures preview always renders
+    if (!combined || combined.trim().length < 10) {
+      return `<!DOCTYPE html><html><head><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#64748b;}</style></head><body><p>프리뷰 준비 중...</p></body></html>`;
+    }
     return combined;
   }, [files]);
 
@@ -940,6 +950,11 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
   /* ===== AI Code Insertion (with optional diff preview) ===== */
   const applyCodeDirect = useCallback((code: string, targetFile: string) => {
+    // Guard: never insert empty content
+    if (!code || code.trim().length === 0) {
+      console.warn(`[applyCodeDirect] Blocked empty code for ${targetFile}`);
+      return;
+    }
     pushUndoSnapshot(targetFile, code);
     setFiles((prev) => {
       const existing = prev[targetFile];

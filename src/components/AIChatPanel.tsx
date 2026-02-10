@@ -374,11 +374,11 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         addProgressEvent("file-insert", "자동 수정 한도 초과 — 코드 삽입 (수동 확인 필요)", "error");
       }
 
-      // NOTE: No reset of autoFixRetryRef — it's cumulative for the entire conversation
+      // Reset auto-fix counter on successful insertion
+      autoFixRetryRef.current = 0;
 
       for (const block of parsed.codeBlocks) {
         onInsertCode(block.code, block.targetFile, true);
-        addProgressEvent("file-insert", `${block.targetFile} 자동 삽입`, "done");
       }
 
       // Lifecycle 4: File insertion done → applying done, testing active
@@ -579,7 +579,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 });
               }
 
-              if (evt.type === "code" && evt.file && evt.content) {
+              if (evt.type === "code" && evt.file && evt.content && String(evt.content).trim().length > 5) {
                 onInsertCode(
                   (evt.file.endsWith(".js") || evt.file.endsWith(".ts")) ? sanitizeJS(evt.content) : evt.content,
                   evt.file,
@@ -1409,11 +1409,24 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
       {/* Progress Panel — only visible while streaming */}
       {isStreaming && (
-        <div className="border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0 px-3 py-1.5">
+        <div className="border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0 px-3 py-1.5 flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-[10px] text-[#0079F2]">
             <Activity size={11} className="animate-pulse" />
-            처리 중...
+            {agentStage ? {
+              planning: "계획 수립 중...",
+              coding: "코드 생성 중...",
+              reviewing: "리뷰 중...",
+              fixing: "수정 중...",
+              complete: "완료 처리 중...",
+            }[agentStage] ?? "처리 중..." : "AI 응답 중..."}
           </span>
+          <button
+            type="button"
+            onClick={() => { agentAbortRef.current?.abort(); abortRef.current?.abort(); }}
+            className="text-[10px] text-[var(--r-text-muted)] hover:text-[#EF4444] transition-colors"
+          >
+            중단
+          </button>
         </div>
       )}
 
