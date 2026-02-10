@@ -3,64 +3,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My App — Field Nine</title>
+  <title>Field Nine — Premium Development Platform</title>
   <link rel="stylesheet" href="style.css" />
-  <meta name="description" content="Field Nine AI-Powered Development Platform">
-  <meta name="keywords" content="AI, Development, Web">
-  <meta name="author" content="Field Nine">
 </head>
 <body>
-  <div class="app" aria-label="Field Nine Application">
-    <nav class="nav" aria-label="Main Navigation">
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loader">
+      <div class="loader-ring"></div>
+      <div class="loader-text">Field Nine Loading...</div>
+    </div>
+  </div>
+
+  <div class="app" id="mainApp">
+    <nav class="nav">
       <div class="nav-brand">
-        <span class="logo" role="img" aria-label="Logo">⚡</span>
-        <span>Field Nine App</span>
+        <span class="logo">⚡</span>
+        <span>Field Nine Pro</span>
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Online</span>
+        </div>
       </div>
       <div class="nav-links">
-        <a href="#" class="active" aria-current="page">Home</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
+        <a href="#" class="active" data-tab="dashboard">대시보드</a>
+        <a href="#" data-tab="projects">프로젝트</a>
+        <a href="#" data-tab="analytics">분석</a>
+        <a href="#" data-tab="settings">설정</a>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge" role="status">🚀 AI-Powered Development</div>
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn" aria-pressed="false">시작하기</button>
-        <button class="btn btn-secondary" id="addCardBtn" aria-pressed="false">카드 추가</button>
+      <div class="hero-badge">
+        🚀 AI-Powered Development Platform
+        <span class="badge-pulse"></span>
       </div>
-      <div class="counter-display" aria-live="polite">
-        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
+      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
+      <p class="hero-description">
+        차세대 개발 플랫폼으로 아이디어를 현실로 만들어보세요.<br/>
+        실시간 협업, AI 지원, 무제한 배포가 가능합니다.
+      </p>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalClicks">0</div>
+          <div class="stat-label">총 클릭</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="totalCards">0</div>
+          <div class="stat-label">생성된 카드</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="uptime">00:00</div>
+          <div class="stat-label">활성 시간</div>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="startBtn" aria-label="프로젝트 시작">
+          <span class="btn-icon">🚀</span>
+          <span>프로젝트 시작</span>
+        </button>
+        <button class="btn btn-secondary" id="addCardBtn" aria-label="새 카드 추가">
+          <span class="btn-icon">➕</span>
+          <span>카드 추가</span>
+        </button>
+        <button class="btn btn-outline" id="clearBtn" aria-label="모든 카드 삭제">
+          <span class="btn-icon">🗑️</span>
+          <span>초기화</span>
+        </button>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label">개발 진행률</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
       </div>
     </main>
 
-    <section class="features" aria-label="Features">
-      <h2>주요 기능</h2>
-      <div class="feature-list">
-        <div class="feature">
-          <h3>빠른 개발</h3>
-          <p>즉각적인 코드 반영 및 배포.</p>
+    <section class="dashboard">
+      <div class="section-header">
+        <h2>프로젝트 대시보드</h2>
+        <div class="view-controls">
+          <button class="view-btn active" data-view="grid">격자</button>
+          <button class="view-btn" data-view="list">목록</button>
         </div>
-        <div class="feature">
-          <h3>유연한 설계</h3>
-          <p>다양한 레이아웃과 컴포넌트.</p>
-        </div>
-        <div class="feature">
-          <h3>확장성</h3>
-          <p>필요에 따라 기능을 추가 가능.</p>
+      </div>
+      
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="카드 검색..." class="search-input" />
+        <select id="sortSelect" class="sort-select">
+          <option value="newest">최신순</option>
+          <option value="oldest">오래된순</option>
+          <option value="title">제목순</option>
+        </select>
+      </div>
+
+      <div class="cards-container" id="cardContainer">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">📋</div>
+          <h3>아직 프로젝트가 없습니다</h3>
+          <p>첫 번째 카드를 추가해보세요!</p>
         </div>
       </div>
     </section>
 
-    <section class="cards" id="cardContainer" aria-label="Dynamic Cards">
-    </section>
-
     <footer class="footer">
-      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+      <div class="footer-content">
+        <div class="footer-left">
+          <p>Built with <span class="heart">♥</span> on Field Nine Platform</p>
+        </div>
+        <div class="footer-right">
+          <span class="version">v2.1.0</span>
+          <span class="separator">•</span>
+          <span class="build-time" id="buildTime"></span>
+        </div>
+      </div>
     </footer>
   </div>
+
+  <div class="toast-container" id="toastContainer"></div>
 
   <script src="app.js"></script>
 </body>
