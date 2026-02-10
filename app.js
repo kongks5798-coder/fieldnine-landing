@@ -1,106 +1,115 @@
-function initializeAnalytics() {
-  checkAnalyticsAvailability();
-  updateAnalyticsDisplay();
-  
-  if (ANALYTICS_CONFIG.isDemoMode) {
-    startDemoSimulation();
-  } else {
-    startRealAnalytics();
-  }
-}
+document.addEventListener('DOMContentLoaded', function() {
+  var exploreBtn = document.getElementById('exploreBtn');
+  var watchDemoBtn = document.getElementById('watchDemoBtn');
+  var getStartedBtn = document.getElementById('getStartedBtn');
+  var monitorToggle = document.getElementById('monitorToggle');
+  var isProcessing = false;
 
-function checkAnalyticsAvailability() {
-  REAL_ANALYTICS.hasGoogleAnalytics = typeof gtag !== 'undefined' || typeof ga !== 'undefined';
-  REAL_ANALYTICS.hasOtherTracker = false;
-  REAL_ANALYTICS.initialized = REAL_ANALYTICS.hasGoogleAnalytics || REAL_ANALYTICS.hasOtherTracker;
-  
-  if (!REAL_ANALYTICS.initialized) {
-    console.log('📊 No real analytics detected - using demo mode');
-    ANALYTICS_CONFIG.isDemoMode = true;
-  }
-}
-
-function updateAnalyticsDisplay() {
-  var liveVisitors = document.getElementById('liveVisitors');
-  var todayVisits = document.getElementById('todayVisits');
-  var pageViews = document.getElementById('pageViews');
-  var dataStatus = document.getElementById('dataStatus');
-  var analyticsStatus = document.getElementById('analyticsStatus');
-  var systemStatus = document.getElementById('systemStatus');
-  
-  if (ANALYTICS_CONFIG.isDemoMode) {
-    if (liveVisitors) liveVisitors.innerHTML = '<span class="demo-badge">DEMO</span> ' + ANALYTICS_CONFIG.demoData.liveVisitors;
-    if (todayVisits) todayVisits.innerHTML = '<span class="demo-badge">DEMO</span> ' + ANALYTICS_CONFIG.demoData.todayVisits.toLocaleString();
-    if (pageViews) pageViews.innerHTML = '<span class="demo-badge">DEMO</span> ' + ANALYTICS_CONFIG.demoData.pageViews.toLocaleString();
-    if (dataStatus) dataStatus.textContent = ANALYTICS_CONFIG.messages.demoMode;
-    if (analyticsStatus) analyticsStatus.textContent = 'Demo Data Active';
-    if (systemStatus) systemStatus.innerHTML = '<span class="status-dot warning"></span>DEMO MODE';
-  } else {
-    if (dataStatus) dataStatus.textContent = ANALYTICS_CONFIG.messages.realMode;
-    if (analyticsStatus) analyticsStatus.textContent = 'Real Analytics Connected';
-    if (systemStatus) systemStatus.innerHTML = '<span class="status-dot online"></span>LIVE DATA';
-  }
-}
-
-function startDemoSimulation() {
-  var sessionDuration = Date.now() - ANALYTICS_CONFIG.demoData.sessionStart;
-  var minutesElapsed = Math.floor(sessionDuration / (1000 * 60));
-  
-  ANALYTICS_CONFIG.demoData.liveVisitors = Math.max(1, 
-    DEMO_SIMULATION.baseVisitors + Math.floor(Math.random() * 
-    (DEMO_SIMULATION.visitorsRange.max - DEMO_SIMULATION.visitorsRange.min)) + 
-    DEMO_SIMULATION.visitorsRange.min);
-  
-  ANALYTICS_CONFIG.demoData.todayVisits = DEMO_SIMULATION.dailyVisitsBase + 
-    (minutesElapsed * Math.floor(Math.random() * 
-    (DEMO_SIMULATION.dailyIncrement.max - DEMO_SIMULATION.dailyIncrement.min)) + 
-    DEMO_SIMULATION.dailyIncrement.min);
-  
-  ANALYTICS_CONFIG.demoData.pageViews = Math.floor(
-    ANALYTICS_CONFIG.demoData.todayVisits * DEMO_SIMULATION.pageViewsMultiplier);
-  
-  updateAnalyticsDisplay();
-  
-  setTimeout(startDemoSimulation, 8000);
-}
-
-function startRealAnalytics() {
-  if (REAL_ANALYTICS.hasGoogleAnalytics) {
-    fetchGoogleAnalyticsData();
-  }
-  
-  setInterval(function() {
-    if (REAL_ANALYTICS.hasGoogleAnalytics) {
-      fetchGoogleAnalyticsData();
+  function handleExplore() {
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    if (exploreBtn) {
+      exploreBtn.innerHTML = '<span>탐색 중...</span><span class="btn-arrow">⚡</span>';
+      exploreBtn.style.transform = 'translateY(-4px)';
+      exploreBtn.style.boxShadow = '0 0 80px rgba(59, 130, 246, 0.4)';
     }
-  }, 60000);
-}
+    
+    setTimeout(function() {
+      var features = document.getElementById('features');
+      if (features) {
+        features.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      setTimeout(function() {
+        if (exploreBtn) {
+          exploreBtn.innerHTML = '<span>플랫폼 탐색하기</span><span class="btn-arrow">→</span>';
+          exploreBtn.style.transform = '';
+          exploreBtn.style.boxShadow = '0 0 40px rgba(59, 130, 246, 0.15)';
+        }
+        isProcessing = false;
+      }, 2000);
+    }, 1000);
+  }
 
-function fetchGoogleAnalyticsData() {
-  console.log('📊 Fetching real analytics data...');
+  function handleDemo() {
+    if (watchDemoBtn) {
+      watchDemoBtn.innerHTML = '<span class="play-icon">⏸</span>로딩 중...';
+      watchDemoBtn.style.opacity = '0.7';
+      watchDemoBtn.style.transform = 'scale(0.95)';
+    }
+    
+    setTimeout(function() {
+      var message = '📊 Field Nine Analytics Demo\n\n';
+      message += '현재 표시되는 데이터는 시뮬레이션입니다.\n\n';
+      message += '실제 트래픽 데이터 연동을 위해서는:\n';
+      message += '• Google Analytics 4 설정\n';
+      message += '• Real-time API 연동\n';
+      message += '• 서버 사이드 추적 구현\n\n';
+      message += '데모 모드에서는 가상의 방문자 데이터가 표시됩니다.';
+      
+      alert(message);
+      
+      if (watchDemoBtn) {
+        watchDemoBtn.innerHTML = '<span class="play-icon">▶</span>Demo 보기';
+        watchDemoBtn.style.opacity = '';
+        watchDemoBtn.style.transform = '';
+      }
+    }, 2000);
+  }
+
+  function handleGetStarted() {
+    if (getStartedBtn) {
+      getStartedBtn.textContent = '시작하는 중...';
+      getStartedBtn.style.transform = 'scale(0.95)';
+      getStartedBtn.style.background = 'var(--accent-purple)';
+    }
+    
+    setTimeout(function() {
+      var features = document.getElementById('features');
+      if (features) {
+        features.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      setTimeout(function() {
+        if (getStartedBtn) {
+          getStartedBtn.textContent = '시작하기';
+          getStartedBtn.style.transform = '';
+          getStartedBtn.style.background = 'var(--text-primary)';
+        }
+      }, 1500);
+    }, 800);
+  }
+
+  if (exploreBtn) exploreBtn.addEventListener('click', handleExplore);
+  if (watchDemoBtn) watchDemoBtn.addEventListener('click', handleDemo);
+  if (getStartedBtn) getStartedBtn.addEventListener('click', handleGetStarted);
+  if (monitorToggle) monitorToggle.addEventListener('click', toggleTrafficMonitor);
+
+  initializeAnalytics();
+  createFloatingAnimation();
+  initializeCounters();
+  handleScrollNavigation();
   
-  var liveVisitors = document.getElementById('liveVisitors');
-  var todayVisits = document.getElementById('todayVisits');
-  var pageViews = document.getElementById('pageViews');
-  
-  if (liveVisitors) liveVisitors.textContent = ANALYTICS_CONFIG.messages.loading;
-  if (todayVisits) todayVisits.textContent = ANALYTICS_CONFIG.messages.loading;
-  if (pageViews) pageViews.textContent = ANALYTICS_CONFIG.messages.loading;
-  
+  document.body.style.opacity = '0';
   setTimeout(function() {
-    if (liveVisitors) liveVisitors.textContent = ANALYTICS_CONFIG.messages.noData;
-    if (todayVisits) todayVisits.textContent = ANALYTICS_CONFIG.messages.noData;
-    if (pageViews) pageViews.textContent = ANALYTICS_CONFIG.messages.noData;
-  }, 3000);
-}
+    document.body.style.opacity = '1';
+    document.body.style.transition = 'opacity 0.8s ease';
+  }, 200);
+  
+  var featureCards = document.querySelectorAll('.feature-card');
+  featureCards.forEach(function(card, index) {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(30px)';
+    setTimeout(function() {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+      card.style.transition = 'all 0.6s ease';
+    }, 2000 + (index * 200));
+  });
 
-function toggleTrafficMonitor() {
-  var monitor = document.getElementById('trafficMonitor');
-  if (!monitor) return;
-  
-  monitor.classList.toggle('collapsed');
-  
-  var title = monitor.classList.contains('collapsed') ? 
-    'Click to expand analytics' : 'Real-time traffic monitoring';
-  monitor.title = title;
-}
+  console.log('📊 Field Nine Analytics System');
+  console.log('🔧 Mode:', ANALYTICS_CONFIG.isDemoMode ? 'Demo' : 'Production');
+  console.log('🌐 Domain:', window.location.hostname);
+  console.log('⚠️  Current data is simulated for demonstration purposes');
+});
