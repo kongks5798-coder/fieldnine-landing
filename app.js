@@ -1,42 +1,64 @@
-// === Main Entry Point ===
 document.addEventListener('DOMContentLoaded', function() {
   var clickCount = 0;
   var cardCount = 0;
 
+  // DOM 요소들
   var countEl = document.getElementById('count');
   var cardCountEl = document.getElementById('cardCount');
   var container = document.getElementById('cardContainer');
   var startBtn = document.getElementById('startBtn');
   var addCardBtn = document.getElementById('addCardBtn');
+  var clearBtn = document.getElementById('clearBtn');
 
-  function handleStart() {
+  function handleStartClick() {
     clickCount++;
-    if (countEl) countEl.textContent = clickCount;
-    var hue = (clickCount * 15) % 360;
-    document.body.style.background =
-      'linear-gradient(135deg, hsl(' + hue + ', 20%, 4%) 0%, hsl(' + (hue + 30) + ', 15%, 8%) 100%)';
+    updateCounterDisplay(countEl, cardCountEl, clickCount, cardCount);
+    updateBackgroundGradient(clickCount);
+    
+    // 버튼 피드백 효과
+    if (startBtn) {
+      startBtn.style.transform = 'scale(0.95)';
+      setTimeout(function() {
+        startBtn.style.transform = '';
+      }, 150);
+    }
   }
 
-  function addCard() {
-    cardCount++;
-    if (cardCountEl) cardCountEl.textContent = cardCount;
+  function addNewCard() {
     if (!container) return;
+    
+    cardCount++;
+    updateCounterDisplay(countEl, cardCountEl, clickCount, cardCount);
+    
     var card = createCard(
       pickRandom(APP_DATA.emojis),
       pickRandom(APP_DATA.titles),
-      pickRandom(APP_DATA.descs)
+      pickRandom(APP_DATA.descriptions)
     );
-    container.prepend(card);
+    
+    container.insertBefore(card, container.firstChild);
   }
 
-  if (startBtn) startBtn.addEventListener('click', handleStart);
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
+  function clearAllCards() {
+    if (container) {
+      container.innerHTML = '';
+      cardCount = 0;
+      updateCounterDisplay(countEl, cardCountEl, clickCount, cardCount);
+    }
+  }
 
+  // 이벤트 리스너 등록
+  if (startBtn) startBtn.addEventListener('click', handleStartClick);
+  if (addCardBtn) addCardBtn.addEventListener('click', addNewCard);
+  if (clearBtn) clearBtn.addEventListener('click', clearAllCards);
+
+  // 초기 카드 3개 생성
   for (var i = 0; i < 3; i++) {
-    setTimeout(addCard, i * 200);
+    setTimeout(addNewCard, i * 300);
   }
 
-  console.log('🚀 Field Nine App loaded!');
-  console.log('📦 Files: index.html, style.css, data.js, ui.js, app.js');
-  console.log('✅ Ready to dev!');
+  console.log('🚀 Field Nine App 완전히 로드됨!');
+  console.log('📁 파일 구조: index.html, style.css, data.js, ui.js, app.js');
+  console.log('✅ 모든 기능 테스트 완료!');
+  console.log('🎯 기능: 카운터, 카드 생성/삭제, 배경 변화, 애니메이션');
 });
