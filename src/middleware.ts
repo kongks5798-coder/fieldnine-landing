@@ -46,7 +46,6 @@ export async function middleware(req: NextRequest) {
 
   // 1. API 라우트 — 쿠키 인증 필수 (Google auth 예외)
   if (req.nextUrl.pathname.startsWith("/api/")) {
-    // Google auth endpoint는 인증 없이 접근 가능
     if (req.nextUrl.pathname === "/api/auth/google") {
       return addSecurityHeaders(NextResponse.next());
     }
@@ -58,27 +57,12 @@ export async function middleware(req: NextRequest) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 2. URL 토큰으로 접근 → 쿠키 설정 후 리다이렉트 (토큰이 URL에 남지 않게)
-  const tokenParam = req.nextUrl.searchParams.get("access");
-  if (tokenParam === ACCESS_TOKEN) {
-    const url = req.nextUrl.clone();
-    url.searchParams.delete("access");
-    const res = NextResponse.redirect(url);
-    res.cookies.set(COOKIE_NAME, ACCESS_TOKEN, {
-      httpOnly: true,
-      secure: req.nextUrl.protocol === "https:",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24시간
-    });
-    return addSecurityHeaders(res);
-  }
-
-  // 3. 쿠키에 토큰이 있으면 통과
+  // 2. 쿠키에 토큰이 있으면 통과
   if (isAuthenticated(req)) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 4. 로그인 페이지 표시 (Google Sign-In + ?access= 폴백)
+  // 3. Google 전용 로그인 페이지 (kongks5798@gmail.com만 허용)
   const googleClientId = process.env.GOOGLE_CLIENT_ID ?? "";
   return addSecurityHeaders(
     new NextResponse(
@@ -93,39 +77,40 @@ export async function middleware(req: NextRequest) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #F9F9F7; color: #171717;
+      background: #0a0a0a; color: #e2e8f0;
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh;
     }
-    .container { text-align: center; padding: 2rem; max-width: 360px; }
-    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-    p { color: #86868b; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    #g_id_onload { display: flex; justify-content: center; margin-bottom: 1.5rem; }
-    .divider { display: flex; align-items: center; gap: 12px; margin: 1.5rem 0; color: #86868b; font-size: 0.75rem; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #d1d1d6; }
-    .form { display: flex; flex-direction: column; gap: 0.75rem; }
-    input {
-      padding: 0.75rem 1rem; border: 1px solid #d1d1d6; border-radius: 12px;
-      font-size: 0.95rem; outline: none; text-align: center;
-      transition: border-color 0.2s;
+    .container { text-align: center; padding: 2rem; max-width: 380px; }
+    .logo { font-size: 3rem; margin-bottom: 1rem; }
+    h1 {
+      font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    input:focus { border-color: #0079f2; }
-    button {
-      padding: 0.75rem; background: #0079f2; color: white; border: none;
-      border-radius: 12px; font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
+    .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 2rem; }
+    .g-wrap {
+      display: flex; justify-content: center; margin-bottom: 1.5rem;
     }
-    button:hover { background: #0066cc; }
-    .err { color: #f43f5e; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
-    .status { font-size: 0.8rem; margin-top: 0.5rem; }
+    #status {
+      font-size: 0.8rem; margin-top: 1rem;
+      min-height: 1.2em;
+    }
+    .footer {
+      margin-top: 3rem; color: #334155; font-size: 0.7rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 1.5rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>F9 OS</h1>
-    <p>Access Restricted</p>
+    <div class="logo">⚡</div>
+    <h1>Field Nine OS</h1>
+    <p class="sub">Private Workspace — Owner Only</p>
 
-    <div id="google-btn-wrap">
+    <div class="g-wrap">
       <div id="g_id_onload"
         data-client_id="${googleClientId}"
         data-callback="handleGoogleLogin"
@@ -134,27 +119,23 @@ export async function middleware(req: NextRequest) {
       <div class="g_id_signin"
         data-type="standard"
         data-size="large"
-        data-theme="outline"
-        data-text="sign_in_with"
+        data-theme="filled_black"
+        data-text="signin_with"
         data-shape="pill"
         data-logo_alignment="left">
       </div>
     </div>
-    <div id="status" class="status"></div>
+    <div id="status"></div>
 
-    <div class="divider">or access code</div>
-
-    <div class="form">
-      <input id="pw" type="password" placeholder="Access Code" autocomplete="off" />
-      <button id="btn" type="button">Enter</button>
-      <div id="err" class="err">Invalid code</div>
+    <div class="footer">
+      Authorized access only &middot; kongks5798@gmail.com
     </div>
   </div>
   <script>
     function handleGoogleLogin(response) {
-      var status = document.getElementById('status');
-      status.textContent = 'Verifying...';
-      status.style.color = '#0079f2';
+      var s = document.getElementById('status');
+      s.textContent = 'Verifying...';
+      s.style.color = '#3b82f6';
       fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,22 +144,19 @@ export async function middleware(req: NextRequest) {
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.success) {
-          status.textContent = 'Welcome!';
-          status.style.color = '#00b894';
+          s.textContent = 'Welcome back!';
+          s.style.color = '#00b894';
           window.location.reload();
         } else {
-          status.textContent = data.error || 'Login failed';
-          status.style.color = '#f43f5e';
+          s.textContent = data.error || 'Access denied';
+          s.style.color = '#f43f5e';
         }
       })
       .catch(function() {
-        status.textContent = 'Network error';
-        status.style.color = '#f43f5e';
+        s.textContent = 'Network error — retry';
+        s.style.color = '#f43f5e';
       });
     }
-    function submit(){var v=document.getElementById('pw').value;if(!v)return;window.location.href=window.location.pathname+'?access='+encodeURIComponent(v);}
-    document.getElementById('btn').onclick=submit;
-    document.getElementById('pw').onkeydown=function(e){if(e.key==='Enter')submit();};
   </script>
 </body>
 </html>`,
