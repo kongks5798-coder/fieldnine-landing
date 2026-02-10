@@ -3,63 +3,65 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine App — AI Development Platform</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendardvariable-dynamic-subset.min.css" />
+  <title>Field Nine — Future Development Platform</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <nav class="nav">
-      <div class="nav-brand">
-        <span class="logo">⚡</span>
-        <span>Field Nine</span>
-      </div>
+      <div class="nav-brand">FIELD NINE</div>
       <div class="nav-links">
-        <a href="#" class="active">Home</a>
-        <a href="#" id="aboutLink">About</a>
-        <a href="#" id="contactLink">Contact</a>
+        <a href="#" class="active">MODEL S</a>
+        <a href="#" id="aboutLink">MODEL X</a>
+        <a href="#" id="contactLink">CYBERTRUCK</a>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge">🚀 AI-Powered Development</div>
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p class="hero-desc">이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn">시작하기</button>
-        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
-        <button class="btn btn-outline" id="clearBtn">초기화</button>
-      </div>
-      <div class="counter-display">
-        <div class="counter-item">
-          <span class="counter-label">클릭</span>
-          <span class="counter-value" id="count">0</span>
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <span class="title-line">ACCELERATING THE WORLD'S</span>
+          <span class="title-line highlight">TRANSITION TO AI</span>
+        </h1>
+        <p class="hero-subtitle">Experience the future of development today</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="startBtn">ORDER NOW</button>
+          <button class="btn btn-secondary" id="addCardBtn">LEARN MORE</button>
         </div>
-        <div class="counter-item">
-          <span class="counter-label">카드</span>
-          <span class="counter-value" id="cardCount">0</span>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-value" id="count">0</div>
+            <div class="stat-label">ACCELERATION</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="cardCount">0</div>
+            <div class="stat-label">RANGE (MI)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">3.1s</div>
+            <div class="stat-label">0-60 MPH</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="cyber-grid"></div>
+        <div class="floating-elements">
+          <div class="element" style="--delay: 0s"></div>
+          <div class="element" style="--delay: 1s"></div>
+          <div class="element" style="--delay: 2s"></div>
         </div>
       </div>
     </main>
 
     <section class="cards-section">
-      <div class="section-header">
-        <h2>최근 활동</h2>
-        <div class="section-subtitle">실시간으로 생성되는 카드들</div>
-      </div>
-      <div class="cards" id="cardContainer">
-        <!-- Cards will be dynamically inserted here -->
-      </div>
+      <div class="section-title">SPECIFICATIONS</div>
+      <div class="cards" id="cardContainer"></div>
     </section>
 
     <footer class="footer">
       <div class="footer-content">
-        <p>Built with <span class="heart">❤️</span> by Field Nine AI</p>
-        <div class="footer-links">
-          <a href="#" id="githubLink">GitHub</a>
-          <a href="#" id="docsLink">Docs</a>
-          <a href="#" id="supportLink">Support</a>
-        </div>
+        <span>© 2024 Field Nine, Inc.</span>
+        <button class="btn btn-outline" id="clearBtn">RESET</button>
       </div>
     </footer>
   </div>
