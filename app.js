@@ -1,4 +1,3 @@
-pp.js
 document.addEventListener('DOMContentLoaded', () => {
   let clickCount = 0;
   let cardCount = 0;
