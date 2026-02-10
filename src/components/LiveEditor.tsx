@@ -662,6 +662,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   }, [initialPrompt, isMobile]);
 
   /* ===== Load saved project on mount ===== */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const buildPreviewRef = useRef<(() => string) | null>(null);
+
   useEffect(() => {
     loadFromStorage().then((loaded) => {
       if (loaded) {
@@ -669,6 +672,10 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         setOpenTabs(Object.keys(loaded));
         setActiveFile(Object.keys(loaded)[0] ?? "index.html");
       }
+      // Force preview refresh after files settle (buildPreview ref will have latest files after re-render)
+      setTimeout(() => {
+        if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current());
+      }, 150);
     });
     loadAssets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -864,6 +871,9 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     [activeFile, buildPreview, triggerAutoSave, triggerAutoCommit, hotInjectCSS, pushUndoSnapshot]
   );
 
+  // Keep buildPreview ref in sync for deferred calls
+  buildPreviewRef.current = buildPreview;
+
   useEffect(() => {
     setRenderedHTML(buildPreview());
   }, [buildPreview]);
@@ -949,6 +959,8 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     });
     if (!openTabs.includes(targetFile)) setOpenTabs((prev) => [...prev, targetFile]);
     setActiveFile(targetFile);
+    // Force preview rebuild after AI code insertion
+    setTimeout(() => { if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current()); }, 100);
   }, [openTabs, triggerAutoSave, triggerAutoCommit, pushUndoSnapshot]);
 
   // Pending diff insertion (stored for accept/reject)

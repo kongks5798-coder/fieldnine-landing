@@ -164,7 +164,7 @@ export default function PreviewPanel({
             style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
             allow="cross-origin-isolated"
           />
-        ) : (
+        ) : renderedHTML ? (
           <iframe
             ref={iframeRef}
             srcDoc={renderedHTML}
@@ -173,6 +173,21 @@ export default function PreviewPanel({
             style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
             sandbox="allow-scripts allow-modals"
           />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Loader2 size={24} className="animate-spin text-[#0079F2] mx-auto mb-3" />
+              <p className="text-[13px] text-[#64748b]">프리뷰 로딩 중...</p>
+              <button
+                type="button"
+                onClick={handleRun}
+                className="mt-3 px-3 py-1.5 text-[12px] text-[#0079F2] border border-[#0079F2]/30 rounded-lg hover:bg-[#0079F2]/5 transition-colors"
+              >
+                <RefreshCw size={12} className="inline mr-1" />
+                새로고침
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Update Transition Overlay */}
