@@ -226,7 +226,10 @@ Reply in Korean. Output code blocks with target comments:
 HTML: <!-- target: index.html -->  CSS: /* target: style.css */  JS: // target: filename.ext
 Output COMPLETE file contents in each code block. Never partial snippets.
 Use addEventListener (never inline onclick). Guard DOM queries with if(el).
-KEEP EACH JS FILE SHORT (under 35 lines).`;
+KEEP EACH JS FILE SHORT (under 35 lines).
+HTML must include <meta charset="UTF-8"> and lang="ko".
+CSS must use font-family: 'Pretendard', sans-serif for Korean text.
+index.html must include: <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />`;
 
 // ===== Strategy 3: File Context Reducer =====
 

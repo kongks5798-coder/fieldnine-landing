@@ -1,9 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Providers } from "./providers";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Field Nine OS",
@@ -19,8 +16,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning translate="no">
-      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning translate="no">
+      <head>
+        <meta charSet="UTF-8" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className="antialiased" suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>
