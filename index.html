@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My App — Field Nine</title>
+  <title>Field Nine App — AI Development Platform</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,33 +12,55 @@
     <nav class="nav">
       <div class="nav-brand">
         <span class="logo">⚡</span>
-        <span>Field Nine App</span>
+        <span>Field Nine</span>
       </div>
       <div class="nav-links">
         <a href="#" class="active">Home</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
+        <a href="#" id="aboutLink">About</a>
+        <a href="#" id="contactLink">Contact</a>
       </div>
     </nav>
 
     <main class="hero">
       <div class="hero-badge">🚀 AI-Powered Development</div>
       <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
+      <p class="hero-desc">이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
       <div class="hero-actions">
         <button class="btn btn-primary" id="startBtn">시작하기</button>
         <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
+        <button class="btn btn-outline" id="clearBtn">초기화</button>
       </div>
       <div class="counter-display">
-        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
+        <div class="counter-item">
+          <span class="counter-label">클릭</span>
+          <span class="counter-value" id="count">0</span>
+        </div>
+        <div class="counter-item">
+          <span class="counter-label">카드</span>
+          <span class="counter-value" id="cardCount">0</span>
+        </div>
       </div>
     </main>
 
-    <section class="cards" id="cardContainer">
+    <section class="cards-section">
+      <div class="section-header">
+        <h2>최근 활동</h2>
+        <div class="section-subtitle">실시간으로 생성되는 카드들</div>
+      </div>
+      <div class="cards" id="cardContainer">
+        <!-- Cards will be dynamically inserted here -->
+      </div>
     </section>
 
     <footer class="footer">
-      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+      <div class="footer-content">
+        <p>Built with <span class="heart">❤️</span> by Field Nine AI</p>
+        <div class="footer-links">
+          <a href="#" id="githubLink">GitHub</a>
+          <a href="#" id="docsLink">Docs</a>
+          <a href="#" id="supportLink">Support</a>
+        </div>
+      </div>
     </footer>
   </div>
 
