@@ -37,11 +37,15 @@ export function classifyComplexity(message: string): "simple" | "complex" {
 export function selectModel(
   complexity: "simple" | "complex",
   userModel: string,
+  provider: string = "anthropic",
 ): string {
   // User explicitly picked a model → respect it
   if (userModel !== "auto") return userModel;
-  // Auto routing: simple → cheap model, complex → default
-  return complexity === "simple" ? "gpt-4o-mini" : "auto";
+  // Auto routing: simple → cheap model matching provider, complex → default
+  if (complexity === "simple") {
+    return provider === "openai" ? "gpt-4o-mini" : "claude-sonnet";
+  }
+  return "auto";
 }
 
 // ===== Strategy 1: Cached Response Lookup =====

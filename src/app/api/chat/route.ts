@@ -300,7 +300,7 @@ export async function POST(req: Request) {
       effectiveModel = provider === "openai" && hasOpenAI ? "gpt-4o-mini" : "claude-sonnet";
       console.log(`[costRouter] Daily limit > 50% — forcing ${effectiveModel}`);
     } else if (effectiveModel === "auto") {
-      effectiveModel = selectModel(complexity, "auto");
+      effectiveModel = selectModel(complexity, "auto", provider);
       // If selectModel returns "auto", fall back to provider default
       if (effectiveModel === "auto") {
         effectiveModel = provider === "openai" ? "gpt-4o" : "claude-sonnet";
