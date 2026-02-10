@@ -3,131 +3,140 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine Energy — Power Your Development</title>
+  <title>Field Nine FSD — Full Self-Driving Development</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
-    <header class="header">
-      <nav class="nav">
-        <div class="nav-brand">
-          <div class="energy-icon">⚡</div>
-          <span>FIELD NINE ENERGY</span>
+    <nav class="nav">
+      <div class="nav-brand">
+        <div class="autopilot-logo">
+          <div class="logo-ring"></div>
+          <div class="logo-center">FN</div>
         </div>
-        <div class="nav-menu">
-          <a href="#" class="active">Solar Roof</a>
-          <a href="#" id="aboutLink">Powerwall</a>
-          <a href="#" id="contactLink">Megapack</a>
-          <button class="support-btn">Support</button>
-        </div>
-      </nav>
-    </header>
-
-    <main class="hero">
-      <div class="hero-visual">
-        <div class="energy-grid">
-          <div class="grid-line" style="--delay: 0s"></div>
-          <div class="grid-line" style="--delay: 0.5s"></div>
-          <div class="grid-line" style="--delay: 1s"></div>
-          <div class="grid-line" style="--delay: 1.5s"></div>
-        </div>
-        <div class="power-indicators">
-          <div class="power-dot active"></div>
-          <div class="power-dot"></div>
-          <div class="power-dot"></div>
-          <div class="power-dot"></div>
+        <span>FIELD NINE FSD</span>
+      </div>
+      <div class="nav-status">
+        <div class="status-indicator active">
+          <div class="status-dot"></div>
+          <span>Autopilot Ready</span>
         </div>
       </div>
-      
-      <div class="hero-content">
-        <div class="hero-badge">
-          <span class="badge-icon">🌱</span>
-          <span>100% Sustainable Development</span>
-        </div>
-        
-        <h1 class="hero-title">
-          Power Your Code<br/>
-          <span class="title-accent">With Clean Energy</span>
-        </h1>
-        
-        <p class="hero-description">
-          Revolutionary development platform powered by renewable algorithms.
-          Zero carbon footprint, infinite possibilities.
-        </p>
+    </nav>
 
-        <div class="energy-stats">
-          <div class="energy-meter">
-            <div class="meter-label">Current Output</div>
-            <div class="meter-value">
-              <span class="value-number" id="count">0</span>
-              <span class="value-unit">kW</span>
+    <main class="dashboard">
+      <div class="main-display">
+        <div class="radar-container">
+          <div class="radar-screen">
+            <div class="radar-sweep"></div>
+            <div class="radar-grid">
+              <div class="grid-circle" style="--size: 100px"></div>
+              <div class="grid-circle" style="--size: 200px"></div>
+              <div class="grid-circle" style="--size: 300px"></div>
             </div>
-            <div class="meter-bar">
-              <div class="meter-fill"></div>
+            <div class="radar-objects">
+              <div class="object" style="--angle: 45deg; --distance: 120px">🚗</div>
+              <div class="object" style="--angle: -30deg; --distance: 180px">🏢</div>
+              <div class="object" style="--angle: 90deg; --distance: 250px">🌳</div>
+            </div>
+            <div class="radar-center">
+              <div class="center-dot"></div>
             </div>
           </div>
           
-          <div class="energy-meter">
-            <div class="meter-label">Storage</div>
-            <div class="meter-value">
-              <span class="value-number" id="cardCount">0</span>
-              <span class="value-unit">kWh</span>
-            </div>
-            <div class="meter-bar">
-              <div class="meter-fill secondary"></div>
+          <div class="detection-info">
+            <h2>Full Self-Driving Development</h2>
+            <p>AI-powered autonomous coding system</p>
+            <div class="detection-stats">
+              <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-data">
+                  <div class="stat-value" id="count">0</div>
+                  <div class="stat-label">Objects Detected</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">🚀</div>
+                <div class="stat-data">
+                  <div class="stat-value" id="cardCount">0</div>
+                  <div class="stat-label">Deployments</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="action-panel">
-          <button class="btn btn-energy" id="startBtn">
-            <span class="btn-icon">⚡</span>
-            <span>Start Charging</span>
-          </button>
-          <button class="btn btn-outline" id="addCardBtn">
-            <span class="btn-icon">🔋</span>
-            <span>Add Battery</span>
-          </button>
+        <div class="control-panel">
+          <div class="panel-header">
+            <h3>Autonomous Controls</h3>
+            <div class="panel-status">
+              <div class="status-light active"></div>
+              <span>System Active</span>
+            </div>
+          </div>
+          
+          <div class="control-grid">
+            <button class="control-btn primary" id="startBtn">
+              <div class="btn-icon">🚗</div>
+              <div class="btn-text">
+                <div class="btn-title">Engage Autopilot</div>
+                <div class="btn-subtitle">Full autonomous mode</div>
+              </div>
+            </button>
+            
+            <button class="control-btn secondary" id="addCardBtn">
+              <div class="btn-icon">📡</div>
+              <div class="btn-text">
+                <div class="btn-title">Add Sensor</div>
+                <div class="btn-subtitle">Expand detection range</div>
+              </div>
+            </button>
+            
+            <button class="control-btn danger" id="clearBtn">
+              <div class="btn-icon">⚠️</div>
+              <div class="btn-text">
+                <div class="btn-title">Emergency Stop</div>
+                <div class="btn-subtitle">Immediate shutdown</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sensor-feed">
+        <div class="feed-header">
+          <h3>Neural Network Feed</h3>
+          <div class="feed-controls">
+            <button class="feed-btn active">Camera</button>
+            <button class="feed-btn">Radar</button>
+            <button class="feed-btn">Ultrasonic</button>
+          </div>
+        </div>
+        
+        <div class="feed-grid" id="cardContainer">
+          <!-- Sensor data cards will appear here -->
         </div>
       </div>
     </main>
 
-    <section class="powerwall-section">
-      <div class="section-header">
-        <h2>Your Development Powerwall</h2>
-        <p>Store unlimited potential, deploy on demand</p>
-      </div>
-      
-      <div class="powerwall-grid" id="cardContainer">
-        <!-- Powerwall cards will appear here -->
-      </div>
-      
-      <div class="control-center">
-        <button class="control-btn" id="clearBtn">
-          <span class="control-icon">🔄</span>
-          <span>System Reset</span>
-        </button>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <div class="footer-content">
-        <div class="company-info">
-          <div class="company-name">Field Nine Energy</div>
-          <div class="company-tagline">Accelerating sustainable development</div>
+    <div class="hud-overlay">
+      <div class="hud-info">
+        <div class="speed-display">
+          <div class="speed-value">88</div>
+          <div class="speed-unit">mph</div>
         </div>
-        <div class="footer-stats">
-          <div class="footer-stat">
-            <div class="stat-value">99.9%</div>
-            <div class="stat-label">Uptime</div>
+        <div class="system-status">
+          <div class="status-item">
+            <div class="status-icon">🛡️</div>
+            <div class="status-text">Safety Score: 98</div>
           </div>
-          <div class="footer-stat">
-            <div class="stat-value">0g</div>
-            <div class="stat-label">CO₂/kWh</div>
+          <div class="status-item">
+            <div class="status-icon">🔋</div>
+            <div class="status-text">Neural Net: 100%</div>
           </div>
         </div>
       </div>
-    </footer>
+    </div>
   </div>
 
   <script src="data.js"></script>
