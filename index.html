@@ -3,66 +3,96 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — Future Development Platform</title>
+  <title>Field Nine — The Future is Now</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <nav class="nav">
-      <div class="nav-brand">FIELD NINE</div>
-      <div class="nav-links">
-        <a href="#" class="active">MODEL S</a>
-        <a href="#" id="aboutLink">MODEL X</a>
-        <a href="#" id="contactLink">CYBERTRUCK</a>
+      <div class="nav-brand">
+        <div class="logo-circle"></div>
+        <span>FIELD NINE</span>
+      </div>
+      <div class="nav-center">
+        <a href="#" class="active">Model AI</a>
+        <a href="#" id="aboutLink">Autopilot</a>
+        <a href="#" id="contactLink">Supercharge</a>
+      </div>
+      <div class="nav-right">
+        <button class="account-btn">Account</button>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-content">
-        <h1 class="hero-title">
-          <span class="title-line">ACCELERATING THE WORLD'S</span>
-          <span class="title-line highlight">TRANSITION TO AI</span>
-        </h1>
-        <p class="hero-subtitle">Experience the future of development today</p>
-        <div class="hero-actions">
-          <button class="btn btn-primary" id="startBtn">ORDER NOW</button>
-          <button class="btn btn-secondary" id="addCardBtn">LEARN MORE</button>
-        </div>
-        <div class="hero-stats">
-          <div class="stat-item">
-            <div class="stat-value" id="count">0</div>
-            <div class="stat-label">ACCELERATION</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value" id="cardCount">0</div>
-            <div class="stat-label">RANGE (MI)</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">3.1s</div>
-            <div class="stat-label">0-60 MPH</div>
-          </div>
-        </div>
+      <div class="hero-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
       </div>
-      <div class="hero-visual">
-        <div class="cyber-grid"></div>
-        <div class="floating-elements">
-          <div class="element" style="--delay: 0s"></div>
-          <div class="element" style="--delay: 1s"></div>
-          <div class="element" style="--delay: 2s"></div>
+      
+      <div class="hero-content">
+        <h1>Model AI</h1>
+        <p class="hero-desc">The most advanced development platform ever created</p>
+        
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="feature-icon">🚀</div>
+            <div class="feature-text">
+              <div class="feature-title">Ludicrous Mode</div>
+              <div class="feature-subtitle">Deploy in seconds</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">🧠</div>
+            <div class="feature-text">
+              <div class="feature-title">Neural Net</div>
+              <div class="feature-subtitle">AI-powered coding</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-text">
+              <div class="feature-title">Supercharging</div>
+              <div class="feature-subtitle">Instant scaling</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cta-section">
+          <button class="btn btn-primary" id="startBtn">Configure</button>
+          <button class="btn btn-ghost" id="addCardBtn">Test Drive</button>
+        </div>
+
+        <div class="stats-bar">
+          <div class="stat">
+            <span class="stat-number" id="count">0</span>
+            <span class="stat-unit">mph</span>
+            <span class="stat-label">Top Speed</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number" id="cardCount">0</span>
+            <span class="stat-unit">mi</span>
+            <span class="stat-label">Range</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">2.1</span>
+            <span class="stat-unit">s</span>
+            <span class="stat-label">0-60 mph</span>
+          </div>
         </div>
       </div>
     </main>
 
-    <section class="cards-section">
-      <div class="section-title">SPECIFICATIONS</div>
+    <section class="experience-section">
+      <div class="section-header">
+        <h2>Experience the Future</h2>
+        <p>Every detail engineered for perfection</p>
+      </div>
       <div class="cards" id="cardContainer"></div>
     </section>
 
     <footer class="footer">
-      <div class="footer-content">
-        <span>© 2024 Field Nine, Inc.</span>
-        <button class="btn btn-outline" id="clearBtn">RESET</button>
-      </div>
+      <button class="btn btn-minimal" id="clearBtn">Reset Configuration</button>
     </footer>
   </div>
 
