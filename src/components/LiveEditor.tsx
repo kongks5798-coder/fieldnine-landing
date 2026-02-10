@@ -410,6 +410,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [splitFile, setSplitFile] = useState("style.css");
   const [aiFixMessage, setAIFixMessage] = useState<string | undefined>(undefined);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showSynced, setShowSynced] = useState(false);
+  const syncDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ===== WebContainer Runtime ===== */
   const {
@@ -478,6 +480,16 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   /* ===== Shadow Commit Handler (passed to AIChatPanel) ===== */
   const handleShadowCommit = useCallback(
     async (fileChanges: { path: string; content: string }[], commitMsg: string): Promise<boolean> => {
+      // Completeness guard: block truncated code from reaching GitHub
+      for (const file of fileChanges) {
+        const ext = file.path.split(".").pop()?.toLowerCase() ?? "";
+        const lang = ext === "js" || ext === "mjs" ? "javascript" : ext === "ts" || ext === "tsx" ? "typescript" : ext;
+        const check = isCodeComplete(file.content, lang);
+        if (!check.complete) {
+          console.warn(`[shadow-commit] BLOCKED: ${file.path} is truncated — ${check.reason}`);
+          return false;
+        }
+      }
       try {
         const res = await fetch("/api/save-code", {
           method: "POST",
@@ -766,6 +778,9 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
         setConsoleLines([]);
         setRenderedHTML(buildPreview());
         setIsSyncing(false);
+        setShowSynced(true);
+        if (syncDoneTimerRef.current) clearTimeout(syncDoneTimerRef.current);
+        syncDoneTimerRef.current = setTimeout(() => setShowSynced(false), 800);
       }, 300);
     },
     [activeFile, buildPreview, triggerAutoSave, triggerAutoCommit, hotInjectCSS, pushUndoSnapshot]
@@ -859,6 +874,16 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
   const pendingInsertRef = useRef<{ code: string; targetFile: string } | null>(null);
 
   const handleInsertCode = useCallback((code: string, targetFile: string, auto?: boolean) => {
+    // Truncation warning: check completeness before inserting AI code
+    const ext = targetFile.split(".").pop()?.toLowerCase() ?? "";
+    const lang = ext === "js" || ext === "mjs" ? "javascript" : ext === "ts" || ext === "tsx" ? "typescript" : ext;
+    const check = isCodeComplete(code, lang);
+    if (!check.complete) {
+      addToast({ type: "error", message: `AI 코드 잘림 감지: ${targetFile} (${check.reason}) — 커밋 차단됨` });
+      console.warn(`[insert-code] Truncated AI output for ${targetFile}: ${check.reason}`);
+      // Still insert so user can see & fix, but auto-commit won't fire (guard in triggerAutoCommit)
+    }
+
     // Auto mode (AI streaming/auto-insert): always apply directly, skip diff preview
     if (auto) {
       applyCodeDirect(code, targetFile);
@@ -872,7 +897,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     } else {
       applyCodeDirect(code, targetFile);
     }
-  }, [files, applyCodeDirect]);
+  }, [files, applyCodeDirect, addToast]);
 
   const handleDiffAccept = useCallback(() => {
     if (pendingInsertRef.current) {
@@ -957,6 +982,14 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
   /* ===== Real Deploy ===== */
   const handleDeploy = useCallback(async () => {
     if (!projectSlug) return;
+    // Pre-deploy completeness check
+    for (const [name, f] of Object.entries(files)) {
+      const check = isCodeComplete(f.content, f.language);
+      if (!check.complete) {
+        addToast({ type: "error", message: `배포 차단: ${name} 코드가 잘려있음 (${check.reason})` });
+        return;
+      }
+    }
     setDeployStatus("deploying");
     const toastId = addToast({ type: "loading", message: "배포 중..." });
     await manualSave(files);
@@ -1655,6 +1688,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                   onInspectorToggle={() => setInspectorMode((v) => !v)}
                   wcServerUrl={wcServerUrl}
                   isSyncing={isSyncing}
+                  showSynced={showSynced}
                 />
               </ErrorBoundary>
             </Panel>
