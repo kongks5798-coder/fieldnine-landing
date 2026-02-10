@@ -1,6 +1,9 @@
+// === Field Nine App Logic ===
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Field Nine App loaded!');
-  
+  console.log('📦 Files: index.html, style.css, app.js');
+  console.log('✅ Ready to dev!');
+
   let clickCount = 0;
   let cardCount = 0;
 
@@ -19,16 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (countElement) {
       countElement.textContent = clickCount;
     }
-    
+
     // Dynamic background color based on clicks
     const hue = (clickCount * 15) % 360;
-    document.body.style.background = 
-      `linear-gradient(135deg, hsl(${hue}, 20%, 4%) 0%, hsl(${hue + 30}, 15%, 8%) 100%)`;
-    
+    document.body.style.background =
+      'linear-gradient(135deg, hsl(' + hue + ', 20%, 4%) 0%, hsl(' + (hue + 30) + ', 15%, 8%) 100%)';
+
     // Add visual feedback
     if (startButton) {
       startButton.style.transform = 'scale(0.95)';
-      setTimeout(() => {
+      setTimeout(function() {
         startButton.style.transform = '';
       }, 150);
     }
@@ -39,40 +42,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cardCountElement) {
       cardCountElement.textContent = cardCount;
     }
-    
+
     if (!cardContainer) return;
-    
-    const card = document.createElement('div');
+
+    var card = document.createElement('div');
     card.className = 'card';
-    
-    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const randomTitle = titles[Math.floor(Math.random() * titles.length)];
-    const randomDescription = descriptions[Math.floor(Math.random() * descriptions.length)];
-    const currentTime = new Date().toLocaleTimeString('ko-KR');
-    
-    card.innerHTML = `
-      <div class="card-emoji">${randomEmoji}</div>
-      <h3>${randomTitle}</h3>
-      <p>${randomDescription}</p>
-      <div class="card-time">${currentTime}</div>
-    `;
-    
+
+    var randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    var randomTitle = titles[Math.floor(Math.random() * titles.length)];
+    var randomDescription = descriptions[Math.floor(Math.random() * descriptions.length)];
+    var currentTime = new Date().toLocaleTimeString('ko-KR');
+
+    card.innerHTML =
+      '<div class="card-emoji">' + randomEmoji + '</div>' +
+      '<h3>' + randomTitle + '</h3>' +
+      '<p>' + randomDescription + '</p>' +
+      '<div class="card-time">' + currentTime + '에 생성됨</div>';
+
     // Add entrance animation
     card.style.opacity = '0';
     card.style.transform = 'translateY(20px)';
-    cardContainer.appendChild(card);
-    
-    setTimeout(() => {
+    cardContainer.prepend(card);
+
+    setTimeout(function() {
       card.style.transition = 'all 0.5s ease';
       card.style.opacity = '1';
       card.style.transform = 'translateY(0)';
     }, 10);
-    
+
     // Add click handler to remove card
-    card.addEventListener('click', () => {
+    card.addEventListener('click', function() {
       card.style.transform = 'scale(0.9) translateY(-10px)';
       card.style.opacity = '0';
-      setTimeout(() => {
+      setTimeout(function() {
         if (card.parentNode) {
           card.parentNode.removeChild(card);
           cardCount--;
@@ -88,13 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (startButton) {
     startButton.addEventListener('click', handleStartClick);
   }
-  
+
   if (addCardButton) {
     addCardButton.addEventListener('click', addNewCard);
   }
 
   // Keyboard shortcuts
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener('keydown', function(event) {
     if (event.key === ' ' || event.code === 'Space') {
       event.preventDefault();
       handleStartClick();
@@ -104,8 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Auto-add first card as demo
-  setTimeout(() => {
-    addNewCard();
-  }, 1000);
+  // Auto-generate 3 initial cards
+  for (var i = 0; i < 3; i++) {
+    (function(idx) {
+      setTimeout(function() {
+        addNewCard();
+      }, idx * 200);
+    })(i);
+  }
 });
