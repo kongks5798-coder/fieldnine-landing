@@ -3,130 +3,149 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — 실시간 프리뷰</title>
+  <title>Field Nine — 자동 테스트 & 실시간 리포트</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">🎬</span>
-        <span>Field Nine Live Preview</span>
+        <span class="logo">🎯</span>
+        <span>Field Nine Auto Test</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="active">Editor</a>
-        <a href="#" id="previewToggle">Preview</a>
-        <a href="#" id="recordToggle">Record</a>
+        <a href="#" class="active">Live Test</a>
+        <a href="#" id="reportToggle">Report</a>
+        <a href="#" id="settingsToggle">Settings</a>
       </div>
     </nav>
 
     <main class="workspace">
-      <div class="workspace-header">
-        <div class="status-bar">
-          <div class="status-item">
-            <span class="status-dot active"></span>
-            <span>Live Preview Active</span>
+      <div class="control-panel">
+        <div class="test-controls">
+          <button class="primary-btn" id="startAutoTest">🚀 자동 테스트 시작</button>
+          <button class="secondary-btn" id="pauseTest">⏸ 일시정지</button>
+          <button class="secondary-btn" id="stopTest">⏹ 중지</button>
+        </div>
+        <div class="status-indicators">
+          <div class="indicator" id="testStatus">
+            <span class="status-dot standby"></span>
+            <span>대기 중</span>
           </div>
-          <div class="status-item">
-            <span class="fps-counter">60 FPS</span>
+          <div class="indicator">
+            <span class="progress-text" id="progressText">0%</span>
           </div>
-          <div class="status-item">
-            <span id="recordingStatus">Ready to Record</span>
+          <div class="indicator">
+            <span id="testTimer">00:00</span>
           </div>
         </div>
       </div>
 
-      <div class="editor-container">
-        <div class="editor-panel">
-          <div class="panel-header">
-            <h3>📝 Code Editor</h3>
-            <div class="editor-controls">
-              <button class="btn-small" id="runCode">▶ Run</button>
-              <button class="btn-small" id="clearOutput">🗑 Clear</button>
+      <div class="main-content">
+        <div class="video-section">
+          <div class="video-header">
+            <h3>📹 실시간 테스트 영상</h3>
+            <div class="video-controls">
+              <button class="icon-btn" id="recordBtn">🔴</button>
+              <button class="icon-btn" id="screenshotBtn">📸</button>
+              <button class="icon-btn" id="fullscreenBtn">⛶</button>
             </div>
           </div>
-          <div class="code-area">
-            <textarea id="codeEditor" placeholder="// JavaScript 코드를 입력하세요...
-const element = document.createElement('div');
-element.textContent = 'Hello World!';
-element.style.color = '#60a5fa';
-document.body.appendChild(element);">// 실시간 코드 테스트
-const demo = document.createElement('div');
-demo.innerHTML = '<h2>🚀 Live Demo</h2>';
-demo.style.cssText = `
-  padding: 20px;
-  background: linear-gradient(45deg, #667eea, #764ba2);
-  border-radius: 12px;
-  color: white;
-  text-align: center;
-  margin: 10px;
-  animation: fadeIn 0.5s ease;
-`;
-document.body.appendChild(demo);</textarea>
-          </div>
-        </div>
-
-        <div class="preview-panel">
-          <div class="panel-header">
-            <h3>🎥 Live Preview</h3>
-            <div class="preview-controls">
-              <button class="btn-small" id="captureFrame">📸 Capture</button>
-              <button class="btn-small recording" id="startRecord">🔴 Record</button>
-            </div>
-          </div>
-          <div class="preview-area">
-            <div class="preview-screen" id="previewScreen">
-              <div class="preview-overlay">
-                <div class="recording-indicator" id="recordingIndicator">
+          <div class="video-container" id="videoContainer">
+            <div class="test-screen" id="testScreen">
+              <div class="recording-overlay" id="recordingOverlay">
+                <div class="rec-indicator">
                   <span class="rec-dot"></span>
-                  <span>RECORDING</span>
+                  <span>REC</span>
                 </div>
+                <div class="timestamp" id="timestamp">00:00:00</div>
               </div>
-              <iframe id="previewFrame" src="about:blank"></iframe>
+              <canvas id="testCanvas" width="800" height="600"></canvas>
             </div>
-            <div class="preview-timeline" id="timeline">
-              <div class="timeline-track">
-                <div class="timeline-progress" id="timelineProgress"></div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <div class="report-header">
+            <h3>📊 실시간 테스트 보고서</h3>
+            <button class="export-btn" id="exportReport">📋 내보내기</button>
+          </div>
+          <div class="report-content">
+            <div class="test-phases" id="testPhases">
+              <div class="phase completed">
+                <span class="phase-icon">✅</span>
+                <span>초기화 완료</span>
+                <span class="phase-time">0.2s</span>
               </div>
-              <div class="timeline-controls">
-                <button id="playPause">⏸</button>
-                <span id="timeDisplay">00:00 / 00:00</span>
-                <button id="fullscreen">⛶</button>
+            </div>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value" id="testsRun">0</div>
+                <div class="metric-label">실행된 테스트</div>
+              </div>
+              <div class="metric-card success">
+                <div class="metric-value" id="testsPass">0</div>
+                <div class="metric-label">성공</div>
+              </div>
+              <div class="metric-card error">
+                <div class="metric-value" id="testsFail">0</div>
+                <div class="metric-label">실패</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="coverage">0%</div>
+                <div class="metric-label">커버리지</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="output-panel">
-        <div class="panel-header">
-          <h3>📊 Output & Analytics</h3>
+      <div class="log-section">
+        <div class="log-header">
+          <h3>📝 실시간 로그</h3>
+          <button class="clear-btn" id="clearLogs">🗑 지우기</button>
         </div>
-        <div class="output-content">
-          <div class="console-output" id="consoleOutput">
-            <div class="log-entry success">✅ Preview initialized</div>
-            <div class="log-entry info">ℹ️ Ready for live coding</div>
+        <div class="log-container" id="logContainer">
+          <div class="log-entry info">
+            <span class="log-time">00:00:00</span>
+            <span class="log-message">시스템 초기화 완료</span>
           </div>
-          <div class="analytics-bar">
-            <div class="metric">
-              <span class="metric-label">Executions</span>
-              <span class="metric-value" id="execCount">0</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Frames</span>
-              <span class="metric-value" id="frameCount">0</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Duration</span>
-              <span class="metric-value" id="duration">00:00</span>
-            </div>
+          <div class="log-entry success">
+            <span class="log-time">00:00:01</span>
+            <span class="log-message">자동 테스트 준비 완료</span>
           </div>
+        </div>
+      </div>
+
+      <div class="auto-features">
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h4>AI 자동 분석</h4>
+          <p>코드를 자동으로 분석하고 최적의 테스트 시나리오를 생성합니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h4>실시간 피드백</h4>
+          <p>테스트 진행 상황을 실시간으로 모니터링하고 즉시 결과를 제공합니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <h4>성능 모니터링</h4>
+          <p>메모리 사용량, 실행 시간 등 성능 지표를 자동으로 수집합니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h4>스마트 보고서</h4>
+          <p>테스트 결과를 분석하여 개선 방안을 자동으로 제안합니다.</p>
         </div>
       </div>
     </main>
 
     <footer class="footer">
-      <p>🎬 Real-time Video Preview • Built with Field Nine</p>
+      <p>🎯 Automated Testing & Real-time Reporting • Powered by Field Nine AI</p>
     </footer>
   </div>
 
