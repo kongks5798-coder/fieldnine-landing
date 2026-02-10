@@ -69,13 +69,18 @@ export function useDeployStatus(enabled: boolean = true) {
     setPolling(false);
   }, []);
 
-  // Auto-stop when status becomes ready
+  // Auto-stop when status becomes ready; auto-clear error after 10s
   useEffect(() => {
     if (deploy.status === "ready" && polling) {
-      // Keep "ready" for a few more seconds then stop
-      setTimeout(() => {
+      setTimeout(() => stopPolling(), 5000);
+    }
+    if (deploy.status === "error") {
+      // Auto-clear error badge after 10 seconds → idle
+      const timer = setTimeout(() => {
+        setDeploy((prev) => prev.status === "error" ? { ...prev, status: "idle" } : prev);
         stopPolling();
-      }, 5000);
+      }, 10000);
+      return () => clearTimeout(timer);
     }
   }, [deploy.status, polling, stopPolling]);
 

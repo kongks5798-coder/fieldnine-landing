@@ -37,8 +37,9 @@ export async function GET(req: NextRequest) {
     );
 
     if (!res.ok) {
+      // Token expired or API error — return idle (not error) to avoid stuck "Build Failed" badge
       return NextResponse.json({
-        status: "error",
+        status: "idle",
         message: `Vercel API error: ${res.status}`,
       });
     }
