@@ -133,6 +133,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const autoFixRetryRef = useRef(0); // cumulative auto-fix counter (max 2 per conversation, never resets)
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const lastUserMsgRef = useRef<string>("");
 
   /* ===== Agent Mode State ===== */
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
@@ -661,6 +662,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       lastSentAtRef.current = now2;
 
       console.log("[AIChatPanel] sendToAI called:", userText.slice(0, 50));
+      lastUserMsgRef.current = userText;
       setError(null);
       setIsStreaming(true);
       setProgressEvents([]);
@@ -854,8 +856,8 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           advanceStage(assistantId, "coding", `${insertedBlocks}개 코드 블록 작성 완료`);
         }
 
-        // Process completed response
-        if (fullText) {
+        // Process completed response (skip if live streaming already inserted all blocks)
+        if (fullText && insertedBlocks === 0) {
           await handleAIResponseComplete(assistantId, fullText);
 
           // Auto-save conversation to long-term memory (fire-and-forget)
@@ -1290,14 +1292,25 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               <span className="font-semibold">오류 발생</span>
             </div>
             <div className="whitespace-pre-wrap">{error}</div>
-            <button
-              type="button"
-              onClick={() => setError(null)}
-              className="mt-2 flex items-center gap-1 text-[10px] bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded-lg transition-colors"
-            >
-              <RefreshCw size={10} />
-              닫기
-            </button>
+            <div className="mt-2 flex items-center gap-2">
+              {lastUserMsgRef.current && (
+                <button
+                  type="button"
+                  onClick={() => { setError(null); sendToAI(lastUserMsgRef.current); }}
+                  className="flex items-center gap-1 text-[10px] bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  <RefreshCw size={10} />
+                  재시도
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="flex items-center gap-1 text-[10px] bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded-lg transition-colors"
+              >
+                닫기
+              </button>
+            </div>
           </div>
         )}
 

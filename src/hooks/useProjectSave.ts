@@ -88,11 +88,15 @@ export function useProjectSave(
     savedTimerRef.current = setTimeout(() => setSaveStatus("idle"), 3000);
   }, []);
 
-  /* --- Auto-save: 2s debounce --- */
+  /* --- Auto-save: 2s debounce + beforeunload flush --- */
+  const pendingFilesRef = useRef<FileMap | null>(null);
+
   const triggerAutoSave = useCallback(
     (files: FileMap) => {
+      pendingFilesRef.current = files;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
+        pendingFilesRef.current = null;
         setSaveStatus("saving");
         saveToLocalStorage(files);
         const ok = await saveToSupabase(files);
@@ -101,6 +105,17 @@ export function useProjectSave(
     },
     [saveToLocalStorage, saveToSupabase, showSaved],
   );
+
+  // Flush pending save on tab close / navigation
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (pendingFilesRef.current) {
+        try { localStorage.setItem(lsKey, JSON.stringify(serialize(pendingFilesRef.current))); } catch { /* best effort */ }
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [lsKey, serialize]);
 
   /* --- Manual save: immediate --- */
   const manualSave = useCallback(

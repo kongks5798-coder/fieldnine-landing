@@ -145,6 +145,7 @@ export default function ReplitApp({ onStartProject, onOpenProject, refreshKey }:
   /* ===== Delete project ===== */
   const handleDelete = useCallback(async (slug: string) => {
     setMenuOpen(null);
+    if (!window.confirm("이 프로젝트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
     await deleteProject(slug);
     setProjects((prev) => prev.filter((p) => p.slug !== slug));
   }, []);

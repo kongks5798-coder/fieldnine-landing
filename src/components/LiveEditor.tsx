@@ -417,7 +417,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [newFileName, setNewFileName] = useState("");
   const [showFileExplorer, setShowFileExplorer] = useState(true);
-  const [mobilePanel, setMobilePanel] = useState<"editor" | "preview" | "ai">("editor");
+  const [mobilePanel, setMobilePanel] = useState<"editor" | "preview" | "ai" | "console">("editor");
   const [isMobile, setIsMobile] = useState(false);
   const [consoleTab, setConsoleTab] = useState<ConsoleTab>("console");
   const [consoleFilter, setConsoleFilter] = useState<ConsoleLine["type"] | "all">("all");
@@ -749,6 +749,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           console.info = function() { _orig.info.apply(console, arguments); _post('info', arguments); };
           window.onerror = function(msg, url, line) {
             _post('error', ['Error: ' + msg + ' (line ' + line + ')']);
+          };
+          window.onunhandledrejection = function(e) {
+            _post('error', ['Unhandled Promise: ' + (e.reason || e)]);
           };
         })();
       </script>
@@ -1114,25 +1117,28 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     }
     setDeployStatus("deploying");
     const toastId = addToast({ type: "loading", message: "배포 중..." });
-    await manualSave(files);
+    try {
+      await manualSave(files);
+      const fileChanges = Object.entries(files).map(([name, f]) => ({
+        path: name,
+        content: f.content,
+      }));
+      await handleShadowCommit(fileChanges, `deploy: ${projectSlug}`);
+      const combinedHTML = buildPreview();
+      const url = await deployProject(projectSlug, combinedHTML);
 
-    const fileChanges = Object.entries(files).map(([name, f]) => ({
-      path: name,
-      content: f.content,
-    }));
-    await handleShadowCommit(fileChanges, `deploy: ${projectSlug}`);
-
-    const combinedHTML = buildPreview();
-    const url = await deployProject(projectSlug, combinedHTML);
-
-    if (url) {
-      setDeployedUrl(url);
-      setDeployStatus("deployed");
-      updateToast(toastId, { type: "success", message: "배포 완료!", url });
-      setTimeout(() => setDeployStatus("idle"), 8000);
-    } else {
+      if (url) {
+        setDeployedUrl(url);
+        setDeployStatus("deployed");
+        updateToast(toastId, { type: "success", message: "배포 완료!", url });
+        setTimeout(() => setDeployStatus("idle"), 8000);
+      } else {
+        setDeployStatus("idle");
+        updateToast(toastId, { type: "error", message: "배포 실패 — 다시 시도해주세요" });
+      }
+    } catch (err) {
       setDeployStatus("idle");
-      updateToast(toastId, { type: "error", message: "배포 실패 — 다시 시도해주세요" });
+      updateToast(toastId, { type: "error", message: `배포 오류: ${(err as Error).message}` });
     }
   }, [files, projectSlug, manualSave, buildPreview, handleShadowCommit, addToast, updateToast]);
 
@@ -1648,6 +1654,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
             {([
               ["editor", FileCode2, "Code"],
               ["preview", Monitor, "Preview"],
+              ["console", TerminalIcon, "Console"],
               ["ai", Sparkles, "AI"],
             ] as [typeof mobilePanel, typeof FileCode2, string][]).map(([id, Icon, label]) => (
               <button
@@ -1700,9 +1707,15 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                     srcDoc={previewHTML}
                     title="Live Preview"
                     className="w-full h-full bg-white border-0"
-                    sandbox="allow-scripts allow-modals"
+                    sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
                   />
                 </div>
+              </div>
+            )}
+
+            {mobilePanel === "console" && (
+              <div className="flex-1 min-h-0">
+                <ConsolePanel consoleTab={consoleTab} setConsoleTab={setConsoleTab} consoleLines={consoleLines} setConsoleLines={setConsoleLines} consoleFilter={consoleFilter} setConsoleFilter={setConsoleFilter} shellHistory={shellHistory} setShellHistory={setShellHistory} shellInput={shellInput} setShellInput={setShellInput} handleShellSubmit={handleShellSubmit} gitHistory={gitHistory} gitLoading={gitLoading} fetchGitHistory={fetchGitHistory} restoringCommit={restoringCommit} handleGitRestore={handleGitRestore} onCollapse={() => setMobilePanel("editor")} onAIFix={handleAIFix} wcEnabled={wcEnabled} onWcToggle={() => setWcEnabled((v) => !v)} wcStatus={wcStatus} wcShellProcess={wcShellProcess} />
               </div>
             )}
 

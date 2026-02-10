@@ -156,7 +156,7 @@ function FileTreeNode({
     ? (isExpanded ? FolderOpen : Folder)
     : (info?.icon ?? FileText);
   const iconColor = node.isFolder ? "text-[#F59E0B]" : (info?.color ?? "text-[#858585]");
-  const isProtected = ["index.html", "style.css", "app.js"].includes(node.fullPath);
+  const isProtected = ["index.html", "style.css", "data.js", "ui.js", "app.js"].includes(node.fullPath);
 
   return (
     <>
@@ -368,7 +368,7 @@ export default function FileExplorer({
                   >
                     <Icon size={14} className={info.color} />
                     <span className="truncate flex-1 font-mono">{fileName}</span>
-                    {!["index.html", "style.css", "app.js"].includes(fileName) && (
+                    {!["index.html", "style.css", "data.js", "ui.js", "app.js"].includes(fileName) && (
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); deleteFile(fileName); }}
