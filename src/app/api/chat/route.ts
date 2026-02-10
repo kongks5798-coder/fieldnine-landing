@@ -295,10 +295,10 @@ export async function POST(req: Request) {
     const complexity = classifyComplexity(userQuery);
     let effectiveModel = requestedModel ?? "auto";
 
-    // Daily limit > 50% → force cheap model
-    if (dailyLimit.forceMinModel && hasOpenAI) {
-      effectiveModel = "gpt-4o-mini";
-      console.log("[costRouter] Daily limit > 50% — forcing gpt-4o-mini");
+    // Daily limit > 50% → force cheap model (respect provider)
+    if (dailyLimit.forceMinModel) {
+      effectiveModel = provider === "openai" && hasOpenAI ? "gpt-4o-mini" : "claude-sonnet";
+      console.log(`[costRouter] Daily limit > 50% — forcing ${effectiveModel}`);
     } else if (effectiveModel === "auto") {
       effectiveModel = selectModel(complexity, "auto");
       // If selectModel returns "auto", fall back to provider default
@@ -372,7 +372,8 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
 
     // ===== Semantic Vector Indexing =====
     let semanticContext = "";
-    const hasEmbeddingKey = !!process.env.OPENAI_API_KEY;
+    // Embedding requires a valid OpenAI key; skip if provider is anthropic-only
+    const hasEmbeddingKey = provider !== "anthropic" && !!process.env.OPENAI_API_KEY;
 
     if (fileContext && Object.keys(fileContext).length > 0 && hasEmbeddingKey) {
       try {
