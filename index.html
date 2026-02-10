@@ -3,98 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeoSpace — 트렌디 앱</title>
+  <title>My App — Field Nine</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="stars"></div>
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">🌌</span>
-        <span>NeoSpace</span>
+        <span class="logo">⚡</span>
+        <span>Field Nine App</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="nav-link active" data-page="home">Home</a>
-        <a href="#" class="nav-link" data-page="features">Features</a>
-        <a href="#" class="nav-link" data-page="about">About</a>
-        <a href="#" class="nav-link" data-page="contact">Contact</a>
+        <a href="#" class="active">Home</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
       </div>
-      <div class="theme-toggle" id="themeToggle">🌙</div>
     </nav>
 
     <main class="hero">
-      <div class="floating-orb orb-1"></div>
-      <div class="floating-orb orb-2"></div>
-      <div class="floating-orb orb-3"></div>
-      
-      <div class="hero-badge" id="heroBadge">
-        <span class="badge-icon">✨</span>
-        <span class="badge-text">AI-Powered Next Gen</span>
-        <div class="badge-glow"></div>
-      </div>
-      
-      <h1 class="hero-title">
-        Create The
-        <span class="gradient-text typing-text" id="typingText">Future</span>
-      </h1>
-      
-      <p class="hero-description">
-        차세대 개발 플랫폼에서 꿈을 현실로 만들어보세요.<br/>
-        혁신적인 기술과 창의력이 만나는 공간입니다.
-      </p>
-      
+      <div class="hero-badge">🚀 AI-Powered Development</div>
+      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
+      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary pulse-btn" id="launchBtn">
-          <span class="btn-text">🚀 Launch</span>
-          <div class="btn-ripple"></div>
-        </button>
-        <button class="btn btn-glass" id="exploreBtn">
-          <span class="btn-text">🎯 Explore</span>
-        </button>
+        <button class="btn btn-primary" id="startBtn">시작하기</button>
+        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
       </div>
-      
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number" id="clickCount">0</div>
-          <div class="stat-label">Interactions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="projectCount">0</div>
-          <div class="stat-label">Projects</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="energyLevel">100</div>
-          <div class="stat-label">Energy</div>
-        </div>
+      <div class="counter-display">
+        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
       </div>
     </main>
 
-    <section class="projects-section">
-      <div class="section-header">
-        <h2>Active Projects</h2>
-        <button class="btn btn-outline" id="addProjectBtn">
-          <span>+ Add Project</span>
-        </button>
-      </div>
-      <div class="projects-grid" id="projectsGrid">
-        <!-- Projects will be dynamically added here -->
-      </div>
+    <section class="cards" id="cardContainer">
     </section>
 
-    <div class="floating-action-btn" id="floatingBtn">
-      <span>⚡</span>
-    </div>
-
     <footer class="footer">
-      <div class="footer-content">
-        <p>Built with <span class="heart">💜</span> in the future</p>
-        <div class="footer-links">
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Support</a>
-        </div>
-      </div>
+      <p>Built with <span class="heart">♥</span> on Field Nine</p>
     </footer>
   </div>
 
