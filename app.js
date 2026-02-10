@@ -1,67 +1,98 @@
-function animateCounter(elementId, targetValue, duration, unit) {
-  var element = document.getElementById(elementId);
-  if (!element) return;
-  
-  var startValue = 0;
-  var increment = targetValue / (duration / 50);
-  var current = startValue;
-  
-  var timer = setInterval(function() {
-    current += increment;
-    if (current >= targetValue) {
-      current = targetValue;
-      clearInterval(timer);
-    }
-    
-    var displayValue;
-    if (unit === '%') {
-      displayValue = current.toFixed(1) + unit;
-    } else if (unit === '시간') {
-      displayValue = Math.floor(current) + unit;
-    } else {
-      displayValue = Math.floor(current).toLocaleString();
-    }
-    
-    element.textContent = displayValue;
-  }, 50);
-}
+document.addEventListener('DOMContentLoaded', function() {
+  var exploreBtn = document.getElementById('exploreBtn');
+  var watchDemoBtn = document.getElementById('watchDemoBtn');
+  var getStartedBtn = document.getElementById('getStartedBtn');
+  var isProcessing = false;
 
-function createFloatingAnimation() {
-  var cards = document.querySelectorAll('.floating-card');
-  cards.forEach(function(card, index) {
-    card.style.animationDelay = (index * 2) + 's';
-    card.style.opacity = '0';
+  function handleExplore() {
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    if (exploreBtn) {
+      exploreBtn.innerHTML = '<span>탐색 중...</span><span class="btn-arrow">⚡</span>';
+      exploreBtn.style.transform = 'translateY(-4px)';
+      exploreBtn.style.boxShadow = '0 0 80px rgba(59, 130, 246, 0.4)';
+    }
     
     setTimeout(function() {
+      var features = document.getElementById('features');
+      if (features) {
+        features.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      setTimeout(function() {
+        if (exploreBtn) {
+          exploreBtn.innerHTML = '<span>플랫폼 탐색하기</span><span class="btn-arrow">→</span>';
+          exploreBtn.style.transform = '';
+          exploreBtn.style.boxShadow = '0 0 40px rgba(59, 130, 246, 0.15)';
+        }
+        isProcessing = false;
+      }, 2000);
+    }, 1000);
+  }
+
+  function handleDemo() {
+    if (watchDemoBtn) {
+      watchDemoBtn.innerHTML = '<span class="play-icon">⏸</span>로딩 중...';
+      watchDemoBtn.style.opacity = '0.7';
+      watchDemoBtn.style.transform = 'scale(0.95)';
+    }
+    
+    setTimeout(function() {
+      alert('곧 공개될 데모를 기대해 주세요! 🚀\n\nField Nine으로 개발의 미래를 경험하세요.');
+      if (watchDemoBtn) {
+        watchDemoBtn.innerHTML = '<span class="play-icon">▶</span>Demo 보기';
+        watchDemoBtn.style.opacity = '';
+        watchDemoBtn.style.transform = '';
+      }
+    }, 2000);
+  }
+
+  function handleGetStarted() {
+    if (getStartedBtn) {
+      getStartedBtn.textContent = '시작하는 중...';
+      getStartedBtn.style.transform = 'scale(0.95)';
+      getStartedBtn.style.background = 'var(--accent-purple)';
+    }
+    
+    setTimeout(function() {
+      var features = document.getElementById('features');
+      if (features) {
+        features.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      setTimeout(function() {
+        if (getStartedBtn) {
+          getStartedBtn.textContent = '시작하기';
+          getStartedBtn.style.transform = '';
+          getStartedBtn.style.background = 'var(--text-primary)';
+        }
+      }, 1500);
+    }, 800);
+  }
+
+  if (exploreBtn) exploreBtn.addEventListener('click', handleExplore);
+  if (watchDemoBtn) watchDemoBtn.addEventListener('click', handleDemo);
+  if (getStartedBtn) getStartedBtn.addEventListener('click', handleGetStarted);
+
+  createFloatingAnimation();
+  initializeCounters();
+  handleScrollNavigation();
+  
+  document.body.style.opacity = '0';
+  setTimeout(function() {
+    document.body.style.opacity = '1';
+    document.body.style.transition = 'opacity 0.8s ease';
+  }, 200);
+  
+  var featureCards = document.querySelectorAll('.feature-card');
+  featureCards.forEach(function(card, index) {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(30px)';
+    setTimeout(function() {
       card.style.opacity = '1';
-      card.style.transition = 'opacity 0.5s ease';
-    }, (index + 1) * 500);
+      card.style.transform = 'translateY(0)';
+      card.style.transition = 'all 0.6s ease';
+    }, 2000 + (index * 200));
   });
-}
-
-function initializeCounters() {
-  var stats = FIELD_NINE_DATA.stats;
-  
-  setTimeout(function() {
-    animateCounter('projectCount', stats.projects.current, 2000, stats.projects.unit);
-  }, 800);
-  
-  setTimeout(function() {
-    animateCounter('timesSaved', stats.timeSaved.current, 1800, stats.timeSaved.unit);
-  }, 1200);
-  
-  setTimeout(function() {
-    animateCounter('satisfaction', stats.satisfaction.current, 1500, stats.satisfaction.unit);
-  }, 1600);
-}
-
-function handleScrollNavigation() {
-  var nav = document.querySelector('.nav');
-  if (!nav) return;
-  
-  window.addEventListener('scroll', function() {
-    var scrolled = window.scrollY > 50;
-    nav.style.background = scrolled ? 'rgba(0, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.8)';
-    nav.style.borderBottomColor = scrolled ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)';
-  });
-}
+});
