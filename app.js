@@ -1,54 +1,117 @@
-// === Field Nine App Logic ===
+// target: app.js
 document.addEventListener('DOMContentLoaded', () => {
-  let clickCount = 0;
-  let cardCount = 0;
+  console.log('🚀 Field Nine Platform loaded!');
 
-  const emojis = ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'];
-  const titles = ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'];
-  const descs = ['Field Nine으로 빠르게 구축했습니다.', 'AI가 코드를 최적화했습니다.', '전 세계에 배포 완료.'];
-
-  const countEl = document.getElementById('count');
-  const cardCountEl = document.getElementById('cardCount');
-  const container = document.getElementById('cardContainer');
   const startBtn = document.getElementById('startBtn');
-  const addCardBtn = document.getElementById('addCardBtn');
+  const analyticsBtn = document.getElementById('analyticsBtn');
+  const dashboard = document.getElementById('dashboard');
+  const performanceScore = document.getElementById('performanceScore');
+  const accuracy = document.getElementById('accuracy');
+  const processedTasks = document.getElementById('processedTasks');
+
+  let isAnalyticsVisible = false;
+  let simulationInterval = null;
+
+  function animateValue(element, start, end, duration, suffix) {
+    if (!element) return;
+    const startTime = performance.now();
+    const range = end - start;
+
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 4);
+      const current = start + (range * eased);
+      element.textContent = (suffix === '%')
+        ? current.toFixed(1) + '%'
+        : (Number.isInteger(end) ? Math.round(current).toLocaleString() : current.toFixed(1));
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  function showDashboard() {
+    if (!dashboard) return;
+    dashboard.classList.add('visible');
+    setTimeout(() => {
+      animateValue(performanceScore, 0, 98.5, 1200, '');
+      animateValue(accuracy, 0, 99.2, 1400, '%');
+      animateValue(processedTasks, 0, 1247, 1600, '');
+    }, 300);
+  }
+
+  function hideDashboard() {
+    if (!dashboard) return;
+    dashboard.classList.remove('visible');
+  }
+
+  function startSimulation() {
+    if (simulationInterval) return;
+    simulationInterval = setInterval(() => {
+      if (!isAnalyticsVisible) return;
+      if (performanceScore) {
+        const val = parseFloat(performanceScore.textContent) || 98.5;
+        const next = Math.max(95, Math.min(100, val + (Math.random() - 0.5) * 0.3));
+        performanceScore.textContent = next.toFixed(1);
+      }
+      if (processedTasks) {
+        const val = parseInt(processedTasks.textContent.replace(/,/g, '')) || 1247;
+        processedTasks.textContent = (val + Math.floor(Math.random() * 3)).toLocaleString();
+      }
+    }, 3000);
+  }
 
   function handleStart() {
-    clickCount++;
-    if (countEl) countEl.textContent = clickCount;
-    const hue = (clickCount * 15) % 360;
-    document.body.style.background =
-      \`linear-gradient(135deg, hsl(\${hue}, 20%, 4%) 0%, hsl(\${hue + 30}, 15%, 8%) 100%)\`;
+    if (startBtn) {
+      startBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => { startBtn.style.transform = ''; }, 150);
+    }
+    if (!isAnalyticsVisible) {
+      isAnalyticsVisible = true;
+      showDashboard();
+      startSimulation();
+      if (analyticsBtn) {
+        analyticsBtn.querySelector('span:last-child').textContent = '분석 숨기기';
+      }
+    }
   }
 
-  function addCard() {
-    cardCount++;
-    if (cardCountEl) cardCountEl.textContent = cardCount;
-    if (!container) return;
-    const card = document.createElement('div');
-    card.className = 'card';
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const title = titles[Math.floor(Math.random() * titles.length)];
-    const desc = descs[Math.floor(Math.random() * descs.length)];
-    const now = new Date().toLocaleTimeString('ko-KR');
-    card.innerHTML = \`
-      <div class="card-emoji">\${emoji}</div>
-      <h3>\${title}</h3>
-      <p>\${desc}</p>
-      <div class="card-time">\${now}에 생성됨</div>
-    \`;
-    container.prepend(card);
+  function handleAnalytics() {
+    isAnalyticsVisible = !isAnalyticsVisible;
+    if (isAnalyticsVisible) {
+      showDashboard();
+      startSimulation();
+      if (analyticsBtn) {
+        const label = analyticsBtn.querySelector('span:last-child');
+        if (label) label.textContent = '분석 숨기기';
+      }
+    } else {
+      hideDashboard();
+      if (analyticsBtn) {
+        const label = analyticsBtn.querySelector('span:last-child');
+        if (label) label.textContent = '분석 보기';
+      }
+    }
   }
 
-  if (startBtn) startBtn.addEventListener('click', handleStart);
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
-
-  // 초기 카드 3개 생성
-  for (let i = 0; i < 3; i++) {
-    setTimeout(() => addCard(), i * 200);
+  if (startBtn) {
+    startBtn.addEventListener('click', handleStart);
+  }
+  if (analyticsBtn) {
+    analyticsBtn.addEventListener('click', handleAnalytics);
   }
 
-  console.log('🚀 Field Nine App loaded!');
+  // Subtle status dot animation
+  const statusDot = document.querySelector('.status-dot');
+  if (statusDot) {
+    setInterval(() => {
+      statusDot.style.opacity = '0.4';
+      setTimeout(() => { statusDot.style.opacity = '1'; }, 500);
+    }, 2000);
+  }
+
   console.log('📦 Files: index.html, style.css, app.js');
-  console.log('✅ Ready to dev!');
+  console.log('✅ Ready!');
 });
