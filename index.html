@@ -3,85 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Button Magic — Field Nine</title>
+  <title>NeoSpace — 트렌디 앱</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="stars"></div>
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">🎯</span>
-        <span>Button Magic</span>
+        <span class="logo">🌌</span>
+        <span>NeoSpace</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="active">Home</a>
-        <a href="#">Gallery</a>
-        <a href="#">Settings</a>
+        <a href="#" class="nav-link active" data-page="home">Home</a>
+        <a href="#" class="nav-link" data-page="features">Features</a>
+        <a href="#" class="nav-link" data-page="about">About</a>
+        <a href="#" class="nav-link" data-page="contact">Contact</a>
       </div>
+      <div class="theme-toggle" id="themeToggle">🌙</div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge">✨ Interactive Button Experience</div>
-      <h1>Click & Watch<br/><span class="gradient-text">The Magic Happen</span></h1>
-      <p>다양한 버튼을 클릭해보세요.<br/>각각 독특한 애니메이션과 효과가 있습니다.</p>
+      <div class="floating-orb orb-1"></div>
+      <div class="floating-orb orb-2"></div>
+      <div class="floating-orb orb-3"></div>
       
-      <div class="stats">
-        <div class="stat-item">
-          <span class="stat-number" id="totalClicks">0</span>
-          <span class="stat-label">Total Clicks</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" id="currentScore">0</span>
-          <span class="stat-label">Current Score</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" id="activeButtons">6</span>
-          <span class="stat-label">Active Buttons</span>
-        </div>
+      <div class="hero-badge" id="heroBadge">
+        <span class="badge-icon">✨</span>
+        <span class="badge-text">AI-Powered Next Gen</span>
+        <div class="badge-glow"></div>
       </div>
-
-      <div class="button-grid">
-        <button class="btn btn-primary pulse-btn" id="primaryBtn">
-          <span class="btn-icon">🚀</span>
-          <span class="btn-text">Launch</span>
+      
+      <h1 class="hero-title">
+        Create The
+        <span class="gradient-text typing-text" id="typingText">Future</span>
+      </h1>
+      
+      <p class="hero-description">
+        차세대 개발 플랫폼에서 꿈을 현실로 만들어보세요.<br/>
+        혁신적인 기술과 창의력이 만나는 공간입니다.
+      </p>
+      
+      <div class="hero-actions">
+        <button class="btn btn-primary pulse-btn" id="launchBtn">
+          <span class="btn-text">🚀 Launch</span>
+          <div class="btn-ripple"></div>
         </button>
-        
-        <button class="btn btn-secondary shake-btn" id="secondaryBtn">
-          <span class="btn-icon">⚡</span>
-          <span class="btn-text">Power Up</span>
-        </button>
-        
-        <button class="btn btn-success glow-btn" id="successBtn">
-          <span class="btn-icon">✅</span>
-          <span class="btn-text">Success</span>
-        </button>
-        
-        <button class="btn btn-warning bounce-btn" id="warningBtn">
-          <span class="btn-icon">⚠️</span>
-          <span class="btn-text">Warning</span>
-        </button>
-        
-        <button class="btn btn-danger explode-btn" id="dangerBtn">
-          <span class="btn-icon">💥</span>
-          <span class="btn-text">Explode</span>
-        </button>
-        
-        <button class="btn btn-magic rainbow-btn" id="magicBtn">
-          <span class="btn-icon">🌈</span>
-          <span class="btn-text">Magic</span>
+        <button class="btn btn-glass" id="exploreBtn">
+          <span class="btn-text">🎯 Explore</span>
         </button>
       </div>
-
-      <div class="action-log" id="actionLog">
-        <h3>Action Log</h3>
-        <div class="log-container" id="logContainer">
-          <p class="log-item">앱이 시작되었습니다 ✨</p>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="clickCount">0</div>
+          <div class="stat-label">Interactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="projectCount">0</div>
+          <div class="stat-label">Projects</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="energyLevel">100</div>
+          <div class="stat-label">Energy</div>
         </div>
       </div>
     </main>
 
+    <section class="projects-section">
+      <div class="section-header">
+        <h2>Active Projects</h2>
+        <button class="btn btn-outline" id="addProjectBtn">
+          <span>+ Add Project</span>
+        </button>
+      </div>
+      <div class="projects-grid" id="projectsGrid">
+        <!-- Projects will be dynamically added here -->
+      </div>
+    </section>
+
+    <div class="floating-action-btn" id="floatingBtn">
+      <span>⚡</span>
+    </div>
+
     <footer class="footer">
-      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+      <div class="footer-content">
+        <p>Built with <span class="heart">💜</span> in the future</p>
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Support</a>
+        </div>
+      </div>
     </footer>
   </div>
 
