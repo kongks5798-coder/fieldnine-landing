@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Field Nine — AI Development Platform</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,6 +22,7 @@
         <a href="#" class="active">Home</a>
         <a href="#" id="aboutLink">About</a>
         <a href="#" id="contactLink">Contact</a>
+        <a href="#" id="galleryLink">Gallery</a>
       </div>
       <div class="system-status" id="systemStatus">
         <div class="status-indicator" id="statusIndicator">
@@ -36,7 +39,7 @@
       </div>
       
       <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p class="hero-desc">이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
+      <p class="hero-desc">이 에디터에서 직접 코드를 수정해보세요.<br/>사진과 영상도 업로드할 수 있습니다.</p>
       
       <div class="hero-actions">
         <button class="btn btn-primary" id="startBtn">
@@ -46,6 +49,10 @@
         <button class="btn btn-secondary" id="addCardBtn">
           <span class="btn-text">카드 추가</span>
           <span class="btn-loader" id="addLoader"></span>
+        </button>
+        <button class="btn btn-media" id="uploadBtn">
+          <span class="btn-text">📷 미디어 업로드</span>
+          <span class="btn-loader" id="uploadLoader"></span>
         </button>
         <button class="btn btn-outline" id="clearBtn">
           <span class="btn-text">초기화</span>
@@ -64,8 +71,64 @@
           <span class="counter-value" id="cardCount">0</span>
           <div class="counter-status" id="cardStatus"></div>
         </div>
+        <div class="counter-item">
+          <span class="counter-label">미디어</span>
+          <span class="counter-value" id="mediaCount">0</span>
+          <div class="counter-status" id="mediaStatus"></div>
+        </div>
       </div>
     </main>
+
+    <!-- 미디어 업로드 섹션 -->
+    <section class="upload-section">
+      <div class="section-header">
+        <h2>미디어 업로드</h2>
+        <div class="section-subtitle">사진과 영상을 드래그하거나 클릭해서 업로드하세요</div>
+      </div>
+      
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-content">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">
+            <div class="upload-title">파일을 여기에 드래그하세요</div>
+            <div class="upload-subtitle">또는 <span class="upload-link">클릭해서 선택</span></div>
+          </div>
+          <div class="upload-formats">
+            <span class="format-tag">JPG</span>
+            <span class="format-tag">PNG</span>
+            <span class="format-tag">GIF</span>
+            <span class="format-tag">MP4</span>
+            <span class="format-tag">WEBM</span>
+          </div>
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+      </div>
+
+      <!-- 업로드 진행률 -->
+      <div class="upload-progress" id="uploadProgress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">업로드 중... 0%</div>
+      </div>
+    </section>
+
+    <!-- 미디어 갤러리 -->
+    <section class="gallery-section">
+      <div class="section-header">
+        <h2>미디어 갤러리</h2>
+        <div class="gallery-controls">
+          <button class="filter-btn active" data-filter="all">전체</button>
+          <button class="filter-btn" data-filter="image">사진</button>
+          <button class="filter-btn" data-filter="video">영상</button>
+          <button class="btn btn-sm btn-outline" id="clearGalleryBtn">갤러리 비우기</button>
+        </div>
+      </div>
+      
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- 미디어 항목들이 여기에 추가됩니다 -->
+      </div>
+    </section>
 
     <section class="cards-section">
       <div class="section-header">
@@ -91,6 +154,27 @@
         </div>
       </div>
     </footer>
+
+    <!-- 미디어 뷰어 모달 -->
+    <div class="media-modal" id="mediaModal">
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <div class="modal-title" id="modalTitle">미디어 보기</div>
+          <div class="modal-actions">
+            <button class="modal-btn" id="downloadBtn" title="다운로드">💾</button>
+            <button class="modal-btn" id="deleteBtn" title="삭제">🗑️</button>
+            <button class="modal-btn" id="closeModalBtn" title="닫기">×</button>
+          </div>
+        </div>
+        <div class="modal-content" id="modalContent">
+          <!-- 미디어 콘텐츠가 여기에 표시됩니다 -->
+        </div>
+        <div class="modal-info" id="modalInfo">
+          <!-- 파일 정보가 여기에 표시됩니다 -->
+        </div>
+      </div>
+    </div>
 
     <!-- 오류 모달 -->
     <div class="error-modal" id="errorModal">
