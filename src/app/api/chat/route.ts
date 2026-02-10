@@ -4,6 +4,17 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { indexProject, searchCode, isIndexed } from "@/lib/semanticIndex";
 import { searchMemories, isMemoryEnabled } from "@/lib/supabaseMemory";
+import {
+  classifyComplexity,
+  selectModel,
+  findCachedResponse,
+  findTemplate,
+  formatTemplateResponse,
+  checkDailyLimit,
+  getDailyUsage,
+  selectRelevantFiles,
+  SIMPLE_SYSTEM_PROMPT,
+} from "@/lib/costRouter";
 
 /** Anthropic cache control marker — cached for 5 min, saves up to 90% cost */
 const ANTHROPIC_CACHE = { anthropic: { cacheControl: { type: "ephemeral" as const } } };
@@ -138,6 +149,18 @@ export async function POST(req: Request) {
     );
   }
 
+  // ===== Strategy 5: Daily Usage Limit =====
+  const dailyLimit = checkDailyLimit(rateLimitKey);
+  if (!dailyLimit.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: `일일 요청 한도(${dailyLimit.limit}회)를 초과했습니다. 내일 다시 시도해주세요.`,
+        dailyUsage: { count: dailyLimit.count, limit: dailyLimit.limit },
+      }),
+      { status: 429, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   // Auto-detect provider: explicit setting > available key > error
   const explicit = process.env.AI_PROVIDER;
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
@@ -154,7 +177,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const rawMessages = body?.messages;
-    const requestedModel = body?.model as string | undefined; // e.g. "gpt-4o", "gpt-4o-mini", "claude-sonnet"
+    const requestedModel = body?.model as string | undefined; // e.g. "gpt-4o", "gpt-4o-mini", "claude-sonnet", "auto"
     const mode = (body?.mode as string) ?? "build"; // "build" | "plan" | "edit"
     const fileContext = body?.fileContext as Record<string, string> | undefined;
 
@@ -184,15 +207,108 @@ export async function POST(req: Request) {
       );
     }
 
+    // ===== Extract user query for search =====
+    const lastMsg = rawMessages[rawMessages.length - 1];
+    const userQuery = typeof lastMsg?.content === "string"
+      ? lastMsg.content
+      : Array.isArray(lastMsg?.parts)
+        ? lastMsg.parts.filter((p: Record<string, unknown>) => p.type === "text").map((p: Record<string, unknown>) => p.text).join(" ")
+        : "";
+
+    // ===== Strategy 4: Template Matching (zero-cost) =====
+    if (mode !== "plan") {
+      const template = findTemplate(userQuery);
+      if (template) {
+        const templateText = formatTemplateResponse(template);
+        console.log("[costRouter] Template hit — skipping AI call");
+        // Return as SSE stream format for compatibility
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            // Send text-delta events
+            const delta = JSON.stringify({ type: "text-delta", delta: templateText });
+            controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
+            // Send finish
+            const finish = JSON.stringify({ type: "finish", finishReason: "stop" });
+            controller.enqueue(encoder.encode(`data: ${finish}\n\n`));
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+            "X-Cost-Strategy": "template",
+          },
+        });
+      }
+    }
+
+    // ===== Strategy 1: Cached Response Check =====
+    if (mode !== "plan" && userQuery.length > 10) {
+      try {
+        const cached = await findCachedResponse(userQuery);
+        if (cached) {
+          console.log("[costRouter] Cache hit — skipping AI call");
+          const encoder = new TextEncoder();
+          const cachedText = `[cached] ${cached}`;
+          const stream = new ReadableStream({
+            start(controller) {
+              const delta = JSON.stringify({ type: "text-delta", delta: cachedText });
+              controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
+              const finish = JSON.stringify({ type: "finish", finishReason: "stop" });
+              controller.enqueue(encoder.encode(`data: ${finish}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+              "X-Cost-Strategy": "cached",
+            },
+          });
+        }
+      } catch (e) {
+        console.warn("[costRouter] Cache check failed:", e instanceof Error ? e.message : e);
+      }
+    }
+
+    // ===== Strategy 2: Model Routing =====
+    const complexity = classifyComplexity(userQuery);
+    let effectiveModel = requestedModel ?? "auto";
+
+    // Daily limit > 50% → force cheap model
+    if (dailyLimit.forceMinModel && hasOpenAI) {
+      effectiveModel = "gpt-4o-mini";
+      console.log("[costRouter] Daily limit > 50% — forcing gpt-4o-mini");
+    } else if (effectiveModel === "auto") {
+      effectiveModel = selectModel(complexity, "auto");
+      // If selectModel returns "auto", fall back to provider default
+      if (effectiveModel === "auto") {
+        effectiveModel = provider === "openai" ? "gpt-4o" : "claude-sonnet";
+      }
+    }
+
+    console.log(`[costRouter] complexity=${complexity} model=${effectiveModel} daily=${dailyLimit.count}/${dailyLimit.limit}`);
+
+    // ===== Strategy 3: History Windowing =====
+    // Only send recent 10 messages (older context available via RAG)
+    const windowedMessages = rawMessages.length > 10
+      ? rawMessages.slice(-10)
+      : rawMessages;
+
     // useChat sends UIMessage format (with parts array),
     // but initial generation sends plain format (with content string).
     // Detect and convert accordingly.
-    const isUIMessage = rawMessages.some((m: Record<string, unknown>) => Array.isArray(m.parts));
+    const isUIMessage = windowedMessages.some((m: Record<string, unknown>) => Array.isArray(m.parts));
     const messages = isUIMessage
-      ? await convertToModelMessages(rawMessages)
-      : rawMessages;
+      ? await convertToModelMessages(windowedMessages)
+      : windowedMessages;
 
-    // Model selection: client can request a specific model, otherwise use default
+    // Model selection
     const MODELS: Record<string, () => ReturnType<ReturnType<typeof createOpenAI>> | ReturnType<ReturnType<typeof createAnthropic>>> = {
       ...(hasOpenAI ? {
         "gpt-4o": () => createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o"),
@@ -203,15 +319,17 @@ export async function POST(req: Request) {
       } : {}),
     };
 
-    const modelFactory = requestedModel && MODELS[requestedModel]
-      ? MODELS[requestedModel]
-      : provider === "openai"
+    const modelFactory = MODELS[effectiveModel]
+      ?? (provider === "openai"
         ? () => createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o")
-        : () => createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514");
+        : () => createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514"));
     const model = modelFactory();
 
-    // Build mode-aware system prompt
-    let systemPrompt = SYSTEM_PROMPT;
+    // ===== Strategy 3: System Prompt Selection =====
+    let systemPrompt = complexity === "simple" && mode === "build"
+      ? SIMPLE_SYSTEM_PROMPT
+      : SYSTEM_PROMPT;
+
     if (mode === "plan") {
       systemPrompt = `You are Field Nine AI — a senior full-stack architect inside a web-based IDE.
 The user is in PLAN mode. Your job is to explain architecture, structure, and strategy in Korean.
@@ -232,16 +350,12 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
 - Explain what changed and why in Korean (1-2 sentences per file).`;
     }
 
-    // ===== Extract user query for search =====
-    const lastMsg = rawMessages[rawMessages.length - 1];
-    const userQuery = typeof lastMsg?.content === "string"
-      ? lastMsg.content
-      : Array.isArray(lastMsg?.parts)
-        ? lastMsg.parts.filter((p: Record<string, unknown>) => p.type === "text").map((p: Record<string, unknown>) => p.text).join(" ")
-        : "";
+    // ===== Strategy 3: File Context Reduction =====
+    const effectiveFileContext = fileContext
+      ? selectRelevantFiles(userQuery, fileContext, complexity)
+      : undefined;
 
     // ===== Semantic Vector Indexing =====
-    // Index files (incremental — fast if unchanged) and search for relevant chunks
     let semanticContext = "";
     const hasEmbeddingKey = !!process.env.OPENAI_API_KEY;
 
@@ -285,17 +399,14 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
     }
 
     // Determine if using Anthropic (for prompt caching)
-    const isAnthropicModel = requestedModel === "claude-sonnet"
-      || (!requestedModel && provider === "anthropic");
+    const isAnthropicModel = effectiveModel === "claude-sonnet";
 
     // Build system messages with Anthropic prompt caching
-    // Breakpoint 1: System instructions (static per mode, cached ~5min)
-    // Breakpoint 2: File context (changes per project state, cached ~5min)
     const systemMessages: SystemModelMessage[] = [];
 
-    if (fileContext && Object.keys(fileContext).length > 0) {
+    if (effectiveFileContext && Object.keys(effectiveFileContext).length > 0) {
       // Build file context string
-      const contextText = Object.entries(fileContext)
+      const contextText = Object.entries(effectiveFileContext)
         .map(([name, content]) => `--- ${name} ---\n${content}`)
         .join("\n\n");
 
@@ -306,14 +417,14 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
         ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
       });
 
-      // Part 2: File context (cached separately — changes less often than user messages)
+      // Part 2: File context (cached separately)
       systemMessages.push({
         role: "system",
         content: `[Current Project Files]\n${contextText}`,
         ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
       });
 
-      // Part 3: Semantic search results (most relevant code chunks for the user's query)
+      // Part 3: Semantic search results
       if (semanticContext) {
         systemMessages.push({
           role: "system",
@@ -321,7 +432,7 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
         });
       }
 
-      // Part 4: Long-term memory (past conversations/code from Supabase pgvector)
+      // Part 4: Long-term memory
       if (memoryContext) {
         systemMessages.push({
           role: "system",
@@ -336,7 +447,6 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
         ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
       });
 
-      // Still inject long-term memory if available
       if (memoryContext) {
         systemMessages.push({
           role: "system",
@@ -345,15 +455,24 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
       }
     }
 
+    // ===== Reduced maxOutputTokens for simple requests =====
+    const maxTokens = complexity === "simple" ? 8192 : 16384;
+
     const result = streamText({
       model,
       system: systemMessages,
       messages,
       temperature: 0.7,
-      maxOutputTokens: 16384,
+      maxOutputTokens: maxTokens,
     });
 
-    return result.toUIMessageStreamResponse();
+    const response = result.toUIMessageStreamResponse();
+    // Add cost strategy headers
+    const usage = getDailyUsage(rateLimitKey);
+    response.headers.set("X-Cost-Strategy", complexity);
+    response.headers.set("X-Model-Used", effectiveModel);
+    response.headers.set("X-Daily-Usage", `${usage.count}/${usage.limit}`);
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {

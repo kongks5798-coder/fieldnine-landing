@@ -102,9 +102,10 @@ const WELCOME_TEXT =
   "무엇을 만들까요? 기능을 지시하면 코드 생성 → 자동 배포합니다.";
 
 const AI_MODELS = [
-  { id: "claude-sonnet", label: "Claude Sonnet" },
-  { id: "gpt-4o", label: "GPT-4o" },
-  { id: "gpt-4o-mini", label: "GPT-4o Mini" },
+  { id: "auto", label: "Auto", cost: "auto" },
+  { id: "claude-sonnet", label: "Claude Sonnet", cost: "$3/1M" },
+  { id: "gpt-4o", label: "GPT-4o", cost: "$2.5/1M" },
+  { id: "gpt-4o-mini", label: "GPT-4o Mini", cost: "$0.15/1M" },
 ] as const;
 
 type AIModelId = (typeof AI_MODELS)[number]["id"];
@@ -118,8 +119,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [systemMessages, setSystemMessages] = useState<SystemMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [apiStatus, setApiStatus] = useState<"ok" | "error">("ok");
-  const [selectedModel, setSelectedModel] = useState<AIModelId>("claude-sonnet");
+  const [selectedModel, setSelectedModel] = useState<AIModelId>("auto");
   const [showModelMenu, setShowModelMenu] = useState(false);
+  const [lastSentAt, setLastSentAt] = useState(0);
+  const [dailyUsage, setDailyUsage] = useState({ count: 0, limit: 100 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initialPromptSentRef = useRef(false);
@@ -479,6 +482,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   /* ===== Direct fetch streaming (no useChat) ===== */
   const sendToAI = useCallback(
     async (userText: string) => {
+      // Strategy 5: Debouncing — block requests within 3 seconds
+      const now2 = Date.now();
+      if (now2 - lastSentAt < 3000) {
+        console.log("[AIChatPanel] Debounced — too fast");
+        return;
+      }
+      setLastSentAt(now2);
+
       console.log("[AIChatPanel] sendToAI called:", userText.slice(0, 50));
       setError(null);
       setIsStreaming(true);
@@ -542,7 +553,18 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          // Update daily usage from error response
+          if (errData.dailyUsage) {
+            setDailyUsage(errData.dailyUsage);
+          }
           throw new Error(errData.error || `API error: ${res.status}`);
+        }
+
+        // Read cost strategy headers
+        const dailyHeader = res.headers.get("X-Daily-Usage");
+        if (dailyHeader) {
+          const [c, l] = dailyHeader.split("/").map(Number);
+          if (!isNaN(c) && !isNaN(l)) setDailyUsage({ count: c, limit: l });
         }
 
         if (!res.body) throw new Error("Empty response body");
@@ -674,7 +696,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         abortRef.current = null;
       }
     },
-    [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent, initStages, advanceStage, completeAllStages],
+    [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent, initStages, advanceStage, completeAllStages, lastSentAt],
   );
 
   // Keep sendToAI ref updated for auto-fix callback
@@ -835,13 +857,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                   key={m.id}
                   type="button"
                   onClick={() => { setSelectedModel(m.id); setShowModelMenu(false); }}
-                  className={`w-full text-left px-3 py-1 text-[11px] transition-colors ${
+                  className={`w-full text-left px-3 py-1 text-[11px] transition-colors flex items-center justify-between ${
                     selectedModel === m.id
                       ? "bg-[#0079F2]/10 text-[#0079F2]"
                       : "text-[var(--r-text-secondary)] hover:bg-[var(--r-surface-hover)]"
                   }`}
                 >
-                  {m.label}
+                  <span>{m.label}</span>
+                  <span className="text-[9px] opacity-60">{m.cost}</span>
                 </button>
               ))}
             </div>
@@ -1215,8 +1238,19 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             <Send size={12} />
           </button>
         </div>
-        <div className="text-[9px] text-[var(--r-text-muted)] mt-1.5 text-center">
-          Field Nine AI — {agentMode === "plan" ? "Plan Mode" : agentMode === "edit" ? "Edit Mode" : "Build Mode"} — Shadow Commit Engine v3.1
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="text-[9px] text-[var(--r-text-muted)]">
+            Field Nine AI — {agentMode === "plan" ? "Plan" : agentMode === "edit" ? "Edit" : "Build"} — v3.2
+          </div>
+          <div className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ${
+            dailyUsage.count > dailyUsage.limit * 0.9
+              ? "bg-red-100 text-red-600"
+              : dailyUsage.count > dailyUsage.limit * 0.5
+                ? "bg-amber-50 text-amber-600"
+                : "text-[var(--r-text-muted)]"
+          }`}>
+            {dailyUsage.count}/{dailyUsage.limit}
+          </div>
         </div>
       </div>
     </div>
