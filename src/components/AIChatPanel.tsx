@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { parseAIResponse } from "@/lib/parseAIResponse";
-import { validateJS } from "@/lib/codeValidator";
+import { validateJS, sanitizeJS } from "@/lib/codeValidator";
 import {
   Send,
   Sparkles,
@@ -224,6 +224,13 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
       const parsed = parseAIResponse(content);
       if (parsed.codeBlocks.length === 0) return;
+
+      // Sanitize JS code blocks (strip stray "pp.js" lines etc.)
+      for (const block of parsed.codeBlocks) {
+        if (block.targetFile.endsWith(".js") || block.targetFile.endsWith(".ts")) {
+          block.code = sanitizeJS(block.code);
+        }
+      }
 
       // Validate JS code blocks before insertion
       const jsBlocks = parsed.codeBlocks.filter(

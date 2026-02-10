@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 - CRITICAL: Before using ANY variable, it MUST be declared with const/let/var/function. Never use abbreviations like "pp", "el2", "btn2" without declaring them first.
 - CRITICAL: After writing the code, mentally trace every variable reference and confirm it has a corresponding declaration. Missing declarations cause runtime crashes.
 - Common mistake to AVOID: writing \`pp.textContent = ...\` or \`pp.style...\` where \`pp\` was never declared. Use full descriptive names like \`paragraph\`, \`priceText\`, \`progressBar\`.
+- ABSOLUTELY FORBIDDEN: NEVER include stray text like "pp.js", "pp", or any filename as a line in app.js. The file must start with a JavaScript statement (e.g. document.addEventListener). If you see "pp.js" in the current file context, IGNORE it and DO NOT reproduce it.
 
 ## Language
 - Explanations: Korean
@@ -284,7 +285,7 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
       system: systemMessages,
       messages,
       temperature: 0.7,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 16384,
     });
 
     return result.toUIMessageStreamResponse();
