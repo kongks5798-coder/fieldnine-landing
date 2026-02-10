@@ -15,7 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleStart() {
     clickCount++;
-    if (countEl) countEl.textContent = clickCount;
+    if (countEl) {
+      countEl.textContent = clickCount;
+    }
     const hue = (clickCount * 15) % 360;
     document.body.style.background =
       `linear-gradient(135deg, hsl(${hue}, 20%, 4%) 0%, hsl(${hue + 30}, 15%, 8%) 100%)`;
@@ -23,8 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function addCard() {
     cardCount++;
-    if (cardCountEl) cardCountEl.textContent = cardCount;
+    if (cardCountEl) {
+      cardCountEl.textContent = cardCount;
+    }
     if (!container) return;
+
     const card = document.createElement('div');
     card.className = 'card';
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
@@ -40,8 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
     container.prepend(card);
   }
 
-  if (startBtn) startBtn.addEventListener('click', handleStart);
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
+  if (startBtn) {
+    startBtn.addEventListener('click', handleStart);
+  }
+  if (addCardBtn) {
+    addCardBtn.addEventListener('click', addCard);
+  }
 
   for (let i = 0; i < 3; i++) {
     setTimeout(() => addCard(), i * 200);
