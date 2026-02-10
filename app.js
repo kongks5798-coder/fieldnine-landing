@@ -1,42 +1,49 @@
-// === Main Entry Point ===
-document.addEventListener('DOMContentLoaded', function() {
-  var clickCount = 0;
-  var cardCount = 0;
-
-  var countEl = document.getElementById('count');
-  var cardCountEl = document.getElementById('cardCount');
-  var container = document.getElementById('cardContainer');
-  var startBtn = document.getElementById('startBtn');
-  var addCardBtn = document.getElementById('addCardBtn');
-
-  function handleStart() {
-    clickCount++;
-    if (countEl) countEl.textContent = clickCount;
-    var hue = (clickCount * 15) % 360;
-    document.body.style.background =
-      'linear-gradient(135deg, hsl(' + hue + ', 20%, 4%) 0%, hsl(' + (hue + 30) + ', 15%, 8%) 100%)';
+function updateStatus(status, message) {
+  var statusDot = document.getElementById('statusDot');
+  var statusText = document.getElementById('statusText');
+  
+  if (statusDot) {
+    statusDot.className = 'status-dot ' + status;
   }
-
-  function addCard() {
-    cardCount++;
-    if (cardCountEl) cardCountEl.textContent = cardCount;
-    if (!container) return;
-    var card = createCard(
-      pickRandom(APP_DATA.emojis),
-      pickRandom(APP_DATA.titles),
-      pickRandom(APP_DATA.descs)
-    );
-    container.prepend(card);
+  if (statusText) {
+    statusText.textContent = message;
   }
+}
 
-  if (startBtn) startBtn.addEventListener('click', handleStart);
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
+function createMemoryItem(key, value) {
+  var item = document.createElement('div');
+  item.className = 'memory-item';
+  item.innerHTML = 
+    '<div class="memory-key">' + key + '</div>' +
+    '<div class="memory-value">' + value + '</div>' +
+    '<button class="memory-delete" onclick="deleteMemoryItem(\'' + key + '\')">🗑️</button>';
+  return item;
+}
 
-  for (var i = 0; i < 3; i++) {
-    setTimeout(addCard, i * 200);
+function calculateStorageSize() {
+  var total = 0;
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.startsWith(MEMORY_CONFIG.prefix)) {
+      total += key.length + localStorage.getItem(key).length;
+    }
   }
+  return Math.round(total / 1024 * 100) / 100;
+}
 
-  console.log('🚀 Field Nine App loaded!');
-  console.log('📦 Files: index.html, style.css, data.js, ui.js, app.js');
-  console.log('✅ Ready to dev!');
-});
+function updateStats(apiCallCount) {
+  var totalKeys = 0;
+  for (var i = 0; i < localStorage.length; i++) {
+    if (localStorage.key(i).startsWith(MEMORY_CONFIG.prefix)) {
+      totalKeys++;
+    }
+  }
+  
+  var totalKeysEl = document.getElementById('totalKeys');
+  var totalSizeEl = document.getElementById('totalSize');
+  var apiCallsEl = document.getElementById('apiCalls');
+  
+  if (totalKeysEl) totalKeysEl.textContent = totalKeys;
+  if (totalSizeEl) totalSizeEl.textContent = calculateStorageSize() + 'KB';
+  if (apiCallsEl) apiCallsEl.textContent = apiCallCount;
+}
