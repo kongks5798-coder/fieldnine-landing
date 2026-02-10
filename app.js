@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 App loaded!');
+  console.log('🚀 Field Nine App loaded successfully!');
+  console.log('📱 User Agent:', navigator.userAgent);
+  console.log('🌐 Current URL:', window.location.href);
+  console.log('⏰ Load Time:', new Date().toLocaleString('ko-KR'));
   
   let clickCount = 0;
   let cardCount = 0;
@@ -14,19 +17,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('startBtn');
   const addCardBtn = document.getElementById('addCardBtn');
 
+  console.log('🔍 DOM Elements found:', {
+    countEl: !!countEl,
+    cardCountEl: !!cardCountEl,
+    container: !!container,
+    startBtn: !!startBtn,
+    addCardBtn: !!addCardBtn
+  });
+
   function handleStart() {
     clickCount++;
+    console.log(`👆 Start button clicked! Count: ${clickCount}`);
+    
     if (countEl) countEl.textContent = clickCount;
     
     const hue = (clickCount * 15) % 360;
     document.body.style.background = 
       `linear-gradient(135deg, hsl(${hue}, 20%, 4%) 0%, hsl(${hue + 30}, 15%, 8%) 100%)`;
+    
+    console.log(`🎨 Background changed to hue: ${hue}`);
   }
 
   function addCard() {
     cardCount++;
+    console.log(`📋 Adding card #${cardCount}`);
+    
     if (cardCountEl) cardCountEl.textContent = cardCount;
-    if (!container) return;
+    if (!container) {
+      console.error('❌ Card container not found!');
+      return;
+    }
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -35,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = titles[Math.floor(Math.random() * titles.length)];
     const desc = descs[Math.floor(Math.random() * descs.length)];
     const now = new Date().toLocaleTimeString('ko-KR');
+
+    console.log(`✨ Generated card: ${emoji} ${title}`);
 
     card.innerHTML = `
       <div class="card-emoji">${emoji}</div>
@@ -51,14 +73,25 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.transition = 'all 0.5s ease';
       card.style.opacity = '1';
       card.style.transform = 'translateY(0)';
+      console.log(`🎬 Card #${cardCount} animation completed`);
     }, 10);
   }
 
   if (startBtn) {
     startBtn.addEventListener('click', handleStart);
+    console.log('✅ Start button event listener attached');
   }
 
   if (addCardBtn) {
     addCardBtn.addEventListener('click', addCard);
+    console.log('✅ Add card button event listener attached');
   }
+
+  // Performance monitoring
+  window.addEventListener('load', () => {
+    const loadTime = performance.now();
+    console.log(`⚡ Page fully loaded in ${loadTime.toFixed(2)}ms`);
+  });
+
+  console.log('🎯 App initialization complete!');
 });
