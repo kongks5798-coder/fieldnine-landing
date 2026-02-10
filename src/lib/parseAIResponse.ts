@@ -12,10 +12,10 @@ export interface ParsedAIResponse {
 const TARGET_COMMENT_PATTERNS: Record<string, RegExp> = {
   html: /^<!--\s*target:\s*(.+?)\s*-->\s*\n?/,
   css: /^\/\*\s*target:\s*(.+?)\s*\*\/\s*\n?/,
-  javascript: /^\/\/\s*target:\s*(.+?)\s*\n?/,
-  js: /^\/\/\s*target:\s*(.+?)\s*\n?/,
-  typescript: /^\/\/\s*target:\s*(.+?)\s*\n?/,
-  ts: /^\/\/\s*target:\s*(.+?)\s*\n?/,
+  javascript: /^\/\/\s*target:\s*(\S+)\s*\n?/,
+  js: /^\/\/\s*target:\s*(\S+)\s*\n?/,
+  typescript: /^\/\/\s*target:\s*(\S+)\s*\n?/,
+  ts: /^\/\/\s*target:\s*(\S+)\s*\n?/,
 };
 
 const LANGUAGE_TO_FILE: Record<string, string> = {
