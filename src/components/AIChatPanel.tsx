@@ -433,7 +433,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               if (parsed.codeBlocks.length > insertedBlocks) {
                 for (let i = insertedBlocks; i < parsed.codeBlocks.length; i++) {
                   const block = parsed.codeBlocks[i];
-                  onInsertCode(block.code, block.targetFile, true);
+                  const code = (block.targetFile.endsWith(".js") || block.targetFile.endsWith(".ts"))
+                    ? sanitizeJS(block.code)
+                    : block.code;
+                  onInsertCode(code, block.targetFile, true);
                 }
                 insertedBlocks = parsed.codeBlocks.length;
               }
@@ -588,7 +591,12 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                       </button>
                       <button
                         type="button"
-                        onClick={() => onInsertCode(block.code, block.targetFile)}
+                        onClick={() => {
+                          const code = (block.targetFile.endsWith(".js") || block.targetFile.endsWith(".ts"))
+                            ? sanitizeJS(block.code)
+                            : block.code;
+                          onInsertCode(code, block.targetFile);
+                        }}
                         className="flex items-center gap-1 text-[10px] bg-[#0079F2] text-white px-1.5 py-0.5 rounded hover:bg-[#0066CC] transition-colors"
                       >
                         <Code2 size={9} />

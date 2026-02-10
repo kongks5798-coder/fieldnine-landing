@@ -17,8 +17,10 @@ const BLOCKLIST = new Set([
 
 /** Sanitize AI-generated JS: strip known stray lines like "pp.js" at top */
 export function sanitizeJS(code: string): string {
-  // Remove stray "pp.js", "pp", or any non-code text at the very top
-  return code.replace(/^(?:pp\.js|pp)\s*\n/, "");
+  // Strip any non-JS first line that looks like a stray filename or label
+  // Handles: "pp.js", "pp", "app.js", "script.js", etc.
+  // Also handles \r\n line endings and leading/trailing whitespace
+  return code.replace(/^\s*(?:pp\.js|pp|app\.js|script\.js|main\.js|index\.js)\s*[\r\n]+/, "");
 }
 
 /** Validate JavaScript syntax using Function constructor + blocklist only */
