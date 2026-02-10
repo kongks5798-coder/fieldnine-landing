@@ -3,38 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My App — Field Nine</title>
+  <title>Button Magic — Field Nine</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
-        <span>Field Nine App</span>
+        <span class="logo">🎯</span>
+        <span>Button Magic</span>
       </div>
       <div class="nav-links">
         <a href="#" class="active">Home</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
+        <a href="#">Gallery</a>
+        <a href="#">Settings</a>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge">🚀 AI-Powered Development</div>
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn">시작하기</button>
-        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
+      <div class="hero-badge">✨ Interactive Button Experience</div>
+      <h1>Click & Watch<br/><span class="gradient-text">The Magic Happen</span></h1>
+      <p>다양한 버튼을 클릭해보세요.<br/>각각 독특한 애니메이션과 효과가 있습니다.</p>
+      
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number" id="totalClicks">0</span>
+          <span class="stat-label">Total Clicks</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="currentScore">0</span>
+          <span class="stat-label">Current Score</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="activeButtons">6</span>
+          <span class="stat-label">Active Buttons</span>
+        </div>
       </div>
-      <div class="counter-display">
-        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
+
+      <div class="button-grid">
+        <button class="btn btn-primary pulse-btn" id="primaryBtn">
+          <span class="btn-icon">🚀</span>
+          <span class="btn-text">Launch</span>
+        </button>
+        
+        <button class="btn btn-secondary shake-btn" id="secondaryBtn">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">Power Up</span>
+        </button>
+        
+        <button class="btn btn-success glow-btn" id="successBtn">
+          <span class="btn-icon">✅</span>
+          <span class="btn-text">Success</span>
+        </button>
+        
+        <button class="btn btn-warning bounce-btn" id="warningBtn">
+          <span class="btn-icon">⚠️</span>
+          <span class="btn-text">Warning</span>
+        </button>
+        
+        <button class="btn btn-danger explode-btn" id="dangerBtn">
+          <span class="btn-icon">💥</span>
+          <span class="btn-text">Explode</span>
+        </button>
+        
+        <button class="btn btn-magic rainbow-btn" id="magicBtn">
+          <span class="btn-icon">🌈</span>
+          <span class="btn-text">Magic</span>
+        </button>
+      </div>
+
+      <div class="action-log" id="actionLog">
+        <h3>Action Log</h3>
+        <div class="log-container" id="logContainer">
+          <p class="log-item">앱이 시작되었습니다 ✨</p>
+        </div>
       </div>
     </main>
-
-    <section class="cards" id="cardContainer">
-    </section>
 
     <footer class="footer">
       <p>Built with <span class="heart">♥</span> on Field Nine</p>
