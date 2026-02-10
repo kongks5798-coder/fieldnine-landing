@@ -3,221 +3,290 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — 개발의 미래</title>
+  <title>Field Nine — AI-Powered Development Platform</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="canonical" href="https://fieldnine.io" />
-  <meta name="description" content="AI 기반 차세대 개발 플랫폼. 번개같이 빠른 개발을 경험하고 전례 없는 효율성으로 애플리케이션을 구축하세요." />
-  <meta property="og:title" content="Field Nine — 개발의 미래" />
-  <meta property="og:description" content="AI 기반 차세대 개발 플랫폼으로 개발의 미래를 경험하세요." />
+  <meta name="description" content="AI 기반 차세대 개발 플랫폼. 3D 대시보드와 지능형 코드 어시스턴트로 개발의 미래를 경험하세요." />
+  <meta property="og:title" content="Field Nine — AI-Powered Development Platform" />
+  <meta property="og:description" content="3D 인터랙티브 대시보드와 AI 코드 생성기가 탑재된 차세대 개발 플랫폼" />
   <meta property="og:url" content="https://fieldnine.io" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <!-- Deployment Test Meta -->
+  <meta name="deployment-test" content="fieldnine-v2.0-production" />
+  <meta name="build-timestamp" content="2024-01-15T10:30:00Z" />
 </head>
 <body>
   <div class="app">
-    <!-- Real Traffic Monitor -->
-    <div class="traffic-monitor" id="trafficMonitor">
-      <div class="monitor-header">
-        <div class="monitor-title">
-          <span class="monitor-icon">📊</span>
-          Real Traffic Monitor
+    <!-- Deployment Status Monitor -->
+    <div class="deployment-monitor" id="deploymentMonitor">
+      <div class="deploy-header">
+        <div class="deploy-title">
+          <span class="deploy-icon">🚀</span>
+          Deployment Status
         </div>
-        <div class="monitor-status" id="systemStatus">
-          <span class="status-dot online"></span>
-          LIVE DATA
-        </div>
-      </div>
-      
-      <div class="monitor-stats">
-        <div class="stat-row">
-          <span class="stat-label">실시간 방문자</span>
-          <span class="stat-value" id="liveVisitors">
-            <span class="loading-dots">•••</span>
-          </span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">오늘 총 방문</span>
-          <span class="stat-value" id="todayVisits">
-            <span class="loading-dots">•••</span>
-          </span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">페이지뷰</span>
-          <span class="stat-value" id="pageViews">
-            <span class="loading-dots">•••</span>
-          </span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">데이터 상태</span>
-          <span class="stat-value" id="dataStatus">DEMO MODE</span>
+        <div class="deploy-status" id="deployStatus">
+          <span class="status-indicator checking"></span>
+          CHECKING...
         </div>
       </div>
       
-      <div class="monitor-notice">
-        <div class="notice-icon">ℹ️</div>
-        <div class="notice-text">현재 데모 데이터가 표시됩니다</div>
+      <div class="deploy-tests" id="deployTests">
+        <div class="test-item" id="domainTest">
+          <span class="test-name">Domain Resolution</span>
+          <span class="test-result pending">⏳</span>
+        </div>
+        <div class="test-item" id="sslTest">
+          <span class="test-name">SSL Certificate</span>
+          <span class="test-result pending">⏳</span>
+        </div>
+        <div class="test-item" id="assetsTest">
+          <span class="test-name">Asset Loading</span>
+          <span class="test-result pending">⏳</span>
+        </div>
+        <div class="test-item" id="performanceTest">
+          <span class="test-name">Performance</span>
+          <span class="test-result pending">⏳</span>
+        </div>
       </div>
       
-      <div class="monitor-toggle" id="monitorToggle">📊</div>
+      <div class="deploy-actions">
+        <button class="deploy-btn" id="runTestsBtn">Run Tests</button>
+        <button class="deploy-btn secondary" id="toggleMonitor">Minimize</button>
+      </div>
+    </div>
+
+    <!-- AI Code Assistant Sidebar -->
+    <div class="ai-assistant" id="aiAssistant">
+      <div class="assistant-header">
+        <div class="assistant-title">
+          <span class="ai-icon">🤖</span>
+          AI Assistant
+        </div>
+        <button class="assistant-toggle" id="assistantToggle">◀</button>
+      </div>
+      
+      <div class="assistant-content">
+        <div class="chat-messages" id="chatMessages">
+          <div class="ai-message">
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+              안녕하세요! Field Nine AI Assistant입니다. 코드 생성, 최적화, 디버깅을 도와드립니다.
+            </div>
+          </div>
+        </div>
+        
+        <div class="chat-input-container">
+          <input type="text" id="chatInput" placeholder="AI에게 질문하거나 코드 요청을 해보세요..." />
+          <button class="send-btn" id="sendBtn">▶</button>
+        </div>
+        
+        <div class="quick-actions">
+          <button class="quick-btn" data-action="generate">🎨 코드 생성</button>
+          <button class="quick-btn" data-action="optimize">⚡ 최적화</button>
+          <button class="quick-btn" data-action="debug">🐛 디버깅</button>
+        </div>
+      </div>
     </div>
 
     <nav class="nav">
       <div class="nav-brand">
         <span class="logo">⚡</span>
         <span>Field Nine</span>
+        <span class="version-badge">v2.0</span>
       </div>
       <div class="nav-menu">
-        <a href="#features" class="nav-link">핵심 기능</a>
-        <a href="#technology" class="nav-link">Technology</a>
-        <a href="#contact" class="nav-link">문의하기</a>
-        <button class="btn btn-nav" id="getStartedBtn">시작하기</button>
+        <a href="#dashboard" class="nav-link">3D Dashboard</a>
+        <a href="#ai-tools" class="nav-link">AI Tools</a>
+        <a href="#features" class="nav-link">Features</a>
+        <button class="btn btn-nav" id="launchIdeBtn">Launch IDE</button>
       </div>
     </nav>
 
     <main class="hero">
       <div class="hero-content">
-        <div class="hero-badge">🚀 fieldnine.io • 차세대 개발 플랫폼</div>
+        <div class="hero-badge">🚀 fieldnine.io • AI-Powered Development Platform</div>
         <h1 class="hero-title">
-          개발의<br/>
-          <span class="gradient-text">미래를 경험하세요</span>
+          AI와 함께하는<br/>
+          <span class="gradient-text">차세대 개발 경험</span>
         </h1>
         <p class="hero-description">
-          AI 기반 도구로 번개같이 빠른 개발을 경험하세요.<br/>
-          전례 없는 효율성으로 애플리케이션을 구축, 배포, 확장할 수 있습니다.
+          3D 인터랙티브 대시보드, 지능형 코드 어시스턴트, 자동 코드 생성기로<br/>
+          개발 생산성을 10배 향상시키세요.
         </p>
         
         <div class="hero-actions">
-          <button class="btn btn-primary" id="exploreBtn">
-            <span>플랫폼 탐색하기</span>
+          <button class="btn btn-primary" id="startCodingBtn">
+            <span>🤖 AI와 코딩 시작</span>
             <span class="btn-arrow">→</span>
           </button>
-          <button class="btn btn-secondary" id="watchDemoBtn">
-            <span class="play-icon">▶</span>
-            Demo 보기
+          <button class="btn btn-secondary" id="view3DBtn">
+            <span class="cube-icon">📊</span>
+            3D Dashboard
           </button>
         </div>
 
         <div class="hero-stats">
           <div class="stat-item">
-            <div class="stat-number" id="projectCount">2,847</div>
-            <div class="stat-label">구축된 프로젝트</div>
+            <div class="stat-number" id="aiGeneratedLines">127K</div>
+            <div class="stat-label">AI 생성 코드 라인</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number" id="timesSaved">156시간</div>
-            <div class="stat-label">절약된 개발시간</div>
+            <div class="stat-number" id="productivityBoost">847%</div>
+            <div class="stat-label">생산성 향상</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number" id="satisfaction">99.8%</div>
-            <div class="stat-label">고객 만족도</div>
+            <div class="stat-number" id="bugReduction">94%</div>
+            <div class="stat-label">버그 감소율</div>
           </div>
         </div>
       </div>
 
       <div class="hero-visual">
         <div class="visual-container">
-          <div class="floating-card" id="card1">
-            <div class="card-icon">🎨</div>
-            <div class="card-text">Design System</div>
+          <!-- 3D Dashboard Preview -->
+          <div class="dashboard-preview" id="dashboardPreview">
+            <div class="dashboard-cube">
+              <div class="cube-face front">
+                <div class="face-content">
+                  <div class="metric-display">
+                    <div class="metric-value">98.7%</div>
+                    <div class="metric-label">Code Quality</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cube-face back">
+                <div class="face-content">
+                  <div class="code-preview">
+                    <div class="code-line">function optimize() {</div>
+                    <div class="code-line">  return ai.enhance();</div>
+                    <div class="code-line">}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cube-face right">
+                <div class="face-content">
+                  <div class="performance-chart">
+                    <div class="chart-bar" style="height: 80%"></div>
+                    <div class="chart-bar" style="height: 95%"></div>
+                    <div class="chart-bar" style="height: 100%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="cube-face left">
+                <div class="face-content">
+                  <div class="ai-status">
+                    <div class="ai-indicator active"></div>
+                    <div class="ai-text">AI Active</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cube-face top">
+                <div class="face-content">
+                  <div class="logo-3d">⚡</div>
+                </div>
+              </div>
+              <div class="cube-face bottom">
+                <div class="face-content">
+                  <div class="build-status">
+                    <div class="build-indicator success"></div>
+                    <div class="build-text">Build Success</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="floating-card" id="card2">
-            <div class="card-icon">⚡</div>
-            <div class="card-text">Lightning Fast</div>
-          </div>
-          <div class="floating-card" id="card3">
-            <div class="card-icon">🤖</div>
-            <div class="card-text">AI Powered</div>
-          </div>
-          <div class="glow-orb"></div>
+          
+          <div class="floating-particles" id="particles"></div>
         </div>
       </div>
     </main>
 
-    <section class="features" id="features">
+    <section class="ai-showcase" id="ai-tools">
       <div class="section-header">
-        <h2>혁신적인 핵심 기능</h2>
-        <p>fieldnine.io에서 제공하는 차세대 개발 솔루션</p>
+        <h2>🤖 AI Development Suite</h2>
+        <p>인공지능이 개발 프로세스의 모든 단계를 지원합니다</p>
       </div>
       
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🎯</div>
-          <h3>Precision Engineering</h3>
-          <p>성능과 안정성을 위해 최적화된 모든 코드 라인</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🛡️</div>
-          <h3>Enterprise Security</h3>
-          <p>엔드투엔드 암호화를 통한 은행급 보안 시스템</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3>Real-time Analytics</h3>
-          <p>고급 메트릭과 인사이트로 실시간 성능 모니터링</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="technology" id="technology">
-      <div class="section-header">
-        <h2>최첨단 기술 스택</h2>
-        <p>fieldnine.io 플랫폼의 핵심 기술</p>
-      </div>
-      
-      <div class="tech-showcase">
-        <div class="tech-item">
-          <div class="tech-icon">🚀</div>
-          <div class="tech-info">
-            <h4>Next.js & React</h4>
-            <p>최신 프론트엔드 프레임워크</p>
+      <div class="ai-tools-grid">
+        <div class="ai-tool-card">
+          <div class="tool-icon">🎨</div>
+          <h3>Intelligent Code Generator</h3>
+          <p>자연어 설명만으로 완전한 함수, 컴포넌트, API 자동 생성</p>
+          <div class="tool-demo">
+            <div class="demo-input">"사용자 인증 API 만들어줘"</div>
+            <div class="demo-arrow">→</div>
+            <div class="demo-output">완전한 JWT 인증 시스템 생성</div>
           </div>
         </div>
-        <div class="tech-item">
-          <div class="tech-icon">⚡</div>
-          <div class="tech-info">
-            <h4>Edge Computing</h4>
-            <p>전 세계 초고속 배포</p>
+        
+        <div class="ai-tool-card">
+          <div class="tool-icon">🔍</div>
+          <h3>Smart Bug Predictor</h3>
+          <p>머신러닝으로 잠재적 버그를 사전 탐지하고 해결책 제시</p>
+          <div class="tool-stats">
+            <span class="stat">94% 정확도</span>
+            <span class="stat">평균 2분 분석</span>
           </div>
         </div>
-        <div class="tech-item">
-          <div class="tech-icon">🤖</div>
-          <div class="tech-info">
-            <h4>AI Integration</h4>
-            <p>지능형 코드 최적화</p>
+        
+        <div class="ai-tool-card">
+          <div class="tool-icon">⚡</div>
+          <h3>Performance Optimizer</h3>
+          <p>코드 성능을 자동 분석하고 최적화된 버전 제안</p>
+          <div class="performance-boost">
+            <span class="boost-text">평균 </span>
+            <span class="boost-number">3.7x</span>
+            <span class="boost-text"> 성능 향상</span>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="contact" id="contact">
+    <section class="dashboard-section" id="dashboard">
       <div class="section-header">
-        <h2>fieldnine.io와 함께하세요</h2>
-        <p>개발의 미래를 함께 만들어갈 파트너를 찾습니다</p>
+        <h2>📊 3D Interactive Dashboard</h2>
+        <p>프로젝트 상태를 3차원으로 시각화하고 실시간 모니터링</p>
       </div>
       
-      <div class="contact-info">
-        <div class="contact-item">
-          <div class="contact-icon">🌐</div>
-          <div class="contact-details">
-            <h4>Main Host</h4>
-            <p>https://fieldnine.io</p>
-          </div>
+      <div class="dashboard-container">
+        <div class="dashboard-controls">
+          <button class="control-btn active" data-view="overview">Overview</button>
+          <button class="control-btn" data-view="performance">Performance</button>
+          <button class="control-btn" data-view="analytics">Analytics</button>
         </div>
-        <div class="contact-item">
-          <div class="contact-icon">📧</div>
-          <div class="contact-details">
-            <h4>Contact</h4>
-            <p>hello@fieldnine.io</p>
-          </div>
-        </div>
-        <div class="contact-item">
-          <div class="contact-icon">📊</div>
-          <div class="contact-details">
-            <h4>Analytics</h4>
-            <p id="analyticsStatus">Demo Data Active</p>
+        
+        <div class="dashboard-main" id="dashboard3D">
+          <div class="dashboard-grid">
+            <div class="dashboard-card">
+              <h4>Project Health</h4>
+              <div class="health-indicator excellent"></div>
+              <span>Excellent</span>
+            </div>
+            <div class="dashboard-card">
+              <h4>Build Status</h4>
+              <div class="build-timeline">
+                <div class="build-item success">✓</div>
+                <div class="build-item success">✓</div>
+                <div class="build-item success">✓</div>
+                <div class="build-item running">⟳</div>
+              </div>
+            </div>
+            <div class="dashboard-card">
+              <h4>AI Assistance</h4>
+              <div class="ai-metrics">
+                <div class="ai-metric">
+                  <span class="metric-label">Generated</span>
+                  <span class="metric-value">1,247</span>
+                </div>
+                <div class="ai-metric">
+                  <span class="metric-label">Optimized</span>
+                  <span class="metric-value">89</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -229,8 +298,11 @@
           <span class="logo">⚡</span>
           <span>Field Nine</span>
         </div>
-        <div class="footer-text">
-          © 2024 fieldnine.io • Demo Environment • Building the Future
+        <div class="footer-info">
+          <div class="deployment-info">
+            <span class="deploy-status-text" id="footerDeployStatus">Deployment: Checking...</span>
+            <span class="domain-info">fieldnine.io • Production Ready</span>
+          </div>
         </div>
       </div>
     </footer>
