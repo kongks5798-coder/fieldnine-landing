@@ -39,7 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     setTimeout(function() {
-      alert('곧 공개될 데모를 기대해 주세요! 🚀\n\nField Nine으로 개발의 미래를 경험하세요.');
+      var message = '곧 공개될 데모를 기대해 주세요! 🚀\n\n';
+      message += 'fieldnine.io에서 개발의 미래를 경험하세요.';
+      alert(message);
+      
       if (watchDemoBtn) {
         watchDemoBtn.innerHTML = '<span class="play-icon">▶</span>Demo 보기';
         watchDemoBtn.style.opacity = '';
@@ -75,6 +78,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (watchDemoBtn) watchDemoBtn.addEventListener('click', handleDemo);
   if (getStartedBtn) getStartedBtn.addEventListener('click', handleGetStarted);
 
+  initializeDomainFeatures();
+  updateContactInfo();
+  handleDomainRedirect();
   createFloatingAnimation();
   initializeCounters();
   handleScrollNavigation();
@@ -95,4 +101,8 @@ document.addEventListener('DOMContentLoaded', function() {
       card.style.transition = 'all 0.6s ease';
     }, 2000 + (index * 200));
   });
+
+  console.log('🚀 Field Nine loaded successfully!');
+  console.log('Domain:', window.location.hostname);
+  console.log('Environment:', window.location.hostname === DOMAIN_CONFIG.domain ? 'Production' : 'Development');
 });
