@@ -1,64 +1,31 @@
-document.addEventListener('DOMContentLoaded', function() {
-  var clickCount = 0;
-  var cardCount = 0;
-
-  // DOM 요소들
-  var countEl = document.getElementById('count');
-  var cardCountEl = document.getElementById('cardCount');
-  var container = document.getElementById('cardContainer');
-  var startBtn = document.getElementById('startBtn');
-  var addCardBtn = document.getElementById('addCardBtn');
-  var clearBtn = document.getElementById('clearBtn');
-
-  function handleStartClick() {
-    clickCount++;
-    updateCounterDisplay(countEl, cardCountEl, clickCount, cardCount);
-    updateBackgroundGradient(clickCount);
-    
-    // 버튼 피드백 효과
-    if (startBtn) {
-      startBtn.style.transform = 'scale(0.95)';
-      setTimeout(function() {
-        startBtn.style.transform = '';
-      }, 150);
-    }
-  }
-
-  function addNewCard() {
-    if (!container) return;
-    
-    cardCount++;
-    updateCounterDisplay(countEl, cardCountEl, clickCount, cardCount);
-    
-    var card = createCard(
-      pickRandom(APP_DATA.emojis),
-      pickRandom(APP_DATA.titles),
-      pickRandom(APP_DATA.descriptions)
-    );
-    
-    container.insertBefore(card, container.firstChild);
-  }
-
-  function clearAllCards() {
-    if (container) {
-      container.innerHTML = '';
-      cardCount = 0;
-      updateCounterDisplay(countEl, cardCountEl, clickCount, cardCount);
-    }
-  }
-
-  // 이벤트 리스너 등록
-  if (startBtn) startBtn.addEventListener('click', handleStartClick);
-  if (addCardBtn) addCardBtn.addEventListener('click', addNewCard);
-  if (clearBtn) clearBtn.addEventListener('click', clearAllCards);
-
-  // 초기 카드 3개 생성
-  for (var i = 0; i < 3; i++) {
-    setTimeout(addNewCard, i * 300);
-  }
-
-  console.log('🚀 Field Nine App 완전히 로드됨!');
-  console.log('📁 파일 구조: index.html, style.css, data.js, ui.js, app.js');
-  console.log('✅ 모든 기능 테스트 완료!');
-  console.log('🎯 기능: 카운터, 카드 생성/삭제, 배경 변화, 애니메이션');
-});
+var APP_DATA = {
+  emojis: ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸', '⭐', '🎪', '🎭', '🎨'],
+  titles: [
+    '새로운 프로젝트 시작',
+    'AI 분석 완료',
+    '배포 성공!',
+    '성능 최적화됨',
+    '버그 수정 완료',
+    '코드 리뷰 통과',
+    '테스트 케이스 추가',
+    '문서화 업데이트'
+  ],
+  descriptions: [
+    'Field Nine으로 빠르게 구축했습니다.',
+    'AI가 코드를 자동으로 최적화했습니다.',
+    '전 세계에 성공적으로 배포되었습니다.',
+    '로딩 속도가 50% 향상되었습니다.',
+    '모든 테스트가 통과했습니다.',
+    '코드 품질이 크게 개선되었습니다.'
+  ],
+  errorMessages: [
+    '네트워크 연결을 확인해주세요.',
+    '서버가 일시적으로 응답하지 않습니다.',
+    '데이터 형식이 올바르지 않습니다.',
+    '권한이 없습니다.',
+    '요청 시간이 초과되었습니다.',
+    '알 수 없는 오류가 발생했습니다.'
+  ],
+  retryAttempts: 0,
+  maxRetries: 3
+};
