@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — AI Development Platform</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
+  <title>Field Nine AI Chat — Multimodal Assistant</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -15,182 +13,129 @@
 
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
-        <span>Field Nine</span>
+        <span class="logo">🤖</span>
+        <span>Field Nine AI</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="active">Home</a>
+        <a href="#" class="active">Chat</a>
         <a href="#" id="aboutLink">About</a>
-        <a href="#" id="contactLink">Contact</a>
-        <a href="#" id="galleryLink">Gallery</a>
+        <a href="#" id="settingsLink">Settings</a>
       </div>
       <div class="system-status" id="systemStatus">
-        <div class="status-indicator" id="statusIndicator">
-          <div class="status-icon">🔄</div>
-          <span class="status-text">시스템 준비 중...</span>
+        <div class="status-indicator ready" id="statusIndicator">
+          <div class="status-icon">✅</div>
+          <span class="status-text">AI 준비 완료</span>
         </div>
       </div>
     </nav>
 
-    <main class="hero">
-      <div class="hero-badge">
-        <span class="badge-icon">🚀</span>
-        <span>AI-Powered Development</span>
+    <main class="chat-container">
+      <!-- 채팅 헤더 -->
+      <div class="chat-header">
+        <div class="ai-info">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-details">
+            <div class="ai-name">Field Nine AI</div>
+            <div class="ai-status">온라인 • 멀티모달 지원</div>
+          </div>
+        </div>
+        <div class="chat-actions">
+          <button class="action-btn" id="clearChatBtn" title="채팅 지우기">🗑️</button>
+          <button class="action-btn" id="exportChatBtn" title="채팅 내보내기">💾</button>
+        </div>
       </div>
-      
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p class="hero-desc">이 에디터에서 직접 코드를 수정해보세요.<br/>사진과 영상도 업로드할 수 있습니다.</p>
-      
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn">
-          <span class="btn-text">시작하기</span>
-          <span class="btn-loader" id="startLoader"></span>
-        </button>
-        <button class="btn btn-secondary" id="addCardBtn">
-          <span class="btn-text">카드 추가</span>
-          <span class="btn-loader" id="addLoader"></span>
-        </button>
-        <button class="btn btn-media" id="uploadBtn">
-          <span class="btn-text">📷 미디어 업로드</span>
-          <span class="btn-loader" id="uploadLoader"></span>
-        </button>
-        <button class="btn btn-outline" id="clearBtn">
-          <span class="btn-text">초기화</span>
-          <span class="btn-loader" id="clearLoader"></span>
-        </button>
+
+      <!-- 채팅 메시지 영역 -->
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-message">
+          <div class="ai-avatar">🤖</div>
+          <div class="message-content">
+            <div class="message-text">
+              안녕하세요! Field Nine AI입니다. 🚀<br/>
+              텍스트, 이미지, 영상, 음성 모두 지원합니다.<br/>
+              무엇을 도와드릴까요?
+            </div>
+            <div class="message-time">방금 전</div>
+          </div>
+        </div>
       </div>
-      
-      <div class="counter-display">
-        <div class="counter-item">
-          <span class="counter-label">클릭</span>
-          <span class="counter-value" id="count">0</span>
-          <div class="counter-status" id="countStatus"></div>
+
+      <!-- 채팅 입력 영역 -->
+      <div class="chat-input-container">
+        <!-- 첨부된 미디어 미리보기 -->
+        <div class="media-preview" id="mediaPreview">
+          <!-- 첨부된 파일들이 여기에 표시됩니다 -->
         </div>
-        <div class="counter-item">
-          <span class="counter-label">카드</span>
-          <span class="counter-value" id="cardCount">0</span>
-          <div class="counter-status" id="cardStatus"></div>
+
+        <!-- 음성 녹음 상태 -->
+        <div class="voice-recording" id="voiceRecording">
+          <div class="recording-indicator">
+            <div class="recording-dot"></div>
+            <span class="recording-text">음성 녹음 중...</span>
+            <span class="recording-time" id="recordingTime">00:00</span>
+          </div>
+          <div class="recording-actions">
+            <button class="recording-btn cancel" id="cancelRecording">취소</button>
+            <button class="recording-btn send" id="sendRecording">전송</button>
+          </div>
         </div>
-        <div class="counter-item">
-          <span class="counter-label">미디어</span>
-          <span class="counter-value" id="mediaCount">0</span>
-          <div class="counter-status" id="mediaStatus"></div>
+
+        <div class="chat-input-wrapper">
+          <!-- 입력 도구들 -->
+          <div class="input-tools">
+            <button class="tool-btn" id="attachImageBtn" title="이미지 첨부">📷</button>
+            <button class="tool-btn" id="attachVideoBtn" title="영상 첨부">🎥</button>
+            <button class="tool-btn" id="attachFileBtn" title="파일 첨부">📎</button>
+            <button class="tool-btn voice-btn" id="voiceBtn" title="음성 입력">🎤</button>
+          </div>
+
+          <!-- 텍스트 입력 -->
+          <div class="text-input-container">
+            <textarea 
+              id="messageInput" 
+              placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+              rows="1"
+            ></textarea>
+            <button class="send-btn" id="sendBtn" disabled>
+              <span class="send-icon">📤</span>
+            </button>
+          </div>
         </div>
+
+        <!-- 숨겨진 파일 입력들 -->
+        <input type="file" id="imageInput" accept="image/*" multiple hidden>
+        <input type="file" id="videoInput" accept="video/*" multiple hidden>
+        <input type="file" id="fileInput" accept="*/*" multiple hidden>
       </div>
     </main>
 
-    <!-- 미디어 업로드 섹션 -->
-    <section class="upload-section">
-      <div class="section-header">
-        <h2>미디어 업로드</h2>
-        <div class="section-subtitle">사진과 영상을 드래그하거나 클릭해서 업로드하세요</div>
-      </div>
-      
-      <div class="upload-area" id="uploadArea">
-        <div class="upload-content">
-          <div class="upload-icon">📁</div>
-          <div class="upload-text">
-            <div class="upload-title">파일을 여기에 드래그하세요</div>
-            <div class="upload-subtitle">또는 <span class="upload-link">클릭해서 선택</span></div>
-          </div>
-          <div class="upload-formats">
-            <span class="format-tag">JPG</span>
-            <span class="format-tag">PNG</span>
-            <span class="format-tag">GIF</span>
-            <span class="format-tag">MP4</span>
-            <span class="format-tag">WEBM</span>
-          </div>
+    <!-- 이미지/영상 뷰어 모달 -->
+    <div class="media-viewer" id="mediaViewer">
+      <div class="viewer-backdrop" id="viewerBackdrop"></div>
+      <div class="viewer-container">
+        <div class="viewer-header">
+          <div class="viewer-title" id="viewerTitle">미디어 보기</div>
+          <button class="viewer-close" id="viewerClose">×</button>
         </div>
-        <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
-      </div>
-
-      <!-- 업로드 진행률 -->
-      <div class="upload-progress" id="uploadProgress">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div class="progress-text" id="progressText">업로드 중... 0%</div>
-      </div>
-    </section>
-
-    <!-- 미디어 갤러리 -->
-    <section class="gallery-section">
-      <div class="section-header">
-        <h2>미디어 갤러리</h2>
-        <div class="gallery-controls">
-          <button class="filter-btn active" data-filter="all">전체</button>
-          <button class="filter-btn" data-filter="image">사진</button>
-          <button class="filter-btn" data-filter="video">영상</button>
-          <button class="btn btn-sm btn-outline" id="clearGalleryBtn">갤러리 비우기</button>
-        </div>
-      </div>
-      
-      <div class="gallery-grid" id="galleryGrid">
-        <!-- 미디어 항목들이 여기에 추가됩니다 -->
-      </div>
-    </section>
-
-    <section class="cards-section">
-      <div class="section-header">
-        <h2>최근 활동</h2>
-        <div class="section-subtitle">실시간으로 생성되는 카드들</div>
-        <div class="section-status" id="sectionStatus">
-          <div class="loading-spinner"></div>
-          <span>카드 로딩 중...</span>
-        </div>
-      </div>
-      <div class="cards" id="cardContainer">
-        <!-- Cards will be dynamically inserted here -->
-      </div>
-    </section>
-
-    <footer class="footer">
-      <div class="footer-content">
-        <p>Built with <span class="heart">❤️</span> by Field Nine AI</p>
-        <div class="footer-links">
-          <a href="#" id="githubLink">GitHub</a>
-          <a href="#" id="docsLink">Docs</a>
-          <a href="#" id="supportLink">Support</a>
-        </div>
-      </div>
-    </footer>
-
-    <!-- 미디어 뷰어 모달 -->
-    <div class="media-modal" id="mediaModal">
-      <div class="modal-backdrop" id="modalBackdrop"></div>
-      <div class="modal-container">
-        <div class="modal-header">
-          <div class="modal-title" id="modalTitle">미디어 보기</div>
-          <div class="modal-actions">
-            <button class="modal-btn" id="downloadBtn" title="다운로드">💾</button>
-            <button class="modal-btn" id="deleteBtn" title="삭제">🗑️</button>
-            <button class="modal-btn" id="closeModalBtn" title="닫기">×</button>
-          </div>
-        </div>
-        <div class="modal-content" id="modalContent">
-          <!-- 미디어 콘텐츠가 여기에 표시됩니다 -->
-        </div>
-        <div class="modal-info" id="modalInfo">
-          <!-- 파일 정보가 여기에 표시됩니다 -->
+        <div class="viewer-content" id="viewerContent">
+          <!-- 미디어 콘텐츠가 여기에 표시 -->
         </div>
       </div>
     </div>
 
-    <!-- 오류 모달 -->
-    <div class="error-modal" id="errorModal">
+    <!-- 음성 권한 요청 모달 -->
+    <div class="permission-modal" id="permissionModal">
       <div class="modal-content">
         <div class="modal-header">
-          <div class="error-icon">⚠️</div>
-          <h3>오류 발생</h3>
-          <button class="modal-close" id="modalClose">×</button>
+          <div class="permission-icon">🎤</div>
+          <h3>음성 권한 필요</h3>
         </div>
         <div class="modal-body">
-          <p id="errorMessage">알 수 없는 오류가 발생했습니다.</p>
-          <div class="error-details" id="errorDetails"></div>
+          <p>음성 입력을 사용하려면 마이크 권한이 필요합니다.</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" id="retryBtn">다시 시도</button>
-          <button class="btn btn-outline" id="dismissBtn">닫기</button>
+          <button class="btn btn-secondary" id="denyPermission">거부</button>
+          <button class="btn btn-primary" id="allowPermission">허용</button>
         </div>
       </div>
     </div>
