@@ -3,96 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — The Future is Now</title>
+  <title>Field Nine Energy — Power Your Development</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
-    <nav class="nav">
-      <div class="nav-brand">
-        <div class="logo-circle"></div>
-        <span>FIELD NINE</span>
-      </div>
-      <div class="nav-center">
-        <a href="#" class="active">Model AI</a>
-        <a href="#" id="aboutLink">Autopilot</a>
-        <a href="#" id="contactLink">Supercharge</a>
-      </div>
-      <div class="nav-right">
-        <button class="account-btn">Account</button>
-      </div>
-    </nav>
+    <header class="header">
+      <nav class="nav">
+        <div class="nav-brand">
+          <div class="energy-icon">⚡</div>
+          <span>FIELD NINE ENERGY</span>
+        </div>
+        <div class="nav-menu">
+          <a href="#" class="active">Solar Roof</a>
+          <a href="#" id="aboutLink">Powerwall</a>
+          <a href="#" id="contactLink">Megapack</a>
+          <button class="support-btn">Support</button>
+        </div>
+      </nav>
+    </header>
 
     <main class="hero">
-      <div class="hero-bg">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
+      <div class="hero-visual">
+        <div class="energy-grid">
+          <div class="grid-line" style="--delay: 0s"></div>
+          <div class="grid-line" style="--delay: 0.5s"></div>
+          <div class="grid-line" style="--delay: 1s"></div>
+          <div class="grid-line" style="--delay: 1.5s"></div>
+        </div>
+        <div class="power-indicators">
+          <div class="power-dot active"></div>
+          <div class="power-dot"></div>
+          <div class="power-dot"></div>
+          <div class="power-dot"></div>
+        </div>
       </div>
       
       <div class="hero-content">
-        <h1>Model AI</h1>
-        <p class="hero-desc">The most advanced development platform ever created</p>
+        <div class="hero-badge">
+          <span class="badge-icon">🌱</span>
+          <span>100% Sustainable Development</span>
+        </div>
         
-        <div class="feature-grid">
-          <div class="feature-item">
-            <div class="feature-icon">🚀</div>
-            <div class="feature-text">
-              <div class="feature-title">Ludicrous Mode</div>
-              <div class="feature-subtitle">Deploy in seconds</div>
+        <h1 class="hero-title">
+          Power Your Code<br/>
+          <span class="title-accent">With Clean Energy</span>
+        </h1>
+        
+        <p class="hero-description">
+          Revolutionary development platform powered by renewable algorithms.
+          Zero carbon footprint, infinite possibilities.
+        </p>
+
+        <div class="energy-stats">
+          <div class="energy-meter">
+            <div class="meter-label">Current Output</div>
+            <div class="meter-value">
+              <span class="value-number" id="count">0</span>
+              <span class="value-unit">kW</span>
+            </div>
+            <div class="meter-bar">
+              <div class="meter-fill"></div>
             </div>
           </div>
-          <div class="feature-item">
-            <div class="feature-icon">🧠</div>
-            <div class="feature-text">
-              <div class="feature-title">Neural Net</div>
-              <div class="feature-subtitle">AI-powered coding</div>
+          
+          <div class="energy-meter">
+            <div class="meter-label">Storage</div>
+            <div class="meter-value">
+              <span class="value-number" id="cardCount">0</span>
+              <span class="value-unit">kWh</span>
             </div>
-          </div>
-          <div class="feature-item">
-            <div class="feature-icon">⚡</div>
-            <div class="feature-text">
-              <div class="feature-title">Supercharging</div>
-              <div class="feature-subtitle">Instant scaling</div>
+            <div class="meter-bar">
+              <div class="meter-fill secondary"></div>
             </div>
           </div>
         </div>
 
-        <div class="cta-section">
-          <button class="btn btn-primary" id="startBtn">Configure</button>
-          <button class="btn btn-ghost" id="addCardBtn">Test Drive</button>
-        </div>
-
-        <div class="stats-bar">
-          <div class="stat">
-            <span class="stat-number" id="count">0</span>
-            <span class="stat-unit">mph</span>
-            <span class="stat-label">Top Speed</span>
-          </div>
-          <div class="stat">
-            <span class="stat-number" id="cardCount">0</span>
-            <span class="stat-unit">mi</span>
-            <span class="stat-label">Range</span>
-          </div>
-          <div class="stat">
-            <span class="stat-number">2.1</span>
-            <span class="stat-unit">s</span>
-            <span class="stat-label">0-60 mph</span>
-          </div>
+        <div class="action-panel">
+          <button class="btn btn-energy" id="startBtn">
+            <span class="btn-icon">⚡</span>
+            <span>Start Charging</span>
+          </button>
+          <button class="btn btn-outline" id="addCardBtn">
+            <span class="btn-icon">🔋</span>
+            <span>Add Battery</span>
+          </button>
         </div>
       </div>
     </main>
 
-    <section class="experience-section">
+    <section class="powerwall-section">
       <div class="section-header">
-        <h2>Experience the Future</h2>
-        <p>Every detail engineered for perfection</p>
+        <h2>Your Development Powerwall</h2>
+        <p>Store unlimited potential, deploy on demand</p>
       </div>
-      <div class="cards" id="cardContainer"></div>
+      
+      <div class="powerwall-grid" id="cardContainer">
+        <!-- Powerwall cards will appear here -->
+      </div>
+      
+      <div class="control-center">
+        <button class="control-btn" id="clearBtn">
+          <span class="control-icon">🔄</span>
+          <span>System Reset</span>
+        </button>
+      </div>
     </section>
 
     <footer class="footer">
-      <button class="btn btn-minimal" id="clearBtn">Reset Configuration</button>
+      <div class="footer-content">
+        <div class="company-info">
+          <div class="company-name">Field Nine Energy</div>
+          <div class="company-tagline">Accelerating sustainable development</div>
+        </div>
+        <div class="footer-stats">
+          <div class="footer-stat">
+            <div class="stat-value">99.9%</div>
+            <div class="stat-label">Uptime</div>
+          </div>
+          <div class="footer-stat">
+            <div class="stat-value">0g</div>
+            <div class="stat-label">CO₂/kWh</div>
+          </div>
+        </div>
+      </div>
     </footer>
   </div>
 
