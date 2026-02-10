@@ -79,7 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
 - CRITICAL: Before using ANY variable, it MUST be declared with const/let/var/function. Never use abbreviations like "pp", "el2", "btn2" without declaring them first.
 - CRITICAL: After writing the code, mentally trace every variable reference and confirm it has a corresponding declaration. Missing declarations cause runtime crashes.
 - Common mistake to AVOID: writing \`pp.textContent = ...\` or \`pp.style...\` where \`pp\` was never declared. Use full descriptive names like \`paragraph\`, \`priceText\`, \`progressBar\`.
-- ABSOLUTELY FORBIDDEN: NEVER include stray text like "pp.js", "pp", or any filename as a line in app.js. The file must start with a JavaScript statement (e.g. document.addEventListener). If you see "pp.js" in the current file context, IGNORE it and DO NOT reproduce it.
+- ABSOLUTELY FORBIDDEN: NEVER include stray text like "pp.js", "pp", "script.js", "main.js", or ANY filename/label as a line in code blocks. The FIRST line of app.js must ALWAYS be either \`// target: app.js\` or \`document.addEventListener('DOMContentLoaded', () => {\`. NO exceptions.
+- If you see "pp.js", "pp", or any filename text in the current file context, it is a bug — IGNORE it completely and DO NOT reproduce it.
+- NEVER output a filename as plain text inside a code block. Filenames belong ONLY in the \`\`\` language tag or the target comment.
 
 ## Language
 - Explanations: Korean

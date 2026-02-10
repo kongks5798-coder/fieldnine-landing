@@ -112,7 +112,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initialPromptSentRef = useRef(false);
-  const autoFixRetryRef = useRef(0); // max 1 auto-fix retry per AI response
+  const autoFixRetryRef = useRef(0); // cumulative auto-fix counter (max 2 per conversation, never resets)
 
   /* ===== Agent Mode State ===== */
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
@@ -244,10 +244,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         }
       }
 
-      // If JS has errors and we haven't retried yet, auto-fix
-      if (validationErrors.length > 0 && autoFixRetryRef.current < 1) {
+      // If JS has errors and we haven't exceeded the conversation-wide auto-fix limit, auto-fix
+      if (validationErrors.length > 0 && autoFixRetryRef.current < 2) {
         autoFixRetryRef.current += 1;
-        addProgressEvent("file-insert", `코드 검증 실패 — 자동 수정 요청 (${autoFixRetryRef.current}/1)`, "pending");
+        addProgressEvent("file-insert", `코드 검증 실패 — 자동 수정 요청 (${autoFixRetryRef.current}/2)`, "pending");
 
         // Still insert the code (so user can see it), but also auto-request fix
         for (const block of parsed.codeBlocks) {
@@ -272,8 +272,12 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         return;
       }
 
-      // Reset retry counter on successful validation
-      autoFixRetryRef.current = 0;
+      // If still has errors but auto-fix limit reached, insert anyway + warn user
+      if (validationErrors.length > 0) {
+        addProgressEvent("file-insert", "자동 수정 한도 초과 — 코드 삽입 (수동 확인 필요)", "error");
+      }
+
+      // NOTE: No reset of autoFixRetryRef — it's cumulative for the entire conversation
 
       for (const block of parsed.codeBlocks) {
         onInsertCode(block.code, block.targetFile, true);
