@@ -505,7 +505,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       initStages(assistantId);
 
       const fileContext: Record<string, string> = currentFiles
-        ? Object.fromEntries(Object.entries(currentFiles).map(([, f]) => [f.name, f.content]))
+        ? Object.fromEntries(Object.entries(currentFiles).map(([, f]) => [f.name, f.content.slice(0, 3000)]))
         : {};
 
       // Abort controller with 120s safety timeout
@@ -699,9 +699,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       abortRef.current = abortController;
 
       try {
-        // Build conversation history for API (plain format)
+        // Build conversation history for API (plain format, last 8 messages to stay under 200KB)
+        const recentHistory = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
         const apiMessages = [
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
+          ...recentHistory,
           { role: "user" as const, content: modePrefix + userText },
         ];
 

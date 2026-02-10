@@ -209,18 +209,6 @@ export async function POST(req: Request) {
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
-    // Limit total payload size (~200KB) to prevent abuse
-    const totalSize = rawMessages.reduce(
-      (sum: number, m: Record<string, unknown>) =>
-        sum + (typeof m.content === "string" ? m.content.length : JSON.stringify(m).length),
-      0,
-    );
-    if (totalSize > 200_000) {
-      return new Response(
-        JSON.stringify({ error: "Request too large (max ~200KB)" }),
-        { status: 413, headers: { "Content-Type": "application/json" } },
-      );
-    }
 
     // ===== Extract user query for search =====
     const lastMsg = rawMessages[rawMessages.length - 1];
@@ -314,6 +302,19 @@ export async function POST(req: Request) {
     const windowedMessages = rawMessages.length > 10
       ? rawMessages.slice(-10)
       : rawMessages;
+
+    // Size check AFTER windowing to avoid false 413s from long history
+    const totalSize = windowedMessages.reduce(
+      (sum: number, m: Record<string, unknown>) =>
+        sum + (typeof m.content === "string" ? m.content.length : JSON.stringify(m).length),
+      0,
+    ) + (fileContext ? JSON.stringify(fileContext).length : 0);
+    if (totalSize > 200_000) {
+      return new Response(
+        JSON.stringify({ error: "Request too large (max ~200KB)" }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     // useChat sends UIMessage format (with parts array),
     // but initial generation sends plain format (with content string).

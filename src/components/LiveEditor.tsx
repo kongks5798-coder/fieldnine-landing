@@ -668,23 +668,48 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const buildPreviewRef = useRef<(() => string) | null>(null);
 
   useEffect(() => {
-    loadFromStorage().then((loaded) => {
-      if (loaded) {
-        // Validate: ensure at least index.html has non-empty content
-        const htmlContent = loaded["index.html"]?.content ?? "";
-        if (htmlContent.trim().length > 10) {
-          setFiles(loaded);
-          setOpenTabs(Object.keys(loaded));
-          setActiveFile(Object.keys(loaded)[0] ?? "index.html");
-        } else {
-          console.warn("[LiveEditor] Loaded files invalid (empty index.html), using defaults");
+    const REQUIRED_FILES = ["index.html", "style.css", "data.js", "ui.js", "app.js"];
+    const defaults = JSON.parse(JSON.stringify(DEFAULT_FILES)) as Record<string, VFile>;
+
+    loadFromStorage()
+      .then((loaded) => {
+        if (loaded) {
+          const htmlContent = loaded["index.html"]?.content ?? "";
+          if (htmlContent.trim().length > 10) {
+            // Patch missing required files from defaults
+            for (const fname of REQUIRED_FILES) {
+              if (!loaded[fname] || !loaded[fname].content || loaded[fname].content.trim().length < 5) {
+                console.warn(`[LiveEditor] Missing/empty ${fname}, patching from defaults`);
+                loaded[fname] = defaults[fname];
+              }
+            }
+            // Truncation guard: if any JS file has unclosed braces, replace it
+            for (const fname of ["data.js", "ui.js", "app.js"]) {
+              const code = loaded[fname]?.content ?? "";
+              const opens = (code.match(/\{/g) || []).length;
+              const closes = (code.match(/\}/g) || []).length;
+              if (opens !== closes) {
+                console.warn(`[LiveEditor] Truncated ${fname} detected (braces ${opens}/${closes}), resetting`);
+                loaded[fname] = defaults[fname];
+              }
+            }
+            setFiles(loaded);
+            setOpenTabs(Object.keys(loaded));
+            setActiveFile(Object.keys(loaded)[0] ?? "index.html");
+          } else {
+            console.warn("[LiveEditor] Loaded files invalid (empty index.html), using defaults");
+          }
         }
-      }
-      // Force preview refresh after files settle
-      setTimeout(() => {
-        if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current());
-      }, 200);
-    });
+      })
+      .catch((err) => {
+        console.error("[LiveEditor] loadFromStorage failed, using defaults:", err);
+      })
+      .finally(() => {
+        // Always force preview render — even on error, defaults are in state
+        setTimeout(() => {
+          if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current());
+        }, 150);
+      });
     loadAssets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
