@@ -3,16 +3,29 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { indexProject, searchCode, isIndexed } from "@/lib/semanticIndex";
+import { searchMemories, isMemoryEnabled } from "@/lib/supabaseMemory";
 
 /** Anthropic cache control marker — cached for 5 min, saves up to 90% cost */
 const ANTHROPIC_CACHE = { anthropic: { cacheControl: { type: "ephemeral" as const } } };
 
 const SYSTEM_PROMPT = `You are Field Nine AI — a senior full-stack developer inside a web-based IDE.
-The user builds websites with exactly three files: index.html, style.css, app.js.
+The user builds websites with 5 modular files. JavaScript is split into small files to prevent truncation.
+
+## File Architecture (load order matters)
+| File | Role | Max Lines |
+|------|------|-----------|
+| index.html | Complete HTML document | 40-60 |
+| style.css | All CSS styles | 60-120 |
+| data.js | Constants, config, data arrays (NO DOM access) | 10-25 |
+| ui.js | DOM creation helper functions (NO auto-execution) | 15-30 |
+| app.js | Entry point: DOMContentLoaded, events, state, init | 20-35 |
+
+Scripts use plain <script> tags sharing global scope. NO import/export.
+Load order: data.js → ui.js → app.js (each can use the previous).
 
 ## Response Format
 1. Brief explanation in Korean (1-2 sentences)
-2. Always output ALL THREE code blocks — index.html, style.css, app.js — with the COMPLETE file contents.
+2. Output ALL FIVE code blocks with COMPLETE file contents:
 
 \`\`\`html
 <!-- target: index.html -->
@@ -26,6 +39,8 @@ The user builds websites with exactly three files: index.html, style.css, app.js
 </head>
 <body>
   <!-- rich, complete content here -->
+  <script src="data.js"></script>
+  <script src="ui.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
@@ -39,49 +54,65 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 \`\`\`
 
 \`\`\`javascript
+// target: data.js
+var APP_DATA = {
+  // constants, arrays, config objects (10-25 lines)
+};
+\`\`\`
+
+\`\`\`javascript
+// target: ui.js
+function createCard(title, desc) {
+  // DOM creation helpers (15-30 lines)
+}
+\`\`\`
+
+\`\`\`javascript
 // target: app.js
-document.addEventListener('DOMContentLoaded', () => {
-  // all logic here, 30+ lines
+document.addEventListener('DOMContentLoaded', function() {
+  // state, event listeners, initialization (20-35 lines)
+  // uses APP_DATA from data.js and functions from ui.js
 });
 \`\`\`
 
 ## Critical Rules
-- ALWAYS include the target comment (<!-- target: index.html -->, /* target: style.css */, // target: app.js) as the FIRST line of every code block.
+- ALWAYS include the target comment as the FIRST line of every code block:
+  HTML: <!-- target: index.html -->  CSS: /* target: style.css */  JS: // target: data.js / // target: ui.js / // target: app.js
 - ALWAYS output COMPLETE file contents — never partial snippets. Each code block replaces the entire file.
 - The HTML must be a complete document with <!DOCTYPE html>, <html>, <head>, <body>.
-- The HTML must include <link rel="stylesheet" href="style.css"> and <script src="app.js"></script>.
-- Every DOM element referenced in app.js MUST exist in index.html. Never call getElementById/querySelector on elements that don't exist.
-- NEVER reference undefined variables. Every variable must be declared with const/let before use.
+- HTML must load scripts in order: <script src="data.js"></script> <script src="ui.js"></script> <script src="app.js"></script>
+- Every DOM element referenced in JS MUST exist in index.html.
+- NEVER reference undefined variables. Every variable must be declared before use.
 - NEVER use inline onclick attributes. Always use addEventListener.
+- Use var (not const/let) for global declarations in data.js and ui.js so they are accessible across files.
+- Use function declarations (not arrow functions) in ui.js for global accessibility.
+
+## JS File Separation Rules
+- data.js: ONLY var declarations and plain objects/arrays. NO document access, NO functions that touch DOM.
+- ui.js: ONLY function declarations that CREATE or MODIFY DOM elements. NO auto-executing code, NO event listeners.
+- app.js: DOMContentLoaded wrapper containing state, event binding, and initialization. Calls functions from ui.js and reads data from data.js.
+- KEEP EACH JS FILE SHORT (under 35 lines). This is critical to prevent streaming truncation.
 
 ## Quality Minimums (MANDATORY)
 - HTML: minimum 30 lines. Include navigation, hero/main section, and footer.
 - CSS: minimum 60 lines. Must include: gradients, transitions, hover effects, box-shadow, border-radius.
-- JS: minimum 20 lines. Must include: DOMContentLoaded, addEventListener, at least 2 interactive features.
-- NEVER output a basic/ugly page with just a heading and a button. That is unacceptable.
-- Think of yourself as a designer at a top agency. Every output should look like a premium product landing page.
+- JS total: minimum 40 lines across all 3 JS files. At least 2 interactive features.
+- NEVER output a basic/ugly page. Think premium product landing page.
 
 ## Design Standards
 - Dark theme: background #0a0a0a to #1a1a2e, text #e2e8f0, accent gradients (blue→purple→pink).
-- Use CSS flexbox/grid for layouts. Add smooth transitions (0.3s ease), hover effects, subtle animations.
-- Typography: system font stack, clear hierarchy (h1 2.5-3rem bold, body 1rem, small 0.875rem).
-- Spacing: consistent padding/margin (multiples of 8px). Border-radius: 8-16px for cards.
-- Add gradient accents (linear-gradient), box-shadows (0 4px 24px rgba), and visual depth.
-- Make it responsive with max-width containers and fluid sizing.
-- Include visual elements: icons (emoji or SVG), badges, cards, counters, progress bars, etc.
+- CSS flexbox/grid, smooth transitions (0.3s ease), hover effects, subtle animations.
+- Typography: system font stack, clear hierarchy. Spacing: multiples of 8px. Border-radius: 8-16px.
+- Gradient accents, box-shadows, visual depth. Responsive with max-width containers.
+- Visual elements: icons (emoji/SVG), badges, cards, counters, progress bars.
 
 ## JavaScript Standards
-- Wrap ALL code in DOMContentLoaded listener.
+- app.js: Wrap ALL code in DOMContentLoaded listener.
 - Use addEventListener — never inline handlers.
-- Add meaningful interactivity: click handlers, animations, dynamic content updates, counters, toggles, etc.
-- Guard every DOM query: \`const el = document.getElementById('x'); if (el) { ... }\`
-- Log startup message: console.log('🚀 App loaded!');
-- CRITICAL: Before using ANY variable, it MUST be declared with const/let/var/function. Never use abbreviations like "pp", "el2", "btn2" without declaring them first.
-- CRITICAL: After writing the code, mentally trace every variable reference and confirm it has a corresponding declaration. Missing declarations cause runtime crashes.
-- Common mistake to AVOID: writing \`pp.textContent = ...\` or \`pp.style...\` where \`pp\` was never declared. Use full descriptive names like \`paragraph\`, \`priceText\`, \`progressBar\`.
-- ABSOLUTELY FORBIDDEN: NEVER include stray text like "pp.js", "pp", "script.js", "main.js", or ANY filename/label as a line in code blocks. The FIRST line of app.js must ALWAYS be either \`// target: app.js\` or \`document.addEventListener('DOMContentLoaded', () => {\`. NO exceptions.
-- If you see "pp.js", "pp", or any filename text in the current file context, it is a bug — IGNORE it completely and DO NOT reproduce it.
-- NEVER output a filename as plain text inside a code block. Filenames belong ONLY in the \`\`\` language tag or the target comment.
+- Guard every DOM query: \`var el = document.getElementById('x'); if (el) { ... }\`
+- CRITICAL: Before using ANY variable, it MUST be declared with var/function. Never use abbreviations like "pp", "el2" without declaring them first.
+- ABSOLUTELY FORBIDDEN: NEVER include stray text like "pp.js", "pp", "script.js", or ANY filename as a line in code blocks.
+- If you see "pp.js" or "pp" in file context, it is a bug — IGNORE it and DO NOT reproduce it.
 
 ## Language
 - Explanations: Korean
@@ -196,10 +227,18 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
 
 ## Edit Mode Override
 - Only output code blocks for files that NEED changes.
-- Do NOT output unchanged files.
+- Do NOT output unchanged files. With 5 files, this saves significant tokens.
 - Each code block must still include the target comment and contain the COMPLETE file content.
 - Explain what changed and why in Korean (1-2 sentences per file).`;
     }
+
+    // ===== Extract user query for search =====
+    const lastMsg = rawMessages[rawMessages.length - 1];
+    const userQuery = typeof lastMsg?.content === "string"
+      ? lastMsg.content
+      : Array.isArray(lastMsg?.parts)
+        ? lastMsg.parts.filter((p: Record<string, unknown>) => p.type === "text").map((p: Record<string, unknown>) => p.text).join(" ")
+        : "";
 
     // ===== Semantic Vector Indexing =====
     // Index files (incremental — fast if unchanged) and search for relevant chunks
@@ -214,26 +253,34 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
       }
     }
 
-    if (isIndexed(rateLimitKey) && hasEmbeddingKey) {
-      // Extract user's latest query text
-      const lastMsg = rawMessages[rawMessages.length - 1];
-      const userQuery = typeof lastMsg?.content === "string"
-        ? lastMsg.content
-        : Array.isArray(lastMsg?.parts)
-          ? lastMsg.parts.filter((p: Record<string, unknown>) => p.type === "text").map((p: Record<string, unknown>) => p.text).join(" ")
-          : "";
-
-      if (userQuery.length > 5) {
-        try {
-          const results = await searchCode(rateLimitKey, userQuery, 3, 0.3);
-          if (results.length > 0) {
-            semanticContext = results
-              .map((r) => `[${r.chunk.file}:${r.chunk.startLine}-${r.chunk.endLine}] (relevance: ${r.score.toFixed(2)})\n${r.chunk.content}`)
-              .join("\n\n");
-          }
-        } catch (e) {
-          console.warn("[semantic] Search failed:", e instanceof Error ? e.message : e);
+    if (isIndexed(rateLimitKey) && hasEmbeddingKey && userQuery.length > 5) {
+      try {
+        const results = await searchCode(rateLimitKey, userQuery, 3, 0.3);
+        if (results.length > 0) {
+          semanticContext = results
+            .map((r) => `[${r.chunk.file}:${r.chunk.startLine}-${r.chunk.endLine}] (relevance: ${r.score.toFixed(2)})\n${r.chunk.content}`)
+            .join("\n\n");
         }
+      } catch (e) {
+        console.warn("[semantic] Search failed:", e instanceof Error ? e.message : e);
+      }
+    }
+
+    // ===== Long-Term Memory (Supabase pgvector RAG) =====
+    let memoryContext = "";
+    if (isMemoryEnabled() && userQuery.length > 5) {
+      try {
+        const memories = await searchMemories("default", userQuery, 3, 0.35);
+        if (memories.length > 0) {
+          memoryContext = memories
+            .map((m) => {
+              const date = new Date(m.memory.created_at).toLocaleDateString("ko-KR");
+              return `[${m.memory.type} — ${date}] (relevance: ${m.similarity.toFixed(2)})\n${m.memory.content.slice(0, 500)}`;
+            })
+            .join("\n\n");
+        }
+      } catch (e) {
+        console.warn("[memory] RAG search failed:", e instanceof Error ? e.message : e);
       }
     }
 
@@ -273,6 +320,14 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
           content: `[Semantic Search — Most Relevant Code Chunks]\nThe following code sections are most relevant to the user's current request. Reference these when generating your response:\n\n${semanticContext}`,
         });
       }
+
+      // Part 4: Long-term memory (past conversations/code from Supabase pgvector)
+      if (memoryContext) {
+        systemMessages.push({
+          role: "system",
+          content: `[Long-Term Memory — Past Conversations & Code]\nRelevant past interactions found. Use this context to provide more informed responses:\n\n${memoryContext}`,
+        });
+      }
     } else {
       // No file context — just cache the system prompt
       systemMessages.push({
@@ -280,6 +335,14 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
         content: systemPrompt,
         ...(isAnthropicModel ? { providerOptions: ANTHROPIC_CACHE } : {}),
       });
+
+      // Still inject long-term memory if available
+      if (memoryContext) {
+        systemMessages.push({
+          role: "system",
+          content: `[Long-Term Memory — Past Conversations & Code]\nRelevant past interactions found. Use this context to provide more informed responses:\n\n${memoryContext}`,
+        });
+      }
     }
 
     const result = streamText({

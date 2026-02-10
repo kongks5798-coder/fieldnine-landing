@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject } from "react";
+import { RefObject, useState, useEffect, useRef } from "react";
 import {
   Monitor,
   Globe,
@@ -10,6 +10,7 @@ import {
   ExternalLink,
   MousePointer,
 } from "lucide-react";
+import AutoTestOverlay from "./AutoTestOverlay";
 
 type ViewportSize = "desktop" | "tablet" | "mobile";
 
@@ -30,6 +31,10 @@ interface PreviewPanelProps {
   isSyncing?: boolean;
   /** Brief flash after sync completes */
   showSynced?: boolean;
+  /** Trigger auto-test animation overlay */
+  autoTestActive?: boolean;
+  /** Called when auto-test animation finishes */
+  onAutoTestComplete?: () => void;
 }
 
 const viewportWidths: Record<ViewportSize, string> = {
@@ -50,8 +55,32 @@ export default function PreviewPanel({
   wcServerUrl,
   isSyncing,
   showSynced,
+  autoTestActive,
+  onAutoTestComplete,
 }: PreviewPanelProps) {
   const liveUrl = vercelUrl ?? deployedUrl;
+
+  /* ===== Update Overlay (blur + fade transition) ===== */
+  const [overlayPhase, setOverlayPhase] = useState<"hidden" | "active" | "fading">("hidden");
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isSyncing) {
+      // Show overlay immediately
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+      setOverlayPhase("active");
+    } else if (overlayPhase === "active") {
+      // Sync just finished — hold briefly for iframe to render, then fade out
+      fadeTimerRef.current = setTimeout(() => {
+        setOverlayPhase("fading");
+        // Remove after fade animation completes
+        fadeTimerRef.current = setTimeout(() => {
+          setOverlayPhase("hidden");
+        }, 450);
+      }, 250);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSyncing]);
 
   return (
     <div className="flex flex-col h-full bg-[var(--r-bg)]">
@@ -125,7 +154,7 @@ export default function PreviewPanel({
       </div>
 
       {/* iframe */}
-      <div className="flex-1 min-h-0 flex justify-center bg-white overflow-auto">
+      <div className="flex-1 min-h-0 flex justify-center bg-white overflow-auto relative">
         {wcServerUrl ? (
           <iframe
             ref={iframeRef}
@@ -144,6 +173,41 @@ export default function PreviewPanel({
             style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
             sandbox="allow-scripts allow-modals"
           />
+        )}
+
+        {/* Update Transition Overlay */}
+        {overlayPhase !== "hidden" && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+            style={{
+              backdropFilter: overlayPhase === "fading" ? "blur(0px)" : "blur(6px)",
+              WebkitBackdropFilter: overlayPhase === "fading" ? "blur(0px)" : "blur(6px)",
+              background: overlayPhase === "fading"
+                ? "rgba(255, 255, 255, 0)"
+                : "rgba(255, 255, 255, 0.55)",
+              opacity: overlayPhase === "fading" ? 0 : 1,
+              transition: "all 0.4s ease-out",
+            }}
+          >
+            <div
+              className="flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm"
+              style={{
+                background: "rgba(255, 255, 255, 0.85)",
+                border: "1px solid rgba(0, 121, 242, 0.15)",
+                transform: overlayPhase === "fading" ? "scale(0.95) translateY(-4px)" : "scale(1) translateY(0)",
+                opacity: overlayPhase === "fading" ? 0 : 1,
+                transition: "all 0.35s ease-out",
+              }}
+            >
+              <Loader2 size={14} className="animate-spin text-[#0079F2]" />
+              <span className="text-[12px] font-medium text-[#1D2433]">업데이트 중...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Auto Test Overlay */}
+        {autoTestActive && (
+          <AutoTestOverlay active={autoTestActive} onComplete={onAutoTestComplete ?? (() => {})} />
         )}
       </div>
     </div>

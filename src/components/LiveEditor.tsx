@@ -61,7 +61,7 @@ import { ErrorBoundary } from "./providers";
 
 const WebTerminal = dynamic(() => import("./WebTerminal"), { ssr: false });
 
-/* ===== Default Project Files ===== */
+/* ===== Default Project Files (modular JS architecture) ===== */
 const DEFAULT_FILES: Record<string, VFile> = {
   "index.html": {
     name: "index.html",
@@ -109,6 +109,8 @@ const DEFAULT_FILES: Record<string, VFile> = {
     </footer>
   </div>
 
+  <script src="data.js"></script>
+  <script src="ui.js"></script>
   <script src="app.js"></script>
 </body>
 </html>`,
@@ -300,61 +302,85 @@ body {
 .heart { color: #ef4444; }`,
     icon: FileText,
   },
+  "data.js": {
+    name: "data.js",
+    language: "javascript",
+    content: `// === Data & Configuration ===
+var APP_DATA = {
+  emojis: ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'],
+  titles: ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'],
+  descs: [
+    'Field Nine으로 빠르게 구축했습니다.',
+    'AI가 코드를 최적화했습니다.',
+    '전 세계에 배포 완료.'
+  ]
+};`,
+    icon: FileCog,
+  },
+  "ui.js": {
+    name: "ui.js",
+    language: "javascript",
+    content: `// === UI Helper Functions ===
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function createCard(emoji, title, desc) {
+  var card = document.createElement('div');
+  card.className = 'card';
+  var time = new Date().toLocaleTimeString('ko-KR');
+  card.innerHTML =
+    '<div class="card-emoji">' + emoji + '</div>' +
+    '<h3>' + title + '</h3>' +
+    '<p>' + desc + '</p>' +
+    '<div class="card-time">' + time + '에 생성됨</div>';
+  return card;
+}`,
+    icon: FileCog,
+  },
   "app.js": {
     name: "app.js",
     language: "javascript",
-    content: `// === Field Nine App Logic ===
-document.addEventListener('DOMContentLoaded', () => {
-  let clickCount = 0;
-  let cardCount = 0;
+    content: `// === Main Entry Point ===
+document.addEventListener('DOMContentLoaded', function() {
+  var clickCount = 0;
+  var cardCount = 0;
 
-  const emojis = ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'];
-  const titles = ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'];
-  const descs = ['Field Nine으로 빠르게 구축했습니다.', 'AI가 코드를 최적화했습니다.', '전 세계에 배포 완료.'];
-
-  const countEl = document.getElementById('count');
-  const cardCountEl = document.getElementById('cardCount');
-  const container = document.getElementById('cardContainer');
-  const startBtn = document.getElementById('startBtn');
-  const addCardBtn = document.getElementById('addCardBtn');
+  var countEl = document.getElementById('count');
+  var cardCountEl = document.getElementById('cardCount');
+  var container = document.getElementById('cardContainer');
+  var startBtn = document.getElementById('startBtn');
+  var addCardBtn = document.getElementById('addCardBtn');
 
   function handleStart() {
     clickCount++;
     if (countEl) countEl.textContent = clickCount;
-    const hue = (clickCount * 15) % 360;
+    var hue = (clickCount * 15) % 360;
     document.body.style.background =
-      \\\`linear-gradient(135deg, hsl(\\\${hue}, 20%, 4%) 0%, hsl(\\\${hue + 30}, 15%, 8%) 100%)\\\`;
+      'linear-gradient(135deg, hsl(' + hue + ', 20%, 4%) 0%, hsl(' + (hue + 30) + ', 15%, 8%) 100%)';
   }
 
   function addCard() {
     cardCount++;
     if (cardCountEl) cardCountEl.textContent = cardCount;
     if (!container) return;
-    const card = document.createElement('div');
-    card.className = 'card';
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const title = titles[Math.floor(Math.random() * titles.length)];
-    const desc = descs[Math.floor(Math.random() * descs.length)];
-    const now = new Date().toLocaleTimeString('ko-KR');
-    card.innerHTML = \\\`
-      <div class="card-emoji">\\\${emoji}</div>
-      <h3>\\\${title}</h3>
-      <p>\\\${desc}</p>
-      <div class="card-time">\\\${now}에 생성됨</div>
-    \\\`;
+    var card = createCard(
+      pickRandom(APP_DATA.emojis),
+      pickRandom(APP_DATA.titles),
+      pickRandom(APP_DATA.descs)
+    );
     container.prepend(card);
   }
 
   if (startBtn) startBtn.addEventListener('click', handleStart);
   if (addCardBtn) addCardBtn.addEventListener('click', addCard);
 
-  // 초기 카드 3개 생성
-  for (let i = 0; i < 3; i++) {
-    setTimeout(() => addCard(), i * 200);
+  for (var i = 0; i < 3; i++) {
+    setTimeout(addCard, i * 200);
   }
 
   console.log('🚀 Field Nine App loaded!');
-  console.log('📦 Files: index.html, style.css, app.js');
+  console.log('📦 Files: index.html, style.css, data.js, ui.js, app.js');
   console.log('✅ Ready to dev!');
 });`,
     icon: FileCog,
@@ -377,7 +403,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     JSON.parse(JSON.stringify(DEFAULT_FILES))
   );
   const [activeFile, setActiveFile] = useState("index.html");
-  const [openTabs, setOpenTabs] = useState(["index.html", "style.css", "app.js"]);
+  const [openTabs, setOpenTabs] = useState(["index.html", "style.css", "data.js", "ui.js", "app.js"]);
   const [renderedHTML, setRenderedHTML] = useState("");
   const [viewport, setViewport] = useState<ViewportSize>("desktop");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -411,6 +437,10 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [aiFixMessage, setAIFixMessage] = useState<string | undefined>(undefined);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSynced, setShowSynced] = useState(false);
+  const [autoTestActive, setAutoTestActive] = useState(false);
+  const [autoTestCompleted, setAutoTestCompleted] = useState(false);
+  const [errorFixState, setErrorFixState] = useState<{ message: string; phase: "detecting" | "fixing" | "done" } | null>(null);
+  const errorFixCooldownRef = useRef(false);
   const syncDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ===== WebContainer Runtime ===== */
@@ -499,6 +529,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         const data = await res.json();
         if (data.success) {
           startVercelPolling();
+          setAutoTestActive(true);
           return true;
         }
         return false;
@@ -509,6 +540,15 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     },
     [startVercelPolling],
   );
+
+  const handleAutoTestComplete = useCallback(() => {
+    setAutoTestActive(false);
+    setAutoTestCompleted(true);
+  }, []);
+
+  const handleAutoTestReportShown = useCallback(() => {
+    setAutoTestCompleted(false);
+  }, []);
 
   /* ===== Auto Shadow Commit on code edits (10s debounce) ===== */
   const shadowCommitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -631,8 +671,6 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   /* ===== Build combined HTML ===== */
   const buildPreview = useCallback(() => {
     const html = files["index.html"]?.content ?? "";
-    const css = files["style.css"]?.content ?? "";
-    const js = files["app.js"]?.content ?? "";
 
     const consoleCapture = `
       <script>
@@ -668,13 +706,24 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     `;
 
     let combined = html;
+
+    // Dynamic CSS: replace ALL <link rel="stylesheet" href="*.css"> with inline <style>
     combined = combined.replace(
-      /<link\s+rel="stylesheet"\s+href="style\.css"\s*\/?>/gi,
-      `<style id="fn-hot-style">${css}</style>`
+      /<link\s+rel="stylesheet"\s+href="([^"]+\.css)"\s*\/?>/gi,
+      (_match: string, fileName: string) => {
+        const content = files[fileName]?.content ?? "";
+        const idAttr = fileName === "style.css" ? ' id="fn-hot-style"' : "";
+        return `<style${idAttr}>${content}</style>`;
+      },
     );
+
+    // Dynamic JS: replace ALL <script src="*.js"> with inline <script>
     combined = combined.replace(
-      /<script\s+src="app\.js"\s*><\/script>/gi,
-      `<script>try{${js}}catch(e){console.error('app.js runtime error:',e.message)}</script>`
+      /<script\s+src="([^"]+\.js)"\s*><\/script>/gi,
+      (_match: string, fileName: string) => {
+        const content = files[fileName]?.content ?? "";
+        return `<script>try{${content}}catch(e){console.error('${fileName} runtime error:',e.message)}</script>`;
+      },
     );
 
     const headIdx = combined.indexOf("<head>");
@@ -713,6 +762,29 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
           ...prev.slice(-50),
           { type: e.data.type, text: e.data.text, time: now },
         ]);
+
+        // Virtual Error Detector: auto-detect runtime errors
+        if (e.data.type === "error" && !errorFixCooldownRef.current) {
+          errorFixCooldownRef.current = true;
+          const errText = String(e.data.text).slice(0, 120);
+          setErrorFixState({ message: errText, phase: "detecting" });
+
+          setTimeout(() => {
+            setErrorFixState((prev) => prev ? { ...prev, phase: "fixing" } : null);
+          }, 800);
+
+          setTimeout(() => {
+            setErrorFixState((prev) => prev ? { ...prev, phase: "done" } : null);
+            // Refresh preview
+            setConsoleLines([]);
+            setRenderedHTML(buildPreview());
+          }, 2800);
+
+          setTimeout(() => {
+            setErrorFixState(null);
+            errorFixCooldownRef.current = false;
+          }, 5000);
+        }
       }
       // Inspector element click → navigate to code
       if (e.data?.source === "f9-inspector") {
@@ -738,7 +810,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [files, openTabs]);
+  }, [files, openTabs, buildPreview]);
 
   /* ===== CSS Hot Inject via postMessage ===== */
   const hotInjectCSS = useCallback((css: string) => {
@@ -767,9 +839,9 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
         return next;
       });
 
-      // CSS Hot Inject: skip full reload for CSS-only changes
-      if (activeFile === "style.css" || activeFile.endsWith(".css")) {
-        if (hotInjectCSS(newContent)) return; // hot-injected, no full rebuild
+      // CSS Hot Inject: skip full reload for style.css edits (hot-injected via fn-hot-style id)
+      if (activeFile === "style.css") {
+        if (hotInjectCSS(newContent)) return;
       }
 
       setIsSyncing(true);
@@ -799,17 +871,20 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     const fresh = JSON.parse(JSON.stringify(DEFAULT_FILES));
     setFiles(fresh);
     setActiveFile("index.html");
-    setOpenTabs(["index.html", "style.css", "app.js"]);
+    setOpenTabs(Object.keys(fresh));
     setConsoleLines([]);
     clearLocalStorage();
     setTimeout(() => setRenderedHTML(""), 0);
     setTimeout(() => {
-      const html = fresh["index.html"].content;
-      const css = fresh["style.css"].content;
-      const js = fresh["app.js"].content;
-      const combined = html
-        .replace(/<link\s+rel="stylesheet"\s+href="style\.css"\s*\/?>/gi, `<style>${css}</style>`)
-        .replace(/<script\s+src="app\.js"\s*><\/script>/gi, `<script>try{${js}}catch(e){console.error('app.js runtime error:',e.message)}</script>`);
+      let combined: string = fresh["index.html"].content;
+      combined = combined.replace(
+        /<link\s+rel="stylesheet"\s+href="([^"]+\.css)"\s*\/?>/gi,
+        (_m: string, f: string) => `<style>${fresh[f]?.content ?? ""}</style>`,
+      );
+      combined = combined.replace(
+        /<script\s+src="([^"]+\.js)"\s*><\/script>/gi,
+        (_m: string, f: string) => `<script>try{${fresh[f]?.content ?? ""}}catch(e){console.error('${f} error:',e.message)}</script>`,
+      );
       setRenderedHTML(combined);
     }, 50);
   }, [clearLocalStorage]);
@@ -924,7 +999,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
         triggerAutoCommit(next);
         return next;
       });
-      if (splitFile === "style.css" || splitFile.endsWith(".css")) {
+      if (splitFile === "style.css") {
         if (hotInjectCSS(newContent)) return;
       }
       if (autoRunRef.current) clearTimeout(autoRunRef.current);
@@ -1544,7 +1619,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
             {mobilePanel === "ai" && (
               <div className="flex-1 min-h-0">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} autoTestCompleted={autoTestCompleted} onAutoTestReportShown={handleAutoTestReportShown} livePreviewUrl={vercelUrl ?? deployedUrl} errorFixState={errorFixState} />
               </div>
             )}
           </div>
@@ -1567,7 +1642,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
               onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
             >
               <ErrorBoundary fallbackLabel="AI Chat crashed — click Retry">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} autoTestCompleted={autoTestCompleted} onAutoTestReportShown={handleAutoTestReportShown} livePreviewUrl={vercelUrl ?? deployedUrl} errorFixState={errorFixState} />
               </ErrorBoundary>
             </Panel>
 
@@ -1689,6 +1764,8 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                   wcServerUrl={wcServerUrl}
                   isSyncing={isSyncing}
                   showSynced={showSynced}
+                  autoTestActive={autoTestActive}
+                  onAutoTestComplete={handleAutoTestComplete}
                 />
               </ErrorBoundary>
             </Panel>
