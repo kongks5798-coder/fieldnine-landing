@@ -3,127 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine — Premium Development Platform</title>
+  <title>Field Nine — 실시간 프리뷰</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="loading-screen" id="loadingScreen">
-    <div class="loader">
-      <div class="loader-ring"></div>
-      <div class="loader-text">Field Nine Loading...</div>
-    </div>
-  </div>
-
-  <div class="app" id="mainApp">
+  <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
-        <span>Field Nine Pro</span>
-        <div class="status-indicator" id="statusIndicator">
-          <span class="status-dot"></span>
-          <span class="status-text">Online</span>
-        </div>
+        <span class="logo">🎬</span>
+        <span>Field Nine Live Preview</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="active" data-tab="dashboard">대시보드</a>
-        <a href="#" data-tab="projects">프로젝트</a>
-        <a href="#" data-tab="analytics">분석</a>
-        <a href="#" data-tab="settings">설정</a>
+        <a href="#" class="active">Editor</a>
+        <a href="#" id="previewToggle">Preview</a>
+        <a href="#" id="recordToggle">Record</a>
       </div>
     </nav>
 
-    <main class="hero">
-      <div class="hero-badge">
-        🚀 AI-Powered Development Platform
-        <span class="badge-pulse"></span>
-      </div>
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p class="hero-description">
-        차세대 개발 플랫폼으로 아이디어를 현실로 만들어보세요.<br/>
-        실시간 협업, AI 지원, 무제한 배포가 가능합니다.
-      </p>
-      
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number" id="totalClicks">0</div>
-          <div class="stat-label">총 클릭</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="totalCards">0</div>
-          <div class="stat-label">생성된 카드</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="uptime">00:00</div>
-          <div class="stat-label">활성 시간</div>
+    <main class="workspace">
+      <div class="workspace-header">
+        <div class="status-bar">
+          <div class="status-item">
+            <span class="status-dot active"></span>
+            <span>Live Preview Active</span>
+          </div>
+          <div class="status-item">
+            <span class="fps-counter">60 FPS</span>
+          </div>
+          <div class="status-item">
+            <span id="recordingStatus">Ready to Record</span>
+          </div>
         </div>
       </div>
 
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn" aria-label="프로젝트 시작">
-          <span class="btn-icon">🚀</span>
-          <span>프로젝트 시작</span>
-        </button>
-        <button class="btn btn-secondary" id="addCardBtn" aria-label="새 카드 추가">
-          <span class="btn-icon">➕</span>
-          <span>카드 추가</span>
-        </button>
-        <button class="btn btn-outline" id="clearBtn" aria-label="모든 카드 삭제">
-          <span class="btn-icon">🗑️</span>
-          <span>초기화</span>
-        </button>
+      <div class="editor-container">
+        <div class="editor-panel">
+          <div class="panel-header">
+            <h3>📝 Code Editor</h3>
+            <div class="editor-controls">
+              <button class="btn-small" id="runCode">▶ Run</button>
+              <button class="btn-small" id="clearOutput">🗑 Clear</button>
+            </div>
+          </div>
+          <div class="code-area">
+            <textarea id="codeEditor" placeholder="// JavaScript 코드를 입력하세요...
+const element = document.createElement('div');
+element.textContent = 'Hello World!';
+element.style.color = '#60a5fa';
+document.body.appendChild(element);">// 실시간 코드 테스트
+const demo = document.createElement('div');
+demo.innerHTML = '<h2>🚀 Live Demo</h2>';
+demo.style.cssText = `
+  padding: 20px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  border-radius: 12px;
+  color: white;
+  text-align: center;
+  margin: 10px;
+  animation: fadeIn 0.5s ease;
+`;
+document.body.appendChild(demo);</textarea>
+          </div>
+        </div>
+
+        <div class="preview-panel">
+          <div class="panel-header">
+            <h3>🎥 Live Preview</h3>
+            <div class="preview-controls">
+              <button class="btn-small" id="captureFrame">📸 Capture</button>
+              <button class="btn-small recording" id="startRecord">🔴 Record</button>
+            </div>
+          </div>
+          <div class="preview-area">
+            <div class="preview-screen" id="previewScreen">
+              <div class="preview-overlay">
+                <div class="recording-indicator" id="recordingIndicator">
+                  <span class="rec-dot"></span>
+                  <span>RECORDING</span>
+                </div>
+              </div>
+              <iframe id="previewFrame" src="about:blank"></iframe>
+            </div>
+            <div class="preview-timeline" id="timeline">
+              <div class="timeline-track">
+                <div class="timeline-progress" id="timelineProgress"></div>
+              </div>
+              <div class="timeline-controls">
+                <button id="playPause">⏸</button>
+                <span id="timeDisplay">00:00 / 00:00</span>
+                <button id="fullscreen">⛶</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="progress-section">
-        <div class="progress-label">개발 진행률</div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
+      <div class="output-panel">
+        <div class="panel-header">
+          <h3>📊 Output & Analytics</h3>
         </div>
-        <div class="progress-text" id="progressText">0%</div>
+        <div class="output-content">
+          <div class="console-output" id="consoleOutput">
+            <div class="log-entry success">✅ Preview initialized</div>
+            <div class="log-entry info">ℹ️ Ready for live coding</div>
+          </div>
+          <div class="analytics-bar">
+            <div class="metric">
+              <span class="metric-label">Executions</span>
+              <span class="metric-value" id="execCount">0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Frames</span>
+              <span class="metric-value" id="frameCount">0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Duration</span>
+              <span class="metric-value" id="duration">00:00</span>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
-    <section class="dashboard">
-      <div class="section-header">
-        <h2>프로젝트 대시보드</h2>
-        <div class="view-controls">
-          <button class="view-btn active" data-view="grid">격자</button>
-          <button class="view-btn" data-view="list">목록</button>
-        </div>
-      </div>
-      
-      <div class="filter-bar">
-        <input type="text" id="searchInput" placeholder="카드 검색..." class="search-input" />
-        <select id="sortSelect" class="sort-select">
-          <option value="newest">최신순</option>
-          <option value="oldest">오래된순</option>
-          <option value="title">제목순</option>
-        </select>
-      </div>
-
-      <div class="cards-container" id="cardContainer">
-        <div class="empty-state" id="emptyState">
-          <div class="empty-icon">📋</div>
-          <h3>아직 프로젝트가 없습니다</h3>
-          <p>첫 번째 카드를 추가해보세요!</p>
-        </div>
-      </div>
-    </section>
-
     <footer class="footer">
-      <div class="footer-content">
-        <div class="footer-left">
-          <p>Built with <span class="heart">♥</span> on Field Nine Platform</p>
-        </div>
-        <div class="footer-right">
-          <span class="version">v2.1.0</span>
-          <span class="separator">•</span>
-          <span class="build-time" id="buildTime"></span>
-        </div>
-      </div>
+      <p>🎬 Real-time Video Preview • Built with Field Nine</p>
     </footer>
   </div>
-
-  <div class="toast-container" id="toastContainer"></div>
 
   <script src="app.js"></script>
 </body>
