@@ -1,54 +1,85 @@
-// === Field Nine App Logic ===
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 Field Nine App loaded!');
+  
   let clickCount = 0;
   let cardCount = 0;
 
   const emojis = ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'];
   const titles = ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'];
-  const descs = ['Field Nine으로 빠르게 구축했습니다.', 'AI가 코드를 최적화했습니다.', '전 세계에 배포 완료.'];
+  const descriptions = ['Field Nine으로 빠르게 구축했습니다.', 'AI가 코드를 최적화했습니다.', '전 세계에 배포 완료.'];
 
-  const countEl = document.getElementById('count');
-  const cardCountEl = document.getElementById('cardCount');
-  const container = document.getElementById('cardContainer');
-  const startBtn = document.getElementById('startBtn');
-  const addCardBtn = document.getElementById('addCardBtn');
+  const countElement = document.getElementById('count');
+  const cardCountElement = document.getElementById('cardCount');
+  const cardContainer = document.getElementById('cardContainer');
+  const startButton = document.getElementById('startBtn');
+  const addCardButton = document.getElementById('addCardBtn');
 
-  function handleStart() {
+  function handleStartClick() {
     clickCount++;
-    if (countEl) countEl.textContent = clickCount;
+    if (countElement) {
+      countElement.textContent = clickCount;
+    }
+    
+    // 배경색 변경 효과
     const hue = (clickCount * 15) % 360;
-    document.body.style.background =
-      \`linear-gradient(135deg, hsl(\${hue}, 20%, 4%) 0%, hsl(\${hue + 30}, 15%, 8%) 100%)\`;
+    document.body.style.background = 
+      `linear-gradient(135deg, hsl(${hue}, 20%, 4%) 0%, hsl(${hue + 30}, 15%, 8%) 100%)`;
   }
 
-  function addCard() {
+  function addNewCard() {
     cardCount++;
-    if (cardCountEl) cardCountEl.textContent = cardCount;
-    if (!container) return;
+    if (cardCountElement) {
+      cardCountElement.textContent = cardCount;
+    }
+    
+    if (!cardContainer) return;
+
     const card = document.createElement('div');
     card.className = 'card';
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const title = titles[Math.floor(Math.random() * titles.length)];
-    const desc = descs[Math.floor(Math.random() * descs.length)];
-    const now = new Date().toLocaleTimeString('ko-KR');
-    card.innerHTML = \`
-      <div class="card-emoji">\${emoji}</div>
-      <h3>\${title}</h3>
-      <p>\${desc}</p>
-      <div class="card-time">\${now}에 생성됨</div>
-    \`;
-    container.prepend(card);
+    
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+    const randomDescription = descriptions[Math.floor(Math.random() * descriptions.length)];
+    const currentTime = new Date().toLocaleTimeString('ko-KR');
+    
+    card.innerHTML = `
+      <div class="card-emoji">${randomEmoji}</div>
+      <h3>${randomTitle}</h3>
+      <p>${randomDescription}</p>
+      <div class="card-time">${currentTime}</div>
+    `;
+    
+    // 카드 클릭 이벤트
+    card.addEventListener('click', () => {
+      card.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        card.style.transform = '';
+      }, 150);
+    });
+    
+    cardContainer.appendChild(card);
+    
+    // 애니메이션 효과
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      card.style.transition = 'all 0.5s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, 100);
   }
 
-  if (startBtn) startBtn.addEventListener('click', handleStart);
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
-
-  // 초기 카드 3개 생성
-  for (let i = 0; i < 3; i++) {
-    setTimeout(() => addCard(), i * 200);
+  // 이벤트 리스너 등록
+  if (startButton) {
+    startButton.addEventListener('click', handleStartClick);
+  }
+  
+  if (addCardButton) {
+    addCardButton.addEventListener('click', addNewCard);
   }
 
-  console.log('🚀 Field Nine App loaded!');
-  console.log('📦 Files: index.html, style.css, app.js');
-  console.log('✅ Ready to dev!');
+  // 초기 카드 하나 추가
+  setTimeout(() => {
+    addNewCard();
+  }, 1000);
 });
