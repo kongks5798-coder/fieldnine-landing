@@ -5,35 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My App — Field Nine</title>
   <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Field Nine AI-Powered Development Platform">
+  <meta name="keywords" content="AI, Development, Web">
+  <meta name="author" content="Field Nine">
 </head>
 <body>
-  <div class="app">
-    <nav class="nav">
+  <div class="app" aria-label="Field Nine Application">
+    <nav class="nav" aria-label="Main Navigation">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
+        <span class="logo" role="img" aria-label="Logo">⚡</span>
         <span>Field Nine App</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="active">Home</a>
+        <a href="#" class="active" aria-current="page">Home</a>
         <a href="#">About</a>
         <a href="#">Contact</a>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge">🚀 AI-Powered Development</div>
+      <div class="hero-badge" role="status">🚀 AI-Powered Development</div>
       <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
       <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn">시작하기</button>
-        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
+        <button class="btn btn-primary" id="startBtn" aria-pressed="false">시작하기</button>
+        <button class="btn btn-secondary" id="addCardBtn" aria-pressed="false">카드 추가</button>
       </div>
-      <div class="counter-display">
+      <div class="counter-display" aria-live="polite">
         클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
       </div>
     </main>
 
-    <section class="cards" id="cardContainer">
+    <section class="features" aria-label="Features">
+      <h2>주요 기능</h2>
+      <div class="feature-list">
+        <div class="feature">
+          <h3>빠른 개발</h3>
+          <p>즉각적인 코드 반영 및 배포.</p>
+        </div>
+        <div class="feature">
+          <h3>유연한 설계</h3>
+          <p>다양한 레이아웃과 컴포넌트.</p>
+        </div>
+        <div class="feature">
+          <h3>확장성</h3>
+          <p>필요에 따라 기능을 추가 가능.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards" id="cardContainer" aria-label="Dynamic Cards">
     </section>
 
     <footer class="footer">
