@@ -3,137 +3,110 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine FSD — Full Self-Driving Development</title>
+  <title>Field Nine — AI Development Platform</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
+    <!-- 알림 시스템 -->
+    <div class="notification-container" id="notificationContainer"></div>
+
     <nav class="nav">
       <div class="nav-brand">
-        <div class="autopilot-logo">
-          <div class="logo-ring"></div>
-          <div class="logo-center">FN</div>
-        </div>
-        <span>FIELD NINE FSD</span>
+        <span class="logo">⚡</span>
+        <span>Field Nine</span>
       </div>
-      <div class="nav-status">
-        <div class="status-indicator active">
-          <div class="status-dot"></div>
-          <span>Autopilot Ready</span>
+      <div class="nav-links">
+        <a href="#" class="active">Home</a>
+        <a href="#" id="aboutLink">About</a>
+        <a href="#" id="contactLink">Contact</a>
+      </div>
+      <div class="system-status" id="systemStatus">
+        <div class="status-indicator" id="statusIndicator">
+          <div class="status-icon">🔄</div>
+          <span class="status-text">시스템 준비 중...</span>
         </div>
       </div>
     </nav>
 
-    <main class="dashboard">
-      <div class="main-display">
-        <div class="radar-container">
-          <div class="radar-screen">
-            <div class="radar-sweep"></div>
-            <div class="radar-grid">
-              <div class="grid-circle" style="--size: 100px"></div>
-              <div class="grid-circle" style="--size: 200px"></div>
-              <div class="grid-circle" style="--size: 300px"></div>
-            </div>
-            <div class="radar-objects">
-              <div class="object" style="--angle: 45deg; --distance: 120px">🚗</div>
-              <div class="object" style="--angle: -30deg; --distance: 180px">🏢</div>
-              <div class="object" style="--angle: 90deg; --distance: 250px">🌳</div>
-            </div>
-            <div class="radar-center">
-              <div class="center-dot"></div>
-            </div>
-          </div>
-          
-          <div class="detection-info">
-            <h2>Full Self-Driving Development</h2>
-            <p>AI-powered autonomous coding system</p>
-            <div class="detection-stats">
-              <div class="stat-card">
-                <div class="stat-icon">🎯</div>
-                <div class="stat-data">
-                  <div class="stat-value" id="count">0</div>
-                  <div class="stat-label">Objects Detected</div>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">🚀</div>
-                <div class="stat-data">
-                  <div class="stat-value" id="cardCount">0</div>
-                  <div class="stat-label">Deployments</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="control-panel">
-          <div class="panel-header">
-            <h3>Autonomous Controls</h3>
-            <div class="panel-status">
-              <div class="status-light active"></div>
-              <span>System Active</span>
-            </div>
-          </div>
-          
-          <div class="control-grid">
-            <button class="control-btn primary" id="startBtn">
-              <div class="btn-icon">🚗</div>
-              <div class="btn-text">
-                <div class="btn-title">Engage Autopilot</div>
-                <div class="btn-subtitle">Full autonomous mode</div>
-              </div>
-            </button>
-            
-            <button class="control-btn secondary" id="addCardBtn">
-              <div class="btn-icon">📡</div>
-              <div class="btn-text">
-                <div class="btn-title">Add Sensor</div>
-                <div class="btn-subtitle">Expand detection range</div>
-              </div>
-            </button>
-            
-            <button class="control-btn danger" id="clearBtn">
-              <div class="btn-icon">⚠️</div>
-              <div class="btn-text">
-                <div class="btn-title">Emergency Stop</div>
-                <div class="btn-subtitle">Immediate shutdown</div>
-              </div>
-            </button>
-          </div>
-        </div>
+    <main class="hero">
+      <div class="hero-badge">
+        <span class="badge-icon">🚀</span>
+        <span>AI-Powered Development</span>
       </div>
-
-      <div class="sensor-feed">
-        <div class="feed-header">
-          <h3>Neural Network Feed</h3>
-          <div class="feed-controls">
-            <button class="feed-btn active">Camera</button>
-            <button class="feed-btn">Radar</button>
-            <button class="feed-btn">Ultrasonic</button>
-          </div>
+      
+      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
+      <p class="hero-desc">이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
+      
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="startBtn">
+          <span class="btn-text">시작하기</span>
+          <span class="btn-loader" id="startLoader"></span>
+        </button>
+        <button class="btn btn-secondary" id="addCardBtn">
+          <span class="btn-text">카드 추가</span>
+          <span class="btn-loader" id="addLoader"></span>
+        </button>
+        <button class="btn btn-outline" id="clearBtn">
+          <span class="btn-text">초기화</span>
+          <span class="btn-loader" id="clearLoader"></span>
+        </button>
+      </div>
+      
+      <div class="counter-display">
+        <div class="counter-item">
+          <span class="counter-label">클릭</span>
+          <span class="counter-value" id="count">0</span>
+          <div class="counter-status" id="countStatus"></div>
         </div>
-        
-        <div class="feed-grid" id="cardContainer">
-          <!-- Sensor data cards will appear here -->
+        <div class="counter-item">
+          <span class="counter-label">카드</span>
+          <span class="counter-value" id="cardCount">0</span>
+          <div class="counter-status" id="cardStatus"></div>
         </div>
       </div>
     </main>
 
-    <div class="hud-overlay">
-      <div class="hud-info">
-        <div class="speed-display">
-          <div class="speed-value">88</div>
-          <div class="speed-unit">mph</div>
+    <section class="cards-section">
+      <div class="section-header">
+        <h2>최근 활동</h2>
+        <div class="section-subtitle">실시간으로 생성되는 카드들</div>
+        <div class="section-status" id="sectionStatus">
+          <div class="loading-spinner"></div>
+          <span>카드 로딩 중...</span>
         </div>
-        <div class="system-status">
-          <div class="status-item">
-            <div class="status-icon">🛡️</div>
-            <div class="status-text">Safety Score: 98</div>
-          </div>
-          <div class="status-item">
-            <div class="status-icon">🔋</div>
-            <div class="status-text">Neural Net: 100%</div>
-          </div>
+      </div>
+      <div class="cards" id="cardContainer">
+        <!-- Cards will be dynamically inserted here -->
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <p>Built with <span class="heart">❤️</span> by Field Nine AI</p>
+        <div class="footer-links">
+          <a href="#" id="githubLink">GitHub</a>
+          <a href="#" id="docsLink">Docs</a>
+          <a href="#" id="supportLink">Support</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- 오류 모달 -->
+    <div class="error-modal" id="errorModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="error-icon">⚠️</div>
+          <h3>오류 발생</h3>
+          <button class="modal-close" id="modalClose">×</button>
+        </div>
+        <div class="modal-body">
+          <p id="errorMessage">알 수 없는 오류가 발생했습니다.</p>
+          <div class="error-details" id="errorDetails"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="retryBtn">다시 시도</button>
+          <button class="btn btn-outline" id="dismissBtn">닫기</button>
         </div>
       </div>
     </div>
