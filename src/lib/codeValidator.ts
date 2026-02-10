@@ -69,3 +69,74 @@ export function validateJS(code: string): ValidationResult {
 
   return { valid: errors.length === 0, errors };
 }
+
+/* ===== Code Completeness Check (anti-truncation guard) ===== */
+
+/**
+ * Strip string literals and comments so brace counting isn't fooled.
+ * Handles unterminated strings gracefully (truncated code).
+ */
+function stripStringsAndComments(code: string): string {
+  return code
+    .replace(/\/\/.*$/gm, "")             // single-line comments
+    .replace(/\/\*[\s\S]*?(\*\/|$)/g, "") // multi-line comments (or unterminated)
+    .replace(/`(?:[^`\\]|\\.)*(`|$)/g, "") // template literals
+    .replace(/"(?:[^"\\]|\\.)*?("|$)/g, "") // double-quoted strings
+    .replace(/'(?:[^'\\]|\\.)*?('|$)/g, ""); // single-quoted strings
+}
+
+/**
+ * Detect truncated/incomplete code by checking balanced braces.
+ * Returns { complete: true } or { complete: false, reason: "..." }.
+ */
+export function isCodeComplete(
+  code: string,
+  language: string
+): { complete: boolean; reason?: string } {
+  const trimmed = code.trim();
+  if (!trimmed) return { complete: true };
+
+  if (language === "javascript" || language === "typescript") {
+    const stripped = stripStringsAndComments(trimmed);
+    const curlyOpen = (stripped.match(/\{/g) || []).length;
+    const curlyClose = (stripped.match(/\}/g) || []).length;
+    if (curlyOpen !== curlyClose) {
+      return { complete: false, reason: `Unbalanced {}: ${curlyOpen} open, ${curlyClose} close` };
+    }
+    const parenOpen = (stripped.match(/\(/g) || []).length;
+    const parenClose = (stripped.match(/\)/g) || []).length;
+    if (parenOpen !== parenClose) {
+      return { complete: false, reason: `Unbalanced (): ${parenOpen} open, ${parenClose} close` };
+    }
+    return { complete: true };
+  }
+
+  if (language === "css") {
+    const stripped = stripStringsAndComments(trimmed);
+    const curlyOpen = (stripped.match(/\{/g) || []).length;
+    const curlyClose = (stripped.match(/\}/g) || []).length;
+    if (curlyOpen !== curlyClose) {
+      return { complete: false, reason: `Unbalanced {}: ${curlyOpen} open, ${curlyClose} close` };
+    }
+    return { complete: true };
+  }
+
+  if (language === "html") {
+    if (/<html[\s>]/i.test(trimmed) && !/<\/html\s*>/i.test(trimmed)) {
+      return { complete: false, reason: "Missing </html> closing tag" };
+    }
+    return { complete: true };
+  }
+
+  return { complete: true };
+}
+
+/** Map file extension to language for completeness check */
+export function extToLanguage(path: string): string {
+  const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "js" || ext === "mjs") return "javascript";
+  if (ext === "ts" || ext === "tsx") return "typescript";
+  if (ext === "css") return "css";
+  if (ext === "html" || ext === "htm") return "html";
+  return ext;
+}

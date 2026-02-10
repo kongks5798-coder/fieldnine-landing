@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { isCodeComplete, extToLanguage } from "@/lib/codeValidator";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
@@ -193,6 +194,19 @@ export async function POST(request: NextRequest) {
       if (typeof file.content !== "string" || file.content.length > MAX_FILE_SIZE) {
         return NextResponse.json(
           { error: `File too large: ${file.path}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Completeness guard: reject truncated code before committing
+    for (const file of body.files) {
+      const lang = extToLanguage(file.path);
+      const check = isCodeComplete(file.content, lang);
+      if (!check.complete) {
+        console.warn(`[save-code] BLOCKED truncated file: ${file.path} — ${check.reason}`);
+        return NextResponse.json(
+          { error: `Truncated code blocked: ${file.path} (${check.reason})` },
           { status: 400 }
         );
       }

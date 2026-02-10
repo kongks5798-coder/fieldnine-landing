@@ -56,6 +56,7 @@ import { useTheme } from "@/lib/useTheme";
 import { FileCog, FileText, Package } from "lucide-react";
 import { useUndoHistory } from "@/hooks/useUndoHistory";
 import { useWebContainer } from "@/hooks/useWebContainer";
+import { isCodeComplete } from "@/lib/codeValidator";
 import { ErrorBoundary } from "./providers";
 
 const WebTerminal = dynamic(() => import("./WebTerminal"), { ssr: false });
@@ -503,6 +504,14 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     (files: Record<string, VFile>) => {
       if (shadowCommitDebounceRef.current) clearTimeout(shadowCommitDebounceRef.current);
       shadowCommitDebounceRef.current = setTimeout(() => {
+        // Client-side completeness guard: skip commit if any file is truncated
+        for (const [name, f] of Object.entries(files)) {
+          const check = isCodeComplete(f.content, f.language);
+          if (!check.complete) {
+            console.warn(`[auto-commit] BLOCKED: ${name} is truncated — ${check.reason}`);
+            return;
+          }
+        }
         const fileChanges = Object.entries(files).map(([name, f]) => ({
           path: name,
           content: f.content,
