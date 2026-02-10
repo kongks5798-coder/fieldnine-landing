@@ -3,144 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine AI Chat — Multimodal Assistant</title>
+  <title>Field Nine OS — AI Control</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
-    <!-- 알림 시스템 -->
-    <div class="notification-container" id="notificationContainer"></div>
-
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">🤖</span>
-        <span>Field Nine AI</span>
+        <span class="logo">⚡</span>
+        <span>Field Nine OS</span>
       </div>
       <div class="nav-links">
-        <a href="#" class="active">Chat</a>
-        <a href="#" id="aboutLink">About</a>
-        <a href="#" id="settingsLink">Settings</a>
-      </div>
-      <div class="system-status" id="systemStatus">
-        <div class="status-indicator ready" id="statusIndicator">
-          <div class="status-icon">✅</div>
-          <span class="status-text">AI 준비 완료</span>
-        </div>
+        <a href="#" class="active">Control</a>
+        <a href="#">Logs</a>
+        <a href="#">Settings</a>
       </div>
     </nav>
 
-    <main class="chat-container">
-      <!-- 채팅 헤더 -->
-      <div class="chat-header">
-        <div class="ai-info">
-          <div class="ai-avatar">🤖</div>
-          <div class="ai-details">
-            <div class="ai-name">Field Nine AI</div>
-            <div class="ai-status">온라인 • 멀티모달 지원</div>
-          </div>
+    <main class="hero">
+      <div class="hero-badge">🚀 Integrated AI Control Environment</div>
+      <h1>Multimodal <span class="gradient-text">Intelligence</span></h1>
+      <p>Upload images, speak commands, or chat with the system.<br/>Field Nine AI is ready.</p>
+      
+      <!-- Gemini-style Chat Interface -->
+      <div class="ai-control-panel">
+        <div class="chat-input-container">
+          <button class="btn-icon" id="attachBtn" title="Add Media">⊕</button>
+          <input type="text" id="chatInput" placeholder="Ask Field Nine AI or upload media..." />
+          <button class="btn-icon" id="micBtn" title="Voice Command">🎙️</button>
+          <button class="btn-send" id="sendBtn">➤</button>
         </div>
-        <div class="chat-actions">
-          <button class="action-btn" id="clearChatBtn" title="채팅 지우기">🗑️</button>
-          <button class="action-btn" id="exportChatBtn" title="채팅 내보내기">💾</button>
-        </div>
+        <div id="mediaPreview" class="media-preview hidden"></div>
       </div>
 
-      <!-- 채팅 메시지 영역 -->
-      <div class="chat-messages" id="chatMessages">
-        <div class="welcome-message">
-          <div class="ai-avatar">🤖</div>
-          <div class="message-content">
-            <div class="message-text">
-              안녕하세요! Field Nine AI입니다. 🚀<br/>
-              텍스트, 이미지, 영상, 음성 모두 지원합니다.<br/>
-              무엇을 도와드릴까요?
-            </div>
-            <div class="message-time">방금 전</div>
-          </div>
+      <!-- Analysis Log -->
+      <div id="analysisLog" class="analysis-log hidden">
+        <div class="log-header">
+          <span class="spinner">↻</span> Analyzing media content...
         </div>
+        <div id="logContent" class="log-content"></div>
       </div>
 
-      <!-- 채팅 입력 영역 -->
-      <div class="chat-input-container">
-        <!-- 첨부된 미디어 미리보기 -->
-        <div class="media-preview" id="mediaPreview">
-          <!-- 첨부된 파일들이 여기에 표시됩니다 -->
-        </div>
-
-        <!-- 음성 녹음 상태 -->
-        <div class="voice-recording" id="voiceRecording">
-          <div class="recording-indicator">
-            <div class="recording-dot"></div>
-            <span class="recording-text">음성 녹음 중...</span>
-            <span class="recording-time" id="recordingTime">00:00</span>
-          </div>
-          <div class="recording-actions">
-            <button class="recording-btn cancel" id="cancelRecording">취소</button>
-            <button class="recording-btn send" id="sendRecording">전송</button>
-          </div>
-        </div>
-
-        <div class="chat-input-wrapper">
-          <!-- 입력 도구들 -->
-          <div class="input-tools">
-            <button class="tool-btn" id="attachImageBtn" title="이미지 첨부">📷</button>
-            <button class="tool-btn" id="attachVideoBtn" title="영상 첨부">🎥</button>
-            <button class="tool-btn" id="attachFileBtn" title="파일 첨부">📎</button>
-            <button class="tool-btn voice-btn" id="voiceBtn" title="음성 입력">🎤</button>
-          </div>
-
-          <!-- 텍스트 입력 -->
-          <div class="text-input-container">
-            <textarea 
-              id="messageInput" 
-              placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
-              rows="1"
-            ></textarea>
-            <button class="send-btn" id="sendBtn" disabled>
-              <span class="send-icon">📤</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 숨겨진 파일 입력들 -->
-        <input type="file" id="imageInput" accept="image/*" multiple hidden>
-        <input type="file" id="videoInput" accept="video/*" multiple hidden>
-        <input type="file" id="fileInput" accept="*/*" multiple hidden>
+      <div class="hero-actions" style="margin-top: 40px;">
+        <button class="btn btn-secondary" id="addCardBtn">Generate Status Card</button>
       </div>
     </main>
 
-    <!-- 이미지/영상 뷰어 모달 -->
-    <div class="media-viewer" id="mediaViewer">
-      <div class="viewer-backdrop" id="viewerBackdrop"></div>
-      <div class="viewer-container">
-        <div class="viewer-header">
-          <div class="viewer-title" id="viewerTitle">미디어 보기</div>
-          <button class="viewer-close" id="viewerClose">×</button>
-        </div>
-        <div class="viewer-content" id="viewerContent">
-          <!-- 미디어 콘텐츠가 여기에 표시 -->
-        </div>
-      </div>
-    </div>
+    <section class="cards" id="cardContainer">
+    </section>
 
-    <!-- 음성 권한 요청 모달 -->
-    <div class="permission-modal" id="permissionModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div class="permission-icon">🎤</div>
-          <h3>음성 권한 필요</h3>
-        </div>
-        <div class="modal-body">
-          <p>음성 입력을 사용하려면 마이크 권한이 필요합니다.</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" id="denyPermission">거부</button>
-          <button class="btn btn-primary" id="allowPermission">허용</button>
-        </div>
-      </div>
-    </div>
+    <footer class="footer">
+      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+    </footer>
   </div>
 
+  <!-- Load Scripts in Order -->
   <script src="data.js"></script>
   <script src="ui.js"></script>
   <script src="app.js"></script>

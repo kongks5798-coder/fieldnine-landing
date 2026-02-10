@@ -1,10 +1,11 @@
 // === Data & Configuration ===
-var APP_DATA = {
+// Attaching to window to ensure global scope access
+window.APP_DATA = {
   emojis: ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'],
-  titles: ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'],
+  titles: ['System Ready', 'Analysis Complete', 'Deploy Success', 'Optimization', 'Security Check'],
   descs: [
-    'Field Nine으로 빠르게 구축했습니다.',
-    'AI가 코드를 최적화했습니다.',
-    '전 세계에 배포 완료.'
+    'Field Nine OS is fully operational.',
+    'AI has optimized the kernel.',
+    'Global nodes are synced.'
   ]
 };
