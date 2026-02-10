@@ -9,18 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
   var startBtn = document.getElementById('startBtn');
   var addCardBtn = document.getElementById('addCardBtn');
 
-  var emojis = ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'];
-  var titles = ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'];
-  var descs = [
-    'Field Nine으로 빠르게 구축했습니다.',
-    'AI가 코드를 최적화했습니다.',
-    '전 세계에 배포 완료.'
-  ];
-
-  function pick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
   function handleStart() {
     clickCount++;
     if (countEl) { countEl.textContent = clickCount; }
@@ -34,14 +22,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (cardCountEl) { cardCountEl.textContent = cardCount; }
     if (!container) { return; }
 
-    var card = document.createElement('div');
-    card.className = 'card';
-    var time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    card.innerHTML =
-      '<div class="card-emoji">' + pick(emojis) + '</div>' +
-      '<h3>' + pick(titles) + '</h3>' +
-      '<p>' + pick(descs) + '</p>' +
-      '<div class="card-time">' + time + '</div>';
+    var card = createCard(
+      pickRandom(APP_DATA.emojis),
+      pickRandom(APP_DATA.titles),
+      pickRandom(APP_DATA.descs)
+    );
 
     card.addEventListener('click', function() {
       card.style.transform = 'scale(0.95)';
@@ -59,5 +44,5 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(addCard, i * 200);
   }
 
-  console.log('🚀 Field Nine App loaded!');
+  console.log('Field Nine App loaded!');
 });
