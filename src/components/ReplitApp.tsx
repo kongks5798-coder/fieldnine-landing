@@ -41,15 +41,24 @@ interface ProjectTemplate {
 }
 
 const TEMPLATES: ProjectTemplate[] = [
+  // Business
   { name: "Landing Page", emoji: "🚀", description: "히어로 + 가격표 + FAQ", prompt: "Build a modern SaaS landing page with hero section, pricing table, testimonials and FAQ" },
-  { name: "Todo App", emoji: "✅", description: "할 일 관리 + 로컬 저장", prompt: "Create a todo app with categories, local storage persistence, and dark mode toggle" },
-  { name: "Portfolio", emoji: "🎨", description: "프로젝트 카드 + 연락 폼", prompt: "Make a personal portfolio with animated project cards, skills section and contact form" },
-  { name: "Dashboard", emoji: "📊", description: "차트 + 통계 카드 + 테이블", prompt: "Build a modern analytics dashboard with Chart.js charts, KPI stat cards and data table" },
   { name: "E-Commerce", emoji: "🛒", description: "상품 그리드 + 장바구니", prompt: "Create an e-commerce product listing page with shopping cart, filters and checkout" },
+  { name: "Restaurant", emoji: "🍽", description: "메뉴판 + 예약 + 지도", prompt: "Build a restaurant website with food menu, table reservation form, location map and photo gallery" },
+  { name: "Booking", emoji: "📅", description: "날짜 선택 + 예약 확인", prompt: "Create a booking/appointment scheduling page with calendar date picker, time slots and confirmation" },
+  { name: "Admin Panel", emoji: "⚙️", description: "사이드바 + 테이블 + CRUD", prompt: "Build an admin dashboard with sidebar navigation, data tables with search/filter, and create/edit/delete modals" },
+  // Creative
+  { name: "Portfolio", emoji: "🎨", description: "프로젝트 카드 + 연락 폼", prompt: "Make a personal portfolio with animated project cards, skills section and contact form" },
   { name: "Blog", emoji: "📝", description: "마크다운 포스트 + 사이드바", prompt: "Create a blog with markdown rendering, sidebar navigation and post categories" },
-  { name: "Game", emoji: "🎮", description: "캔버스 게임 + 점수 추적", prompt: "Build a fun canvas-based snake game with score tracking, levels and animations" },
+  { name: "Gallery", emoji: "📸", description: "사진 그리드 + 라이트박스", prompt: "Build a photo gallery with masonry grid layout, lightbox viewer, categories and smooth animations" },
+  // Data & Tools
+  { name: "Dashboard", emoji: "📊", description: "차트 + 통계 카드 + 테이블", prompt: "Build a modern analytics dashboard with Chart.js charts, KPI stat cards and data table" },
+  { name: "Survey", emoji: "📋", description: "폼 빌더 + 결과 차트", prompt: "Create a survey/form builder with multiple question types, progress bar and results visualization" },
+  { name: "Calculator", emoji: "🧮", description: "계산기 + 환율/단위 변환", prompt: "Build a multi-purpose calculator with standard calc, currency converter and unit converter tabs" },
+  // Interactive
   { name: "Chat UI", emoji: "💬", description: "채팅 버블 + 타이핑 표시", prompt: "Build a modern chat interface with message bubbles, typing indicator and emoji picker" },
-  { name: "Weather", emoji: "🌤", description: "도시 검색 + 날씨 시각화", prompt: "Build a weather dashboard with city search, forecast cards and animated weather icons" },
+  { name: "Todo App", emoji: "✅", description: "할 일 관리 + 로컬 저장", prompt: "Create a todo app with categories, local storage persistence, and dark mode toggle" },
+  { name: "Game", emoji: "🎮", description: "캔버스 게임 + 점수 추적", prompt: "Build a fun canvas-based snake game with score tracking, levels and animations" },
   { name: "Pomodoro", emoji: "⏱", description: "타이머 + 알림 + 통계", prompt: "Build a Pomodoro timer with session tracking, sound notifications and daily statistics" },
 ];
 

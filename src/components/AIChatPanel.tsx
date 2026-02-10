@@ -856,11 +856,58 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           advanceStage(assistantId, "coding", `${insertedBlocks}개 코드 블록 작성 완료`);
         }
 
-        // Process completed response (skip if live streaming already inserted all blocks)
+        // Process completed response
         if (fullText && insertedBlocks === 0) {
+          // No live-inserted blocks → full handleAIResponseComplete (validate + insert + commit)
           await handleAIResponseComplete(assistantId, fullText);
+        } else if (fullText && insertedBlocks > 0) {
+          // Live-streamed blocks already inserted → commit in background (non-blocking)
+          const parsed = parseAIResponse(fullText);
+          if (parsed.codeBlocks.length > 0) {
+            advanceStage(assistantId, "applying", `${parsed.codeBlocks.length}개 파일 삽입 완료`);
 
-          // Auto-save conversation to long-term memory (fire-and-forget)
+            const blockIds = parsed.codeBlocks.map((_, idx) => `${assistantId}-code-${idx}`);
+            setAutoInsertedBlocks((prev) => {
+              const next = new Set(prev);
+              for (const id of blockIds) next.add(id);
+              return next;
+            });
+
+            // Optimistic: advance stages immediately, commit in background
+            const files = parsed.codeBlocks.map((b) => b.targetFile);
+            const commitMsg = `feat(ai): ${parsed.explanation.slice(0, 50)}`;
+            addProgressEvent("commit-start", "GitHub 커밋 중...", "pending");
+
+            // Background commit — don't await, let user continue immediately
+            const fileChanges = parsed.codeBlocks.map((b) => ({
+              path: b.targetFile,
+              content: (b.targetFile.endsWith(".js") || b.targetFile.endsWith(".ts"))
+                ? sanitizeJS(b.code) : b.code,
+            }));
+            shadowCommit(fileChanges, commitMsg).then((result) => {
+              if (result.success) {
+                advanceStage(assistantId, "testing", "GitHub 커밋 + Vercel 배포 시작");
+                addProgressEvent("commit-success", "GitHub 커밋 완료", "done");
+                addSystemMessage(
+                  assistantId,
+                  `📋 변경 리포트:\n• 수정 파일: ${files.join(", ")}\n• 커밋: ${commitMsg}\n• 상태: ✅ GitHub 커밋 완료 → Vercel 빌드 시작`,
+                  "commit-report",
+                );
+                addSystemMessage(assistantId, commitMsg, "checkpoint", {
+                  commitSha: result.sha,
+                  filesChanged: files,
+                });
+              } else {
+                addProgressEvent("commit-fail", "커밋 실패 — 로컬 삽입만 완료", "error");
+              }
+            }).catch(() => {
+              addProgressEvent("commit-fail", "커밋 실패 — 로컬 삽입만 완료", "error");
+            });
+          }
+        }
+
+        // Auto-save conversation to long-term memory (fire-and-forget)
+        if (fullText) {
           try {
             fetch("/api/memory", {
               method: "POST",

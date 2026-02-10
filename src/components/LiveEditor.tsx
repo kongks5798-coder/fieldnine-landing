@@ -74,8 +74,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My App — Field Nine</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -127,7 +126,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #0a0a0a;
   color: #e2e8f0;
   min-height: 100vh;
@@ -445,6 +444,8 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [autoTestCompleted, setAutoTestCompleted] = useState(false);
   const [errorFixState, setErrorFixState] = useState<{ message: string; phase: "detecting" | "fixing" | "done" } | null>(null);
   const errorFixCooldownRef = useRef(false);
+  const lastErrorMsgRef = useRef<string>("");
+  const errorRetryCountRef = useRef(0);
   const syncDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ===== AI IDE Action State ===== */
@@ -576,8 +577,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           path: name,
           content: f.content,
         }));
-        handleShadowCommit(fileChanges, "chore: auto-save code changes");
-      }, 10_000);
+        // Fire-and-forget: don't block UI waiting for commit
+        handleShadowCommit(fileChanges, "chore: auto-save code changes").catch(() => {});
+      }, 5_000);
     },
     [handleShadowCommit],
   );
@@ -586,7 +588,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const fetchGitHistory = useCallback(async () => {
     setGitLoading(true);
     try {
-      const res = await fetch("/api/git-history?per_page=30");
+      const res = await fetch("/api/git-history?per_page=50");
       const data = await res.json();
       setGitHistory(data.commits ?? []);
     } catch {
@@ -787,7 +789,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
     // Safety: never return empty — ensures preview always renders
     if (!combined || combined.trim().length < 10) {
-      return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Pretendard',sans-serif;color:#64748b;}</style></head><body><p>프리뷰 준비 중...</p></body></html>`;
+      return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"/><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Inter','Noto Sans KR',sans-serif;color:#64748b;}</style></head><body><p>프리뷰 준비 중...</p></body></html>`;
     }
     return combined;
   }, [files]);
@@ -819,10 +821,24 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
           { type: e.data.type, text: e.data.text, time: now },
         ]);
 
-        // Virtual Error Detector: show error once per unique message (no auto-refresh to avoid loops)
+        // Virtual Error Detector: detects errors and triggers AI auto-fix
+        // Cooldown resets after each cycle so new/different errors can be caught
+        // Same error repeating 3+ times → stop (prevents infinite loops)
         if (e.data.type === "error" && !errorFixCooldownRef.current) {
-          errorFixCooldownRef.current = true;
           const errText = String(e.data.text).slice(0, 120);
+
+          // Same error repeating? Increment counter. Different error? Reset.
+          if (errText === lastErrorMsgRef.current) {
+            errorRetryCountRef.current += 1;
+          } else {
+            errorRetryCountRef.current = 1;
+            lastErrorMsgRef.current = errText;
+          }
+
+          // Stop after 3 retries on the same error (infinite loop guard)
+          if (errorRetryCountRef.current > 3) return;
+
+          errorFixCooldownRef.current = true;
           setErrorFixState({ message: errText, phase: "detecting" });
 
           setTimeout(() => {
@@ -831,8 +847,9 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
           setTimeout(() => {
             setErrorFixState(null);
-            // Keep cooldown active — don't auto-refresh to prevent infinite error loops
-          }, 4000);
+            // Reset cooldown so new errors can be detected
+            errorFixCooldownRef.current = false;
+          }, 5000);
         }
       }
       // Inspector element click → navigate to code
@@ -991,9 +1008,22 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     });
     if (!openTabs.includes(targetFile)) setOpenTabs((prev) => [...prev, targetFile]);
     setActiveFile(targetFile);
-    // Force preview rebuild after AI code insertion
-    setTimeout(() => { if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current()); }, 100);
-  }, [openTabs, triggerAutoSave, triggerAutoCommit, pushUndoSnapshot]);
+
+    // CSS hot inject: skip full reload for style.css (instant visual update)
+    if (targetFile === "style.css") {
+      hotInjectCSS(code);
+      return;
+    }
+
+    // Debounced preview rebuild: batch multiple rapid AI insertions into one rebuild
+    if (autoRunRef.current) clearTimeout(autoRunRef.current);
+    autoRunRef.current = setTimeout(() => {
+      if (buildPreviewRef.current) {
+        setConsoleLines([]);
+        setRenderedHTML(buildPreviewRef.current());
+      }
+    }, 150);
+  }, [openTabs, triggerAutoSave, triggerAutoCommit, pushUndoSnapshot, hotInjectCSS]);
 
   // Pending diff insertion (stored for accept/reject)
   const pendingInsertRef = useRef<{ code: string; targetFile: string } | null>(null);

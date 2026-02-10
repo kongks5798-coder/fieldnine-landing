@@ -4,7 +4,22 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Field Nine OS",
-  description: "Ultimate Professional Tool for Business Owners",
+  description: "AI-powered code editor with live preview and one-click deploy. Build, ship, and scale — all in one place.",
+  openGraph: {
+    title: "Field Nine OS",
+    description: "AI-powered code editor with live preview and one-click deploy.",
+    type: "website",
+    locale: "ko_KR",
+    siteName: "Field Nine OS",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Field Nine OS",
+    description: "AI-powered code editor with live preview and one-click deploy.",
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
   other: {
     google: "notranslate",
   },
@@ -23,11 +38,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
         />
       </head>
       <body className="antialiased" suppressHydrationWarning>
