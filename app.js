@@ -1,73 +1,67 @@
-document.addEventListener('DOMContentLoaded', function() {
-  var exploreBtn = document.getElementById('exploreBtn');
-  var watchDemoBtn = document.getElementById('watchDemoBtn');
-  var getStartedBtn = document.getElementById('getStartedBtn');
-  var isExploring = false;
-
-  function handleExplore() {
-    if (isExploring) return;
-    isExploring = true;
-    
-    if (exploreBtn) {
-      exploreBtn.innerHTML = '<span>Exploring...</span><span class="btn-arrow">⚡</span>';
-      exploreBtn.style.transform = 'translateY(-4px)';
+function animateCounter(elementId, targetValue, duration, unit) {
+  var element = document.getElementById(elementId);
+  if (!element) return;
+  
+  var startValue = 0;
+  var increment = targetValue / (duration / 50);
+  var current = startValue;
+  
+  var timer = setInterval(function() {
+    current += increment;
+    if (current >= targetValue) {
+      current = targetValue;
+      clearInterval(timer);
     }
     
-    setTimeout(function() {
-      var features = document.getElementById('features');
-      if (features) {
-        features.scrollIntoView({ behavior: 'smooth' });
-      }
-      
-      setTimeout(function() {
-        if (exploreBtn) {
-          exploreBtn.innerHTML = '<span>Explore Platform</span><span class="btn-arrow">→</span>';
-          exploreBtn.style.transform = '';
-        }
-        isExploring = false;
-      }, 2000);
-    }, 800);
-  }
-
-  function handleDemo() {
-    if (watchDemoBtn) {
-      watchDemoBtn.innerHTML = '<span class="play-icon">⏸</span>Loading Demo...';
-      watchDemoBtn.style.opacity = '0.7';
+    var displayValue;
+    if (unit === '%') {
+      displayValue = current.toFixed(1) + unit;
+    } else if (unit === '시간') {
+      displayValue = Math.floor(current) + unit;
+    } else {
+      displayValue = Math.floor(current).toLocaleString();
     }
     
-    setTimeout(function() {
-      alert('Demo coming soon! 🚀\n\nExperience the future of development with Field Nine.');
-      if (watchDemoBtn) {
-        watchDemoBtn.innerHTML = '<span class="play-icon">▶</span>Watch Demo';
-        watchDemoBtn.style.opacity = '';
-      }
-    }, 1500);
-  }
+    element.textContent = displayValue;
+  }, 50);
+}
 
-  function handleGetStarted() {
-    if (getStartedBtn) {
-      getStartedBtn.textContent = 'Launching...';
-      getStartedBtn.style.transform = 'scale(0.95)';
-    }
+function createFloatingAnimation() {
+  var cards = document.querySelectorAll('.floating-card');
+  cards.forEach(function(card, index) {
+    card.style.animationDelay = (index * 2) + 's';
+    card.style.opacity = '0';
     
     setTimeout(function() {
-      window.location.href = '#features';
-      if (getStartedBtn) {
-        getStartedBtn.textContent = 'Get Started';
-        getStartedBtn.style.transform = '';
-      }
-    }, 1000);
-  }
+      card.style.opacity = '1';
+      card.style.transition = 'opacity 0.5s ease';
+    }, (index + 1) * 500);
+  });
+}
 
-  if (exploreBtn) exploreBtn.addEventListener('click', handleExplore);
-  if (watchDemoBtn) watchDemoBtn.addEventListener('click', handleDemo);
-  if (getStartedBtn) getStartedBtn.addEventListener('click', handleGetStarted);
-
-  initializeVisualEffects();
-  handleNavScroll();
+function initializeCounters() {
+  var stats = FIELD_NINE_DATA.stats;
   
   setTimeout(function() {
-    document.body.style.opacity = '1';
-    document.body.style.transition = 'opacity 0.5s ease';
-  }, 100);
-});
+    animateCounter('projectCount', stats.projects.current, 2000, stats.projects.unit);
+  }, 800);
+  
+  setTimeout(function() {
+    animateCounter('timesSaved', stats.timeSaved.current, 1800, stats.timeSaved.unit);
+  }, 1200);
+  
+  setTimeout(function() {
+    animateCounter('satisfaction', stats.satisfaction.current, 1500, stats.satisfaction.unit);
+  }, 1600);
+}
+
+function handleScrollNavigation() {
+  var nav = document.querySelector('.nav');
+  if (!nav) return;
+  
+  window.addEventListener('scroll', function() {
+    var scrolled = window.scrollY > 50;
+    nav.style.background = scrolled ? 'rgba(0, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.8)';
+    nav.style.borderBottomColor = scrolled ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)';
+  });
+}
