@@ -11,11 +11,18 @@ export interface TaskStage {
   detail?: string;
 }
 
-interface TaskProgressCardProps {
-  stages: TaskStage[];
+export interface SubTaskItem {
+  id: string;
+  description: string;
+  status: string;
 }
 
-export default function TaskProgressCard({ stages }: TaskProgressCardProps) {
+interface TaskProgressCardProps {
+  stages: TaskStage[];
+  subtasks?: SubTaskItem[];
+}
+
+export default function TaskProgressCard({ stages, subtasks }: TaskProgressCardProps) {
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
 
   if (stages.length === 0) return null;
@@ -119,6 +126,31 @@ export default function TaskProgressCard({ stages }: TaskProgressCardProps) {
           );
         })}
       </div>
+
+      {/* Agent subtasks */}
+      {subtasks && subtasks.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-[var(--r-border)]">
+          <div className="text-[10px] text-[var(--r-text-muted)] mb-1 font-medium">서브태스크</div>
+          <div className="space-y-0.5">
+            {subtasks.map((st) => (
+              <div key={st.id} className="flex items-center gap-1.5 text-[10px]">
+                {st.status === "done" ? (
+                  <Check size={9} className="text-[#00B894] shrink-0" />
+                ) : st.status === "active" ? (
+                  <Loader2 size={9} className="text-[#0079F2] animate-spin shrink-0" />
+                ) : (
+                  <div className="w-[9px] h-[9px] rounded-full border border-[var(--r-border)] shrink-0" />
+                )}
+                <span className={
+                  st.status === "done" ? "text-[#00B894]" :
+                  st.status === "active" ? "text-[#0079F2]" :
+                  "text-[var(--r-text-muted)]"
+                }>{st.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

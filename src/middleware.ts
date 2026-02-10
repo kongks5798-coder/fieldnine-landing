@@ -6,12 +6,12 @@ const COOKIE_NAME = "f9_access";
 /** Content Security Policy */
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.jsdelivr.net",
-  "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net fonts.googleapis.com",
+  "script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.jsdelivr.net accounts.google.com",
+  "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net fonts.googleapis.com accounts.google.com",
   "font-src 'self' fonts.gstatic.com cdn.jsdelivr.net",
-  "img-src 'self' data: blob: *.supabase.co",
-  "connect-src 'self' *.supabase.co api.github.com api.vercel.com",
-  "frame-src 'self' blob: data:",
+  "img-src 'self' data: blob: *.supabase.co *.googleusercontent.com",
+  "connect-src 'self' *.supabase.co api.github.com api.vercel.com accounts.google.com oauth2.googleapis.com",
+  "frame-src 'self' blob: data: accounts.google.com",
   "worker-src 'self' blob:",
   "media-src 'self' blob: data: *.supabase.co",
 ].join("; ");
@@ -44,8 +44,12 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // 1. API 라우트 — 쿠키 인증 필수
+  // 1. API 라우트 — 쿠키 인증 필수 (Google auth 예외)
   if (req.nextUrl.pathname.startsWith("/api/")) {
+    // Google auth endpoint는 인증 없이 접근 가능
+    if (req.nextUrl.pathname === "/api/auth/google") {
+      return addSecurityHeaders(NextResponse.next());
+    }
     if (!isAuthenticated(req)) {
       return addSecurityHeaders(
         NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
@@ -74,7 +78,8 @@ export async function middleware(req: NextRequest) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 4. 로그인 페이지 표시 (JS로 ?access= 파라미터 전송)
+  // 4. 로그인 페이지 표시 (Google Sign-In + ?access= 폴백)
+  const googleClientId = process.env.GOOGLE_CLIENT_ID ?? "";
   return addSecurityHeaders(
     new NextResponse(
       `<!DOCTYPE html>
@@ -83,6 +88,7 @@ export async function middleware(req: NextRequest) {
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Field Nine OS</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -94,6 +100,9 @@ export async function middleware(req: NextRequest) {
     .container { text-align: center; padding: 2rem; max-width: 360px; }
     h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
     p { color: #86868b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    #g_id_onload { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 1.5rem 0; color: #86868b; font-size: 0.75rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #d1d1d6; }
     .form { display: flex; flex-direction: column; gap: 0.75rem; }
     input {
       padding: 0.75rem 1rem; border: 1px solid #d1d1d6; border-radius: 12px;
@@ -108,19 +117,65 @@ export async function middleware(req: NextRequest) {
     }
     button:hover { background: #0066cc; }
     .err { color: #f43f5e; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
+    .status { font-size: 0.8rem; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>F9 OS</h1>
     <p>Access Restricted</p>
+
+    <div id="google-btn-wrap">
+      <div id="g_id_onload"
+        data-client_id="${googleClientId}"
+        data-callback="handleGoogleLogin"
+        data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-shape="pill"
+        data-logo_alignment="left">
+      </div>
+    </div>
+    <div id="status" class="status"></div>
+
+    <div class="divider">or access code</div>
+
     <div class="form">
-      <input id="pw" type="password" placeholder="Access Code" autocomplete="off" autofocus />
+      <input id="pw" type="password" placeholder="Access Code" autocomplete="off" />
       <button id="btn" type="button">Enter</button>
       <div id="err" class="err">Invalid code</div>
     </div>
   </div>
   <script>
+    function handleGoogleLogin(response) {
+      var status = document.getElementById('status');
+      status.textContent = 'Verifying...';
+      status.style.color = '#0079f2';
+      fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          status.textContent = 'Welcome!';
+          status.style.color = '#00b894';
+          window.location.reload();
+        } else {
+          status.textContent = data.error || 'Login failed';
+          status.style.color = '#f43f5e';
+        }
+      })
+      .catch(function() {
+        status.textContent = 'Network error';
+        status.style.color = '#f43f5e';
+      });
+    }
     function submit(){var v=document.getElementById('pw').value;if(!v)return;window.location.href=window.location.pathname+'?access='+encodeURIComponent(v);}
     document.getElementById('btn').onclick=submit;
     document.getElementById('pw').onkeydown=function(e){if(e.key==='Enter')submit();};

@@ -31,7 +31,9 @@ import {
   ShieldCheck,
   Wrench,
   CheckCircle2,
+  Cpu,
 } from "lucide-react";
+import type { IDEAction } from "@/lib/ideActions";
 
 interface FileChange {
   path: string;
@@ -61,12 +63,13 @@ interface CurrentFile {
 }
 
 /* ===== Agent Mode ===== */
-type AgentMode = "build" | "plan" | "edit";
+type AgentMode = "build" | "plan" | "edit" | "agent";
 
 const AGENT_MODES: { id: AgentMode; label: string; icon: React.ElementType; desc: string }[] = [
   { id: "build", label: "Build", icon: Hammer, desc: "코드 생성 + 자동 배포" },
   { id: "plan", label: "Plan", icon: Lightbulb, desc: "설계만, 코드 없음" },
   { id: "edit", label: "Edit", icon: Pencil, desc: "변경 파일만 출력" },
+  { id: "agent", label: "Agent", icon: Cpu, desc: "AI 자율 에이전트" },
 ];
 
 /* ===== Progress Events ===== */
@@ -92,6 +95,7 @@ interface AIChatPanelProps {
   onAutoTestReportShown?: () => void;
   livePreviewUrl?: string | null;
   errorFixState?: { message: string; phase: "detecting" | "fixing" | "done" } | null;
+  onIDEAction?: (action: IDEAction) => void;
 }
 
 function now() {
@@ -110,7 +114,7 @@ const AI_MODELS = [
 
 type AIModelId = (typeof AI_MODELS)[number]["id"];
 
-export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt, onGitRestore, externalMessage, onExternalMessageConsumed, autoTestCompleted, onAutoTestReportShown, livePreviewUrl, errorFixState }: AIChatPanelProps) {
+export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit, initialPrompt, onGitRestore, externalMessage, onExternalMessageConsumed, autoTestCompleted, onAutoTestReportShown, livePreviewUrl, errorFixState, onIDEAction }: AIChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
@@ -479,6 +483,148 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  /* ===== Agent mode: multi-agent pipeline ===== */
+  const [agentSubtasks, setAgentSubtasks] = useState<{ id: string; description: string; status: string }[]>([]);
+  const [agentStage, setAgentStage] = useState<string | null>(null);
+
+  const sendToAgent = useCallback(
+    async (userText: string) => {
+      setError(null);
+      setIsStreaming(true);
+      setAgentSubtasks([]);
+      setAgentStage("planning");
+      addProgressEvent("stream-start", "에이전트 파이프라인 시작", "pending");
+
+      const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: userText };
+      const assistantId = `ai-agent-${Date.now()}`;
+      const assistantMsg: ChatMessage = { id: assistantId, role: "assistant", content: "" };
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+      initStages(assistantId);
+
+      const fileContext: Record<string, string> = currentFiles
+        ? Object.fromEntries(Object.entries(currentFiles).map(([, f]) => [f.name, f.content]))
+        : {};
+
+      try {
+        const res = await fetch("/api/agent/run", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userText, fileContext }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          throw new Error(errData.error || `Agent API error: ${res.status}`);
+        }
+        if (!res.body) throw new Error("Empty response body");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = "";
+        let statusText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split("\n");
+          sseBuffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const payload = trimmed.slice(5).trim();
+            if (!payload || payload === "[DONE]") continue;
+
+            try {
+              const evt = JSON.parse(payload);
+
+              if (evt.type === "stage") {
+                setAgentStage(evt.stage);
+                const stageLabels: Record<string, string> = {
+                  planning: "계획 수립 중...",
+                  coding: "코드 생성 중...",
+                  reviewing: "코드 리뷰 중...",
+                  fixing: "수정 중...",
+                  complete: "완료!",
+                };
+                const label = stageLabels[evt.stage] ?? evt.stage;
+                statusText += `\n${label}`;
+                setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
+
+                if (evt.stage === "coding") advanceStage(assistantId, "planning", "계획 수립 완료");
+                if (evt.stage === "reviewing") advanceStage(assistantId, "coding", "코드 생성 완료");
+                if (evt.stage === "complete") completeAllStages(assistantId);
+              }
+
+              if (evt.type === "subtask") {
+                setAgentSubtasks((prev) => {
+                  const existing = prev.findIndex((s) => s.id === evt.id);
+                  if (existing >= 0) {
+                    const updated = [...prev];
+                    updated[existing] = { id: evt.id, description: evt.description, status: evt.status };
+                    return updated;
+                  }
+                  return [...prev, { id: evt.id, description: evt.description, status: evt.status }];
+                });
+              }
+
+              if (evt.type === "code" && evt.file && evt.content) {
+                onInsertCode(
+                  (evt.file.endsWith(".js") || evt.file.endsWith(".ts")) ? sanitizeJS(evt.content) : evt.content,
+                  evt.file,
+                  true,
+                );
+                addProgressEvent("file-insert", `${evt.file} 삽입`, "done");
+              }
+
+              if (evt.type === "review" && evt.issues?.length > 0) {
+                statusText += `\n리뷰 이슈: ${evt.issues.join(", ")}`;
+                setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
+              }
+
+              if (evt.type === "complete" && Array.isArray(evt.files)) {
+                const fileChanges = evt.files as { path: string; content: string }[];
+                statusText += `\n${fileChanges.length}개 파일 완성 — 커밋 중...`;
+                setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
+
+                // Auto commit
+                if (onShadowCommit && fileChanges.length > 0) {
+                  const commitMsg = `feat(agent): ${userText.slice(0, 50)}`;
+                  const ok = await onShadowCommit(fileChanges, commitMsg);
+                  if (ok) {
+                    addProgressEvent("commit-success", "GitHub 커밋 완료", "done");
+                    statusText += "\nGitHub 커밋 완료!";
+                  } else {
+                    addProgressEvent("commit-fail", "커밋 실패", "error");
+                    statusText += "\n커밋 실패 — 로컬 삽입만 완료";
+                  }
+                  setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
+                }
+              }
+
+              if (evt.type === "error") {
+                statusText += `\n오류: ${evt.message}`;
+                setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
+              }
+            } catch { /* partial JSON */ }
+          }
+        }
+
+        addProgressEvent("stream-end", "에이전트 파이프라인 완료", "done");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg);
+        addProgressEvent("stream-end", `에이전트 오류: ${msg}`, "error");
+      } finally {
+        setIsStreaming(false);
+        setAgentStage(null);
+      }
+    },
+    [currentFiles, onInsertCode, onShadowCommit, addProgressEvent, initStages, advanceStage, completeAllStages],
+  );
+
   /* ===== Direct fetch streaming (no useChat) ===== */
   const sendToAI = useCallback(
     async (userText: string) => {
@@ -575,6 +721,28 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         let sseBuffer = "";
         let insertedBlocks = 0; // Track how many code blocks we've already live-inserted
 
+        /** Convert tool call to IDE action and dispatch */
+        const handleToolCall = (toolName: string, args: Record<string, unknown>) => {
+          if (!onIDEAction) return;
+          const actionMap: Record<string, () => IDEAction> = {
+            switch_file: () => ({ type: "switch-file", file: String(args.file ?? "") }),
+            create_file: () => ({ type: "create-file", name: String(args.name ?? "") }),
+            delete_file: () => ({ type: "delete-file", name: String(args.name ?? "") }),
+            set_viewport: () => ({ type: "set-viewport", size: args.size as "desktop" | "tablet" | "mobile" }),
+            toggle_file_explorer: () => ({ type: "toggle-file-explorer" }),
+            toggle_console: () => ({ type: "toggle-console" }),
+            refresh_preview: () => ({ type: "refresh-preview" }),
+            deploy: () => ({ type: "deploy" }),
+            set_theme: () => ({ type: "set-theme", theme: args.theme as "dark" | "light" }),
+            insert_code: () => ({ type: "insert-code", file: String(args.file ?? ""), content: String(args.content ?? "") }),
+          };
+          const factory = actionMap[toolName];
+          if (factory) {
+            onIDEAction(factory());
+            addProgressEvent("file-insert", `IDE: ${toolName}(${JSON.stringify(args).slice(0, 50)})`, "done");
+          }
+        };
+
         /** Parse a single SSE data line and accumulate text */
         const processLine = (line: string) => {
           const trimmed = line.trim();
@@ -591,7 +759,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             );
             // Live preview: when a new code block closes (```), insert it immediately
             // Skip live insertion in plan mode
-            if (agentMode !== "plan") {
+            if (agentMode !== "plan" && agentMode !== "agent") {
               const parsed = parseAIResponse(fullText);
               if (parsed.codeBlocks.length > insertedBlocks) {
                 // Lifecycle 2: First code block → advance planning→done, coding→active
@@ -608,6 +776,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 insertedBlocks = parsed.codeBlocks.length;
               }
             }
+          }
+          // Handle tool calls from AI SDK streaming
+          if (obj.type === "tool-call" && obj.toolName && obj.args) {
+            handleToolCall(obj.toolName, obj.args);
           }
           if (obj.type === "error") {
             throw new Error(obj.errorText || obj.message || "API stream error");
@@ -715,12 +887,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     if (!inputValue.trim() || isStreaming || isCommitting) return;
     const text = inputValue.trim();
     setInputValue("");
-    sendToAI(text).catch((err: unknown) => {
+
+    const sendFn = agentMode === "agent" ? sendToAgent : sendToAI;
+    sendFn(text).catch((err: unknown) => {
       console.error("[AIChatPanel] Unhandled error:", err);
       setError(err instanceof Error ? err.message : String(err));
       setIsStreaming(false);
     });
-  }, [inputValue, isStreaming, isCommitting, sendToAI]);
+  }, [inputValue, isStreaming, isCommitting, sendToAI, sendToAgent, agentMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -831,6 +1005,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     build: "기능을 지시하세요... (예: 빨간 버튼 만들어줘)",
     plan: "설계를 요청하세요... (예: 로그인 기능 구조 설명해줘)",
     edit: "수정할 부분을 지시하세요... (예: 헤더 색상 바꿔줘)",
+    agent: "자율 에이전트에게 지시... (예: todo 앱 만들어줘)",
   };
 
   return (
@@ -931,6 +1106,33 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             <div className="whitespace-pre-wrap">{WELCOME_TEXT}</div>
           </div>
         </div>
+
+        {/* Agent subtask progress */}
+        {agentMode === "agent" && agentSubtasks.length > 0 && (
+          <div className="mx-2 px-3 py-2 rounded-xl bg-[var(--r-bg)] border border-[var(--r-border)]">
+            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold text-[#0079F2]">
+              <Cpu size={12} />
+              Agent Pipeline {agentStage && <span className="font-normal text-[var(--r-text-secondary)]">— {agentStage}</span>}
+            </div>
+            <div className="space-y-1">
+              {agentSubtasks.map((st) => (
+                <div key={st.id} className="flex items-center gap-2 text-[10px]">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    st.status === "done" ? "bg-[#00B894]" :
+                    st.status === "active" ? "bg-[#0079F2] animate-pulse" :
+                    "bg-[var(--r-border)]"
+                  }`} />
+                  <span className={
+                    st.status === "done" ? "text-[#00B894]" :
+                    st.status === "active" ? "text-[#0079F2]" :
+                    "text-[var(--r-text-muted)]"
+                  }>{st.description}</span>
+                  <span className="text-[9px] text-[var(--r-text-muted)] ml-auto">{st.id}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* API connectivity status */}
         {apiStatus === "error" && (

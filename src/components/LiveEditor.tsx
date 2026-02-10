@@ -58,6 +58,8 @@ import { useUndoHistory } from "@/hooks/useUndoHistory";
 import { useWebContainer } from "@/hooks/useWebContainer";
 import { isCodeComplete } from "@/lib/codeValidator";
 import { ErrorBoundary } from "./providers";
+import AIStatusIndicator from "./AIStatusIndicator";
+import type { IDEAction } from "@/lib/ideActions";
 
 const WebTerminal = dynamic(() => import("./WebTerminal"), { ssr: false });
 
@@ -442,6 +444,10 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [errorFixState, setErrorFixState] = useState<{ message: string; phase: "detecting" | "fixing" | "done" } | null>(null);
   const errorFixCooldownRef = useRef(false);
   const syncDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ===== AI IDE Action State ===== */
+  const [currentIDEAction, setCurrentIDEAction] = useState<IDEAction | null>(null);
+  const ideActionCounter = useRef(0);
 
   /* ===== WebContainer Runtime ===== */
   const {
@@ -1173,6 +1179,48 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     if (aiCollapsed) panel.expand(); else panel.collapse();
   }, [aiCollapsed]);
 
+  /* ===== IDE Action Dispatcher (AI → IDE control) ===== */
+  const handleIDEAction = useCallback((action: IDEAction) => {
+    ideActionCounter.current += 1;
+    setCurrentIDEAction({ ...action });
+
+    switch (action.type) {
+      case "switch-file":
+        if (files[action.file]) {
+          if (!openTabs.includes(action.file)) setOpenTabs((prev) => [...prev, action.file]);
+          setActiveFile(action.file);
+        }
+        break;
+      case "create-file":
+        createFile(action.name);
+        break;
+      case "delete-file":
+        deleteFile(action.name);
+        break;
+      case "set-viewport":
+        setViewport(action.size);
+        break;
+      case "toggle-file-explorer":
+        setShowFileExplorer((v) => !v);
+        break;
+      case "toggle-console":
+        toggleConsole();
+        break;
+      case "refresh-preview":
+        handleRun();
+        break;
+      case "deploy":
+        handleDeploy();
+        break;
+      case "set-theme":
+        if ((action.theme === "dark") !== (theme === "dark")) toggleTheme();
+        break;
+      case "insert-code":
+        handleInsertCode(action.content, action.file, true);
+        break;
+    }
+  }, [files, openTabs, createFile, deleteFile, toggleConsole, handleRun, handleDeploy, theme, toggleTheme, handleInsertCode]);
+
   /* ===== Keyboard Shortcuts ===== */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1619,7 +1667,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
             {mobilePanel === "ai" && (
               <div className="flex-1 min-h-0">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} autoTestCompleted={autoTestCompleted} onAutoTestReportShown={handleAutoTestReportShown} livePreviewUrl={vercelUrl ?? deployedUrl} errorFixState={errorFixState} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} autoTestCompleted={autoTestCompleted} onAutoTestReportShown={handleAutoTestReportShown} livePreviewUrl={vercelUrl ?? deployedUrl} errorFixState={errorFixState} onIDEAction={handleIDEAction} />
               </div>
             )}
           </div>
@@ -1642,7 +1690,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
               onResize={(size) => setAiCollapsed(size.asPercentage < 1)}
             >
               <ErrorBoundary fallbackLabel="AI Chat crashed — click Retry">
-                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} autoTestCompleted={autoTestCompleted} onAutoTestReportShown={handleAutoTestReportShown} livePreviewUrl={vercelUrl ?? deployedUrl} errorFixState={errorFixState} />
+                <AIChatPanel onInsertCode={handleInsertCode} activeFile={activeFile} currentFiles={files} onShadowCommit={handleShadowCommit} initialPrompt={initialPrompt} onGitRestore={handleGitRestore} externalMessage={aiFixMessage} onExternalMessageConsumed={() => setAIFixMessage(undefined)} autoTestCompleted={autoTestCompleted} onAutoTestReportShown={handleAutoTestReportShown} livePreviewUrl={vercelUrl ?? deployedUrl} errorFixState={errorFixState} onIDEAction={handleIDEAction} />
               </ErrorBoundary>
             </Panel>
 
@@ -1800,6 +1848,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
         theme={theme}
       />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <AIStatusIndicator action={currentIDEAction} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { streamText, convertToModelMessages, type SystemModelMessage } from "ai";
+import { streamText, convertToModelMessages, tool, type SystemModelMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { z } from "zod";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { indexProject, searchCode, isIndexed } from "@/lib/semanticIndex";
 import { searchMemories, isMemoryEnabled } from "@/lib/supabaseMemory";
@@ -127,7 +128,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 ## Language
 - Explanations: Korean
-- Code: English (variable names, comments, HTML content can mix Korean for UI text)`;
+- Code: English (variable names, comments, HTML content can mix Korean for UI text)
+
+## IDE Control Tools
+You have access to IDE control tools. Use them when the user asks to:
+- Switch files: use switch_file tool
+- Create/delete files: use create_file / delete_file tools
+- Change viewport: use set_viewport tool
+- Toggle panels: use toggle_file_explorer / toggle_console tools
+- Refresh preview: use refresh_preview tool
+- Deploy: use deploy tool
+- Change theme: use set_theme tool
+- Insert code into a specific file: use insert_code tool
+
+Always use the appropriate tool when the user's request maps to an IDE action.
+You can combine tool calls with code generation in a single response.`;
 
 export async function POST(req: Request) {
   // Rate limiting (15 requests per minute per session)
@@ -458,10 +473,58 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
     // ===== Reduced maxOutputTokens for simple requests =====
     const maxTokens = complexity === "simple" ? 8192 : 16384;
 
+    // ===== IDE Control Tools =====
+    const ideTools = {
+      switch_file: tool({
+        description: "Switch the active editor tab to a specific file",
+        inputSchema: z.object({ file: z.string().describe("File name to switch to, e.g. 'style.css'") }),
+      }),
+      create_file: tool({
+        description: "Create a new file in the project",
+        inputSchema: z.object({ name: z.string().describe("New file name, e.g. 'utils.js'") }),
+      }),
+      delete_file: tool({
+        description: "Delete a file from the project",
+        inputSchema: z.object({ name: z.string().describe("File name to delete") }),
+      }),
+      set_viewport: tool({
+        description: "Change the preview viewport size",
+        inputSchema: z.object({ size: z.enum(["desktop", "tablet", "mobile"]).describe("Viewport size") }),
+      }),
+      toggle_file_explorer: tool({
+        description: "Toggle the file explorer sidebar visibility",
+        inputSchema: z.object({}),
+      }),
+      toggle_console: tool({
+        description: "Toggle the console panel visibility",
+        inputSchema: z.object({}),
+      }),
+      refresh_preview: tool({
+        description: "Refresh the live preview panel",
+        inputSchema: z.object({}),
+      }),
+      deploy: tool({
+        description: "Deploy the current project to production",
+        inputSchema: z.object({}),
+      }),
+      set_theme: tool({
+        description: "Change the IDE theme",
+        inputSchema: z.object({ theme: z.enum(["dark", "light"]).describe("Theme to apply") }),
+      }),
+      insert_code: tool({
+        description: "Insert or replace code in a specific file",
+        inputSchema: z.object({
+          file: z.string().describe("Target file name"),
+          content: z.string().describe("Complete file content to insert"),
+        }),
+      }),
+    };
+
     const result = streamText({
       model,
       system: systemMessages,
       messages,
+      tools: ideTools,
       temperature: 0.7,
       maxOutputTokens: maxTokens,
     });
