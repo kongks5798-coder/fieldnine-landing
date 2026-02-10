@@ -1,121 +1,73 @@
 document.addEventListener('DOMContentLoaded', function() {
-  var apiCallCount = 0;
-  var keyInput = document.getElementById('keyInput');
-  var valueInput = document.getElementById('valueInput');
-  var saveBtn = document.getElementById('saveBtn');
-  var loadBtn = document.getElementById('loadBtn');
-  var clearBtn = document.getElementById('clearBtn');
-  var memoryList = document.getElementById('memoryList');
+  var exploreBtn = document.getElementById('exploreBtn');
+  var watchDemoBtn = document.getElementById('watchDemoBtn');
+  var getStartedBtn = document.getElementById('getStartedBtn');
+  var isExploring = false;
 
-  function incrementApiCalls() {
-    apiCallCount++;
-    updateStats(apiCallCount);
-  }
-
-  function saveMemory() {
-    var key = keyInput ? keyInput.value.trim() : '';
-    var value = valueInput ? valueInput.value.trim() : '';
+  function handleExplore() {
+    if (isExploring) return;
+    isExploring = true;
     
-    if (!key || !value) {
-      alert('키와 값을 모두 입력해주세요!');
-      return;
+    if (exploreBtn) {
+      exploreBtn.innerHTML = '<span>Exploring...</span><span class="btn-arrow">⚡</span>';
+      exploreBtn.style.transform = 'translateY(-4px)';
     }
-
-    updateStatus('loading', API_MESSAGES.saving);
-    incrementApiCalls();
-
-    setTimeout(function() {
-      try {
-        localStorage.setItem(MEMORY_CONFIG.prefix + key, value);
-        updateStatus('online', API_MESSAGES.success);
-        if (keyInput) keyInput.value = '';
-        if (valueInput) valueInput.value = '';
-        refreshMemoryList();
-      } catch (e) {
-        updateStatus('error', API_MESSAGES.error);
-      }
-    }, 500);
-  }
-
-  function loadMemory() {
-    var key = keyInput ? keyInput.value.trim() : '';
-    if (!key) {
-      alert('불러올 키를 입력해주세요!');
-      return;
-    }
-
-    updateStatus('loading', API_MESSAGES.loading);
-    incrementApiCalls();
-
-    setTimeout(function() {
-      var value = localStorage.getItem(MEMORY_CONFIG.prefix + key);
-      if (value && valueInput) {
-        valueInput.value = value;
-        updateStatus('online', API_MESSAGES.success);
-      } else {
-        updateStatus('error', '키를 찾을 수 없음');
-      }
-    }, 300);
-  }
-
-  function clearAllMemory() {
-    if (!confirm('모든 메모리 데이터를 삭제하시겠습니까?')) return;
     
-    updateStatus('loading', '삭제중...');
-    incrementApiCalls();
-
     setTimeout(function() {
-      var keysToDelete = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i);
-        if (key.startsWith(MEMORY_CONFIG.prefix)) {
-          keysToDelete.push(key);
+      var features = document.getElementById('features');
+      if (features) {
+        features.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      setTimeout(function() {
+        if (exploreBtn) {
+          exploreBtn.innerHTML = '<span>Explore Platform</span><span class="btn-arrow">→</span>';
+          exploreBtn.style.transform = '';
         }
-      }
-      
-      keysToDelete.forEach(function(key) {
-        localStorage.removeItem(key);
-      });
-      
-      updateStatus('online', API_MESSAGES.cleared);
-      refreshMemoryList();
+        isExploring = false;
+      }, 2000);
     }, 800);
   }
 
-  function refreshMemoryList() {
-    if (!memoryList) return;
-    
-    memoryList.innerHTML = '';
-    for (var i = 0; i < localStorage.length; i++) {
-      var key = localStorage.key(i);
-      if (key.startsWith(MEMORY_CONFIG.prefix)) {
-        var displayKey = key.replace(MEMORY_CONFIG.prefix, '');
-        var value = localStorage.getItem(key);
-        memoryList.appendChild(createMemoryItem(displayKey, value));
-      }
+  function handleDemo() {
+    if (watchDemoBtn) {
+      watchDemoBtn.innerHTML = '<span class="play-icon">⏸</span>Loading Demo...';
+      watchDemoBtn.style.opacity = '0.7';
     }
-    updateStats(apiCallCount);
+    
+    setTimeout(function() {
+      alert('Demo coming soon! 🚀\n\nExperience the future of development with Field Nine.');
+      if (watchDemoBtn) {
+        watchDemoBtn.innerHTML = '<span class="play-icon">▶</span>Watch Demo';
+        watchDemoBtn.style.opacity = '';
+      }
+    }, 1500);
   }
 
-  window.deleteMemoryItem = function(key) {
-    localStorage.removeItem(MEMORY_CONFIG.prefix + key);
-    incrementApiCalls();
-    refreshMemoryList();
-    updateStatus('online', '항목 삭제됨');
-  };
+  function handleGetStarted() {
+    if (getStartedBtn) {
+      getStartedBtn.textContent = 'Launching...';
+      getStartedBtn.style.transform = 'scale(0.95)';
+    }
+    
+    setTimeout(function() {
+      window.location.href = '#features';
+      if (getStartedBtn) {
+        getStartedBtn.textContent = 'Get Started';
+        getStartedBtn.style.transform = '';
+      }
+    }, 1000);
+  }
 
-  if (saveBtn) saveBtn.addEventListener('click', saveMemory);
-  if (loadBtn) loadBtn.addEventListener('click', loadMemory);
-  if (clearBtn) clearBtn.addEventListener('click', clearAllMemory);
+  if (exploreBtn) exploreBtn.addEventListener('click', handleExplore);
+  if (watchDemoBtn) watchDemoBtn.addEventListener('click', handleDemo);
+  if (getStartedBtn) getStartedBtn.addEventListener('click', handleGetStarted);
 
-  updateStatus('online', API_MESSAGES.ready);
-  refreshMemoryList();
+  initializeVisualEffects();
+  handleNavScroll();
   
-  for (var i = 0; i < 2; i++) {
-    localStorage.setItem(
-      MEMORY_CONFIG.prefix + MEMORY_CONFIG.testKeys[i], 
-      MEMORY_CONFIG.testValues[i]
-    );
-  }
-  refreshMemoryList();
+  setTimeout(function() {
+    document.body.style.opacity = '1';
+    document.body.style.transition = 'opacity 0.5s ease';
+  }, 100);
 });
