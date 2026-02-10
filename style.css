@@ -1,18 +1,15 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #0a0a0a;
   color: #e2e8f0;
   min-height: 100vh;
 }
-
 .app {
   max-width: 960px;
   margin: 0 auto;
   padding: 0 24px;
 }
-
 .nav {
   display: flex;
   align-items: center;
@@ -20,7 +17,6 @@ body {
   padding: 20px 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-
 .nav-brand {
   display: flex;
   align-items: center;
@@ -28,26 +24,20 @@ body {
   font-weight: 700;
   font-size: 18px;
 }
-
 .logo { font-size: 24px; }
-
 .nav-links { display: flex; gap: 24px; }
-
 .nav-links a {
   color: #64748b;
   text-decoration: none;
   font-size: 14px;
   transition: color 0.2s;
 }
-
 .nav-links a:hover,
 .nav-links a.active { color: #f1f5f9; }
-
 .hero {
   text-align: center;
   padding: 80px 0 60px;
 }
-
 .hero-badge {
   display: inline-block;
   padding: 6px 16px;
@@ -58,7 +48,6 @@ body {
   color: #60a5fa;
   margin-bottom: 24px;
 }
-
 .hero h1 {
   font-size: 48px;
   font-weight: 800;
@@ -66,27 +55,23 @@ body {
   margin-bottom: 20px;
   letter-spacing: -1px;
 }
-
 .gradient-text {
   background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-
 .hero p {
   color: #94a3b8;
   font-size: 16px;
   line-height: 1.7;
   margin-bottom: 32px;
 }
-
 .hero-actions {
   display: flex;
   gap: 12px;
   justify-content: center;
   margin-bottom: 24px;
 }
-
 .btn {
   padding: 12px 28px;
   border: none;
@@ -96,115 +81,54 @@ body {
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .btn-primary {
   background: linear-gradient(135deg, #2563eb, #7c3aed);
   color: white;
 }
-
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
 }
-
 .btn-secondary {
-  background: rgba(255,255,255,0.1);
-  color: #e2e8f0;
+  background: rgba(255,255,255,0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.1);
 }
-
 .btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
 }
-
-.features {
-  padding: 40px 0;
-  background: #1a1a2e;
-  border-radius: 12px;
-  margin-top: 40px;
-}
-
-.features h2 {
-  text-align: center;
-  margin-bottom: 24px;
-  font-size: 28px;
-}
-
-.feature-list {
-  display: flex;
-  justify-content: space-around;
-  gap: 16px;
-}
-
-.feature {
-  text-align: center;
-  padding: 20px;
-  background: #25253e;
-  border-radius: 8px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.feature:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.feature h3 {
-  font-size: 18px;
-  color: #e2e8f0;
-  margin-bottom: 12px;
-}
-
-.feature p {
-  color: #94a3b8;
+.counter-display {
   font-size: 14px;
+  color: #64748b;
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  display: inline-block;
 }
-
+.counter-display span {
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 18px;
+}
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
   padding: 40px 0;
 }
-
 .card {
-  background: #1a1a2e;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 24px;
+  animation: slideUp 0.4s ease-out;
+  transition: all 0.2s;
 }
-
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.3);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
 }
-
-.card-emoji {
-  font-size: 32px;
-}
-
-.card h3 {
-  font-size: 20px;
-  color: #e2e8f0;
-  margin: 12px 0;
-}
-
-.card p {
-  color: #94a3b8;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.card-time {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.footer {
-  text-align: center;
-  padding: 20px 0;
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
-
-.footer .heart { color: #f43f5e; }
+.card-emoji { font-size: 32px; margin-bottom: 12px; }
+.card h3 { font-size: 16px; margin-bottom: 8px; }
