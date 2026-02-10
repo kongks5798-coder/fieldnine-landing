@@ -6,9 +6,9 @@ const COOKIE_NAME = "f9_access";
 /** Content Security Policy */
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.jsdelivr.net",
-  "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net fonts.googleapis.com",
-  "font-src 'self' fonts.gstatic.com cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+  "font-src 'self' fonts.gstatic.com",
   "img-src 'self' data: blob: *.supabase.co",
   "connect-src 'self' *.supabase.co api.github.com api.vercel.com",
   "frame-src 'self' blob: data:",

@@ -228,8 +228,8 @@ Output COMPLETE file contents in each code block. Never partial snippets.
 Use addEventListener (never inline onclick). Guard DOM queries with if(el).
 KEEP EACH JS FILE SHORT (under 35 lines).
 HTML must include <meta charset="UTF-8"> and lang="ko".
-CSS must use font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif for Korean text.
-index.html must include: <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" /> and <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />`;
+CSS must use font-family: 'Inter', 'Noto Sans KR', sans-serif for Korean text.
+index.html must include: <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />`;
 
 // ===== Strategy 3: File Context Reducer =====
 

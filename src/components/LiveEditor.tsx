@@ -74,8 +74,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My App — Field Nine</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -127,7 +126,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #0a0a0a;
   color: #e2e8f0;
   min-height: 100vh;
@@ -787,7 +786,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
     // Safety: never return empty — ensures preview always renders
     if (!combined || combined.trim().length < 10) {
-      return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Pretendard',sans-serif;color:#64748b;}</style></head><body><p>프리뷰 준비 중...</p></body></html>`;
+      return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter&family=Noto+Sans+KR&display=swap"/><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Inter','Noto Sans KR',sans-serif;color:#64748b;}</style></head><body><p>프리뷰 준비 중...</p></body></html>`;
     }
     return combined;
   }, [files]);
