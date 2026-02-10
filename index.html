@@ -17,6 +17,55 @@
 </head>
 <body>
   <div class="app">
+    <!-- Global Traffic Monitor -->
+    <div class="traffic-monitor" id="trafficMonitor">
+      <div class="monitor-header">
+        <div class="monitor-title">
+          <span class="monitor-icon">🌐</span>
+          Global Traffic Monitor
+        </div>
+        <div class="monitor-status" id="systemStatus">
+          <span class="status-dot online"></span>
+          ONLINE
+        </div>
+      </div>
+      
+      <div class="monitor-stats">
+        <div class="stat-row">
+          <span class="stat-label">실시간 방문자</span>
+          <span class="stat-value" id="liveVisitors">247</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">오늘 총 방문</span>
+          <span class="stat-value" id="todayVisits">3,842</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">서버 응답시간</span>
+          <span class="stat-value" id="responseTime">23ms</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">활성 세션</span>
+          <span class="stat-value" id="activeSessions">189</span>
+        </div>
+      </div>
+      
+      <div class="monitor-chart">
+        <div class="chart-title">24시간 트래픽</div>
+        <div class="chart-bars" id="trafficChart">
+          <div class="chart-bar" style="height: 60%"></div>
+          <div class="chart-bar" style="height: 40%"></div>
+          <div class="chart-bar" style="height: 80%"></div>
+          <div class="chart-bar" style="height: 90%"></div>
+          <div class="chart-bar" style="height: 70%"></div>
+          <div class="chart-bar" style="height: 85%"></div>
+          <div class="chart-bar" style="height: 95%"></div>
+          <div class="chart-bar" style="height: 100%"></div>
+        </div>
+      </div>
+      
+      <div class="monitor-toggle" id="monitorToggle">⚡</div>
+    </div>
+
     <nav class="nav">
       <div class="nav-brand">
         <span class="logo">⚡</span>
@@ -32,7 +81,7 @@
 
     <main class="hero">
       <div class="hero-content">
-        <div class="hero-badge">🚀 차세대 개발 플랫폼</div>
+        <div class="hero-badge">🚀 fieldnine.io • 차세대 개발 플랫폼</div>
         <h1 class="hero-title">
           개발의<br/>
           <span class="gradient-text">미래를 경험하세요</span>
@@ -91,7 +140,7 @@
     <section class="features" id="features">
       <div class="section-header">
         <h2>혁신적인 핵심 기능</h2>
-        <p>미래를 구축하는 데 필요한 모든 것</p>
+        <p>fieldnine.io에서 제공하는 차세대 개발 솔루션</p>
       </div>
       
       <div class="features-grid">
@@ -116,7 +165,7 @@
     <section class="technology" id="technology">
       <div class="section-header">
         <h2>최첨단 기술 스택</h2>
-        <p>검증된 기술과 혁신적인 솔루션의 완벽한 조합</p>
+        <p>fieldnine.io 플랫폼의 핵심 기술</p>
       </div>
       
       <div class="tech-showcase">
@@ -146,30 +195,30 @@
 
     <section class="contact" id="contact">
       <div class="section-header">
-        <h2>함께 미래를 만들어가세요</h2>
-        <p>fieldnine.io에서 새로운 개발 경험을 시작하세요</p>
+        <h2>fieldnine.io와 함께하세요</h2>
+        <p>개발의 미래를 함께 만들어갈 파트너를 찾습니다</p>
       </div>
       
       <div class="contact-info">
         <div class="contact-item">
           <div class="contact-icon">🌐</div>
           <div class="contact-details">
-            <h4>Website</h4>
+            <h4>Main Host</h4>
             <p>https://fieldnine.io</p>
           </div>
         </div>
         <div class="contact-item">
           <div class="contact-icon">📧</div>
           <div class="contact-details">
-            <h4>Email</h4>
+            <h4>Contact</h4>
             <p>hello@fieldnine.io</p>
           </div>
         </div>
         <div class="contact-item">
           <div class="contact-icon">🚀</div>
           <div class="contact-details">
-            <h4>Status</h4>
-            <p id="siteStatus">Online • Ready</p>
+            <h4>System Status</h4>
+            <p id="siteStatus">All Systems Operational</p>
           </div>
         </div>
       </div>
@@ -182,7 +231,7 @@
           <span>Field Nine</span>
         </div>
         <div class="footer-text">
-          © 2024 fieldnine.io • 한 번에 하나씩 프로젝트로 미래를 구축합니다.
+          © 2024 fieldnine.io • Powered by AI • Building the Future
         </div>
       </div>
     </footer>
