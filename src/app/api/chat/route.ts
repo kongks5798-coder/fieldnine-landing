@@ -218,35 +218,9 @@ export async function POST(req: Request) {
         ? lastMsg.parts.filter((p: Record<string, unknown>) => p.type === "text").map((p: Record<string, unknown>) => p.text).join(" ")
         : "";
 
-    // ===== Strategy 4: Template Matching (zero-cost) =====
-    if (mode !== "plan") {
-      const template = findTemplate(userQuery);
-      if (template) {
-        const templateText = formatTemplateResponse(template);
-        console.log("[costRouter] Template hit — skipping AI call");
-        // Return as SSE stream format for compatibility
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-          start(controller) {
-            // Send text-delta events
-            const delta = JSON.stringify({ type: "text-delta", delta: templateText });
-            controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
-            // Send finish
-            const finish = JSON.stringify({ type: "finish", finishReason: "stop" });
-            controller.enqueue(encoder.encode(`data: ${finish}\n\n`));
-            controller.close();
-          },
-        });
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-            "X-Cost-Strategy": "template",
-          },
-        });
-      }
-    }
+    // ===== Strategy 4: Template Matching — DISABLED =====
+    // Templates produce partial code (only 1-2 files), which destroys existing files
+    // when auto-inserted. Disabled until templates output all 5 files.
 
     // ===== Strategy 1: Cached Response Check =====
     if (mode !== "plan" && userQuery.length > 10) {

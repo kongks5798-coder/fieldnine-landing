@@ -125,12 +125,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
   const [apiStatus, setApiStatus] = useState<"ok" | "error">("ok");
   const [selectedModel, setSelectedModel] = useState<AIModelId>("auto");
   const [showModelMenu, setShowModelMenu] = useState(false);
-  const [lastSentAt, setLastSentAt] = useState(0);
+  const lastSentAtRef = useRef(0);
   const [dailyUsage, setDailyUsage] = useState({ count: 0, limit: 100 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initialPromptSentRef = useRef(false);
   const autoFixRetryRef = useRef(0); // cumulative auto-fix counter (max 2 per conversation, never resets)
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   /* ===== Agent Mode State ===== */
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
@@ -593,7 +595,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               }
 
               if (evt.type === "complete" && Array.isArray(evt.files)) {
-                const fileChanges = evt.files as { path: string; content: string }[];
+                const fileChanges = (evt.files as { path: string; content: string }[]).map((f) => ({
+                  path: f.path,
+                  content: (f.path.endsWith(".js") || f.path.endsWith(".ts")) ? sanitizeJS(f.content) : f.content,
+                }));
                 statusText += `\n${fileChanges.length}개 파일 완성 — 커밋 중...`;
                 setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
 
@@ -649,11 +654,11 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     async (userText: string) => {
       // Strategy 5: Debouncing — block requests within 3 seconds
       const now2 = Date.now();
-      if (now2 - lastSentAt < 3000) {
+      if (now2 - lastSentAtRef.current < 3000) {
         console.log("[AIChatPanel] Debounced — too fast");
         return;
       }
-      setLastSentAt(now2);
+      lastSentAtRef.current = now2;
 
       console.log("[AIChatPanel] sendToAI called:", userText.slice(0, 50));
       setError(null);
@@ -700,7 +705,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
       try {
         // Build conversation history for API (plain format, last 8 messages to stay under 200KB)
-        const recentHistory = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
+        const recentHistory = messagesRef.current.slice(-8).map((m) => ({ role: m.role, content: m.content }));
         const apiMessages = [
           ...recentHistory,
           { role: "user" as const, content: modePrefix + userText },
@@ -831,7 +836,9 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           for (const line of sseBuffer.split("\n")) {
             try {
               processLine(line);
-            } catch { /* trailing partial — safe to skip */ }
+            } catch (e) {
+              if (!(e instanceof SyntaxError)) console.warn("[AIChatPanel] SSE flush error:", e);
+            }
           }
         }
 
@@ -890,7 +897,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         setProgressEvents([]);
       }
     },
-    [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent, initStages, advanceStage, completeAllStages, lastSentAt],
+    [currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent, initStages, advanceStage, completeAllStages],
   );
 
   // Keep sendToAI ref updated for auto-fix callback

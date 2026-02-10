@@ -23,6 +23,7 @@ export function useDeployStatus(enabled: boolean = true) {
   const [polling, setPolling] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
+  const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -72,10 +73,11 @@ export function useDeployStatus(enabled: boolean = true) {
   // Auto-stop when status becomes ready; auto-clear error after 10s
   useEffect(() => {
     if (deploy.status === "ready" && polling) {
-      setTimeout(() => stopPolling(), 5000);
+      if (readyTimerRef.current) clearTimeout(readyTimerRef.current);
+      readyTimerRef.current = setTimeout(() => stopPolling(), 5000);
+      return () => { if (readyTimerRef.current) clearTimeout(readyTimerRef.current); };
     }
     if (deploy.status === "error") {
-      // Auto-clear error badge after 10 seconds → idle
       const timer = setTimeout(() => {
         setDeploy((prev) => prev.status === "error" ? { ...prev, status: "idle" } : prev);
         stopPolling();

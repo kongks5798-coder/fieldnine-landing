@@ -610,7 +610,11 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         const info = getFileInfo(name);
         restoredFiles[name] = { name, language: info.language, content, icon: info.icon };
       }
-      setFiles((prev) => ({ ...prev, ...restoredFiles }));
+      setFiles((prev) => {
+        const merged = { ...prev, ...restoredFiles };
+        triggerAutoSave(merged);
+        return merged;
+      });
       setOpenTabs((prev) => {
         const newTabs = [...prev];
         for (const name of Object.keys(restoredFiles)) {
@@ -618,14 +622,13 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
         }
         return newTabs;
       });
-      triggerAutoSave({ ...files, ...restoredFiles });
       addToast({ type: "success", message: `커밋 ${data.sha}로 복원 완료` });
     } catch (err) {
       addToast({ type: "error", message: `복원 실패: ${(err as Error).message}` });
     } finally {
       setRestoringCommit(null);
     }
-  }, [files, triggerAutoSave, addToast]);
+  }, [triggerAutoSave, addToast]);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const autoRunRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -765,7 +768,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
 
     // Dynamic JS: replace ALL <script src="*.js"> with inline <script>
     combined = combined.replace(
-      /<script\s+src="([^"]+\.js)"\s*><\/script>/gi,
+      /<script\s+[^>]*src="([^"]+\.js)"[^>]*><\/script>/gi,
       (_match: string, fileName: string) => {
         const content = files[fileName]?.content ?? "";
         return `<script>try{${content}}catch(e){console.error('${fileName} runtime error:',e.message)}</script>`;
@@ -813,27 +816,20 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
           { type: e.data.type, text: e.data.text, time: now },
         ]);
 
-        // Virtual Error Detector: auto-detect runtime errors
+        // Virtual Error Detector: show error once per unique message (no auto-refresh to avoid loops)
         if (e.data.type === "error" && !errorFixCooldownRef.current) {
           errorFixCooldownRef.current = true;
           const errText = String(e.data.text).slice(0, 120);
           setErrorFixState({ message: errText, phase: "detecting" });
 
           setTimeout(() => {
-            setErrorFixState((prev) => prev ? { ...prev, phase: "fixing" } : null);
-          }, 800);
-
-          setTimeout(() => {
             setErrorFixState((prev) => prev ? { ...prev, phase: "done" } : null);
-            // Refresh preview
-            setConsoleLines([]);
-            setRenderedHTML(buildPreview());
-          }, 2800);
+          }, 1500);
 
           setTimeout(() => {
             setErrorFixState(null);
-            errorFixCooldownRef.current = false;
-          }, 5000);
+            // Keep cooldown active — don't auto-refresh to prevent infinite error loops
+          }, 4000);
         }
       }
       // Inspector element click → navigate to code
@@ -927,18 +923,9 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
     setOpenTabs(Object.keys(fresh));
     setConsoleLines([]);
     clearLocalStorage();
-    setTimeout(() => setRenderedHTML(""), 0);
+    // Use buildPreviewRef so console capture and all injection logic is included
     setTimeout(() => {
-      let combined: string = fresh["index.html"].content;
-      combined = combined.replace(
-        /<link\s+rel="stylesheet"\s+href="([^"]+\.css)"\s*\/?>/gi,
-        (_m: string, f: string) => `<style>${fresh[f]?.content ?? ""}</style>`,
-      );
-      combined = combined.replace(
-        /<script\s+src="([^"]+\.js)"\s*><\/script>/gi,
-        (_m: string, f: string) => `<script>try{${fresh[f]?.content ?? ""}}catch(e){console.error('${f} error:',e.message)}</script>`,
-      );
-      setRenderedHTML(combined);
+      if (buildPreviewRef.current) setRenderedHTML(buildPreviewRef.current());
     }, 50);
   }, [clearLocalStorage]);
 
@@ -1133,7 +1120,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
       path: name,
       content: f.content,
     }));
-    handleShadowCommit(fileChanges, `deploy: ${projectSlug}`);
+    await handleShadowCommit(fileChanges, `deploy: ${projectSlug}`);
 
     const combinedHTML = buildPreview();
     const url = await deployProject(projectSlug, combinedHTML);

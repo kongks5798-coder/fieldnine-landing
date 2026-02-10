@@ -23,6 +23,7 @@ async function ghFetch(url: string, opts: RequestInit = {}) {
     headers: {
       Authorization: `Bearer ${GITHUB_TOKEN}`,
       Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
       "X-GitHub-Api-Version": "2022-11-28",
       ...(opts.headers as Record<string, string>),
     },

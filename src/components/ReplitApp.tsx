@@ -89,10 +89,15 @@ export default function ReplitApp({ onStartProject, onOpenProject, refreshKey }:
   /* ===== Load projects ===== */
   useEffect(() => {
     setLoading(true);
-    listProjects().then((data) => {
-      setProjects(data);
-      setLoading(false);
-    });
+    listProjects()
+      .then((data) => {
+        setProjects(data);
+      })
+      .catch((err) => {
+        console.error("[ReplitApp] Failed to load projects:", err);
+        setProjects([]);
+      })
+      .finally(() => setLoading(false));
   }, [refreshKey]);
 
   /* ===== Create project + start IDE ===== */
