@@ -26,6 +26,8 @@ interface PreviewPanelProps {
   onInspectorToggle?: () => void;
   /** WebContainer dev server URL (when runtime is active) */
   wcServerUrl?: string | null;
+  /** True while code change is being synced to preview */
+  isSyncing?: boolean;
 }
 
 const viewportWidths: Record<ViewportSize, string> = {
@@ -44,6 +46,7 @@ export default function PreviewPanel({
   inspectorMode,
   onInspectorToggle,
   wcServerUrl,
+  isSyncing,
 }: PreviewPanelProps) {
   const liveUrl = vercelUrl ?? deployedUrl;
 
@@ -57,7 +60,13 @@ export default function PreviewPanel({
           onClick={() => { if (liveUrl) window.open(liveUrl, "_blank"); }}
           title={liveUrl ? `${liveUrl} (클릭하여 새 탭에서 열기)` : "로컬 프리뷰"}
         >
-          {vercelState === "building" ? (
+          {isSyncing ? (
+            <>
+              <span className="flex items-center gap-1 text-[11px] text-[#0079F2] font-mono animate-pulse">
+                ⚡ Syncing...
+              </span>
+            </>
+          ) : vercelState === "building" ? (
             <>
               <Loader2 size={10} className="text-[#f59e0b] animate-spin" />
               <span className="text-[11px] text-[#f59e0b] font-mono truncate">

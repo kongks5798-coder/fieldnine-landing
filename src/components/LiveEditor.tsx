@@ -408,6 +408,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   const [splitView, setSplitView] = useState(false);
   const [splitFile, setSplitFile] = useState("style.css");
   const [aiFixMessage, setAIFixMessage] = useState<string | undefined>(undefined);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   /* ===== WebContainer Runtime ===== */
   const {
@@ -750,10 +751,12 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
         if (hotInjectCSS(newContent)) return; // hot-injected, no full rebuild
       }
 
+      setIsSyncing(true);
       if (autoRunRef.current) clearTimeout(autoRunRef.current);
       autoRunRef.current = setTimeout(() => {
         setConsoleLines([]);
         setRenderedHTML(buildPreview());
+        setIsSyncing(false);
       }, 300);
     },
     [activeFile, buildPreview, triggerAutoSave, triggerAutoCommit, hotInjectCSS, pushUndoSnapshot]
@@ -1642,6 +1645,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                   inspectorMode={inspectorMode}
                   onInspectorToggle={() => setInspectorMode((v) => !v)}
                   wcServerUrl={wcServerUrl}
+                  isSyncing={isSyncing}
                 />
               </ErrorBoundary>
             </Panel>
