@@ -3,62 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Memory API Tester — Field Nine</title>
+  <title>Field Nine — The Future of Development</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">🧠</span>
-        <span>Memory API Tester</span>
+        <span class="logo">⚡</span>
+        <span>Field Nine</span>
       </div>
-      <div class="nav-status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">준비중...</span>
+      <div class="nav-menu">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#technology" class="nav-link">Technology</a>
+        <a href="#contact" class="nav-link">Contact</a>
+        <button class="btn btn-nav" id="getStartedBtn">Get Started</button>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge">🔬 API Testing Tool</div>
-      <h1>메모리 API<br/><span class="gradient-text">동작 확인</span></h1>
-      <p>로컬스토리지를 통한 데이터 저장/로드 테스트<br/>실시간 API 상태 모니터링</p>
-      
-      <div class="test-panel">
-        <div class="input-group">
-          <input type="text" id="keyInput" placeholder="키를 입력하세요" />
-          <input type="text" id="valueInput" placeholder="값을 입력하세요" />
-        </div>
+      <div class="hero-content">
+        <div class="hero-badge">🚀 Next Generation Platform</div>
+        <h1 class="hero-title">
+          The Future of<br/>
+          <span class="gradient-text">Development</span>
+        </h1>
+        <p class="hero-description">
+          Experience lightning-fast development with AI-powered tools.<br/>
+          Build, deploy, and scale applications with unprecedented efficiency.
+        </p>
+        
         <div class="hero-actions">
-          <button class="btn btn-primary" id="saveBtn">💾 저장하기</button>
-          <button class="btn btn-secondary" id="loadBtn">📂 불러오기</button>
-          <button class="btn btn-danger" id="clearBtn">🗑️ 전체삭제</button>
+          <button class="btn btn-primary" id="exploreBtn">
+            <span>Explore Platform</span>
+            <span class="btn-arrow">→</span>
+          </button>
+          <button class="btn btn-secondary" id="watchDemoBtn">
+            <span class="play-icon">▶</span>
+            Watch Demo
+          </button>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-number" id="projectCount">2,847</div>
+            <div class="stat-label">Projects Built</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="timesSaved">156h</div>
+            <div class="stat-label">Time Saved</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="satisfaction">99.8%</div>
+            <div class="stat-label">Satisfaction</div>
+          </div>
         </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number" id="totalKeys">0</div>
-          <div class="stat-label">저장된 키</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="totalSize">0KB</div>
-          <div class="stat-label">사용 용량</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="apiCalls">0</div>
-          <div class="stat-label">API 호출</div>
+      <div class="hero-visual">
+        <div class="visual-container">
+          <div class="floating-card" id="card1">
+            <div class="card-icon">🎨</div>
+            <div class="card-text">Design System</div>
+          </div>
+          <div class="floating-card" id="card2">
+            <div class="card-icon">⚡</div>
+            <div class="card-text">Lightning Fast</div>
+          </div>
+          <div class="floating-card" id="card3">
+            <div class="card-icon">🤖</div>
+            <div class="card-text">AI Powered</div>
+          </div>
+          <div class="glow-orb"></div>
         </div>
       </div>
     </main>
 
-    <section class="memory-display">
-      <h2>📋 저장된 데이터</h2>
-      <div class="memory-list" id="memoryList"></div>
+    <section class="features" id="features">
+      <div class="section-header">
+        <h2>Revolutionary Features</h2>
+        <p>Everything you need to build the future</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Precision Engineering</h3>
+          <p>Every line of code optimized for performance and reliability</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Enterprise Security</h3>
+          <p>Bank-level security with end-to-end encryption</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Real-time Analytics</h3>
+          <p>Monitor performance with advanced metrics and insights</p>
+        </div>
+      </div>
     </section>
 
     <footer class="footer">
-      <p>Memory API Test • <span class="heart">♥</span> Field Nine</p>
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="logo">⚡</span>
+          <span>Field Nine</span>
+        </div>
+        <div class="footer-text">
+          Building the future, one project at a time.
+        </div>
+      </div>
     </footer>
   </div>
 
