@@ -589,16 +589,24 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 statusText += `\n${fileChanges.length}개 파일 완성 — 커밋 중...`;
                 setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
 
-                // Auto commit
+                // Auto commit (with 15s timeout to prevent hang)
                 if (onShadowCommit && fileChanges.length > 0) {
                   const commitMsg = `feat(agent): ${userText.slice(0, 50)}`;
-                  const ok = await onShadowCommit(fileChanges, commitMsg);
-                  if (ok) {
-                    addProgressEvent("commit-success", "GitHub 커밋 완료", "done");
-                    statusText += "\nGitHub 커밋 완료!";
-                  } else {
-                    addProgressEvent("commit-fail", "커밋 실패", "error");
-                    statusText += "\n커밋 실패 — 로컬 삽입만 완료";
+                  try {
+                    const ok = await Promise.race([
+                      onShadowCommit(fileChanges, commitMsg),
+                      new Promise<false>((r) => setTimeout(() => r(false), 15000)),
+                    ]);
+                    if (ok) {
+                      addProgressEvent("commit-success", "GitHub 커밋 완료", "done");
+                      statusText += "\nGitHub 커밋 완료!";
+                    } else {
+                      addProgressEvent("commit-fail", "커밋 실패", "error");
+                      statusText += "\n커밋 실패 — 로컬 삽입만 완료";
+                    }
+                  } catch {
+                    addProgressEvent("commit-fail", "커밋 오류", "error");
+                    statusText += "\n커밋 오류 — 로컬 삽입만 완료";
                   }
                   setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
                 }
@@ -620,6 +628,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       } finally {
         setIsStreaming(false);
         setAgentStage(null);
+        // Clear all stuck "pending" progress events
+        setProgressEvents((prev) => prev.map((e) =>
+          e.status === "pending" ? { ...e, status: "done" as const } : e
+        ));
       }
     },
     [currentFiles, onInsertCode, onShadowCommit, addProgressEvent, initStages, advanceStage, completeAllStages],
@@ -866,6 +878,10 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       } finally {
         setIsStreaming(false);
         abortRef.current = null;
+        // Clear all stuck "pending" progress events
+        setProgressEvents((prev) => prev.map((e) =>
+          e.status === "pending" ? { ...e, status: "done" as const } : e
+        ));
       }
     },
     [messages, currentFiles, handleAIResponseComplete, selectedModel, agentMode, addProgressEvent, initStages, advanceStage, completeAllStages, lastSentAt],
