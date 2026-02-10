@@ -3,44 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My App — Field Nine</title>
+  <title>Memory API Tester — Field Nine</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
-        <span>Field Nine App</span>
+        <span class="logo">🧠</span>
+        <span>Memory API Tester</span>
       </div>
-      <div class="nav-links">
-        <a href="#" class="active">Home</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
+      <div class="nav-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">준비중...</span>
       </div>
     </nav>
 
     <main class="hero">
-      <div class="hero-badge">🚀 AI-Powered Development</div>
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn">시작하기</button>
-        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
+      <div class="hero-badge">🔬 API Testing Tool</div>
+      <h1>메모리 API<br/><span class="gradient-text">동작 확인</span></h1>
+      <p>로컬스토리지를 통한 데이터 저장/로드 테스트<br/>실시간 API 상태 모니터링</p>
+      
+      <div class="test-panel">
+        <div class="input-group">
+          <input type="text" id="keyInput" placeholder="키를 입력하세요" />
+          <input type="text" id="valueInput" placeholder="값을 입력하세요" />
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="saveBtn">💾 저장하기</button>
+          <button class="btn btn-secondary" id="loadBtn">📂 불러오기</button>
+          <button class="btn btn-danger" id="clearBtn">🗑️ 전체삭제</button>
+        </div>
       </div>
-      <div class="counter-display">
-        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalKeys">0</div>
+          <div class="stat-label">저장된 키</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="totalSize">0KB</div>
+          <div class="stat-label">사용 용량</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="apiCalls">0</div>
+          <div class="stat-label">API 호출</div>
+        </div>
       </div>
     </main>
 
-    <section class="cards" id="cardContainer">
+    <section class="memory-display">
+      <h2>📋 저장된 데이터</h2>
+      <div class="memory-list" id="memoryList"></div>
     </section>
 
     <footer class="footer">
-      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+      <p>Memory API Test • <span class="heart">♥</span> Field Nine</p>
     </footer>
   </div>
 
+  <script src="data.js"></script>
+  <script src="ui.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
