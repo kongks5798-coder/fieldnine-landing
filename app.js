@@ -1,133 +1,135 @@
-function resetStartCodingButton() {
+document.addEventListener('DOMContentLoaded', function() {
   var startCodingBtn = document.getElementById('startCodingBtn');
-  if (startCodingBtn) {
-    startCodingBtn.innerHTML = '<span>🤖 AI와 코딩 시작</span><span class="btn-arrow">→</span>';
-    startCodingBtn.style.transform = '';
-    startCodingBtn.style.boxShadow = '0 0 40px rgba(139, 92, 246, 0.3)';
-    startCodingBtn.disabled = false;
-  }
-}
+  var view3DBtn = document.getElementById('view3DBtn');
+  var launchIdeBtn = document.getElementById('launchIdeBtn');
+  var toggleMonitor = document.getElementById('toggleMonitor');
+  var assistantToggle = document.getElementById('assistantToggle');
+  var sendBtn = document.getElementById('sendBtn');
+  var chatInput = document.getElementById('chatInput');
 
-function toggleAIAssistant() {
-  var assistant = document.getElementById('aiAssistant');
-  var toggle = document.getElementById('assistantToggle');
-  
-  if (assistant && toggle) {
-    var isCollapsed = assistant.classList.contains('collapsed');
+  function handleStartCoding() {
+    if (!startCodingBtn) return;
     
-    if (isCollapsed) {
-      assistant.classList.remove('collapsed');
-      toggle.textContent = '◀';
-      AI_ASSISTANT_CONFIG.isExpanded = true;
-    } else {
-      assistant.classList.add('collapsed');
-      toggle.textContent = '▶';
-      AI_ASSISTANT_CONFIG.isExpanded = false;
-    }
-  }
-}
-
-function addAIMessage(message, isUser) {
-  var chatMessages = document.getElementById('chatMessages');
-  if (!chatMessages) return;
-  
-  var messageDiv = document.createElement('div');
-  messageDiv.className = isUser ? 'user-message' : 'ai-message';
-  
-  messageDiv.innerHTML = 
-    '<div class="message-avatar">' + (isUser ? '👤' : '🤖') + '</div>' +
-    '<div class="message-content">' + message + '</div>';
-  
-  chatMessages.appendChild(messageDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  
-  AI_ASSISTANT_CONFIG.messageHistory.push({
-    message: message,
-    isUser: isUser,
-    timestamp: new Date()
-  });
-}
-
-function handleQuickAction(action) {
-  var responses = AI_RESPONSES[action];
-  if (responses && responses.length > 0) {
-    var randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    startCodingBtn.innerHTML = '<span>🤖 AI 초기화 중...</span><span class="btn-arrow">⚡</span>';
+    startCodingBtn.style.transform = 'translateY(-2px)';
+    startCodingBtn.disabled = true;
+    
     setTimeout(function() {
+      if (!AI_ASSISTANT_CONFIG.isExpanded) {
+        toggleAIAssistant();
+      }
+      addAIMessage('Field Nine AI Assistant가 활성화되었습니다! 무엇을 도와드릴까요?', false);
+      
+      setTimeout(function() {
+        resetStartCodingButton();
+      }, 1500);
+    }, 2000);
+  }
+
+  function handleView3D() {
+    if (!view3DBtn) return;
+    
+    view3DBtn.innerHTML = '<span class="cube-icon">🔄</span>로딩 중...';
+    view3DBtn.style.opacity = '0.7';
+    
+    setTimeout(function() {
+      var dashboard = document.getElementById('dashboard');
+      if (dashboard) {
+        dashboard.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      setTimeout(function() {
+        view3DBtn.innerHTML = '<span class="cube-icon">📊</span>3D Dashboard';
+        view3DBtn.style.opacity = '';
+      }, 1000);
+    }, 800);
+  }
+
+  function handleLaunchIDE() {
+    if (!launchIdeBtn) return;
+    
+    launchIdeBtn.textContent = 'Launching...';
+    launchIdeBtn.style.background = 'var(--accent-pink)';
+    
+    setTimeout(function() {
+      var message = '🚀 Field Nine IDE v2.0\n\n';
+      message += '✅ AI Code Generator: 활성화\n';
+      message += '✅ 3D Dashboard: 온라인\n';
+      message += '✅ Smart Debugging: 준비완료\n';
+      message += '✅ Real-time Collaboration: 연결됨\n\n';
+      message += 'fieldnine.io에서 차세대 개발을 시작하세요!';
+      
+      alert(message);
+      
+      launchIdeBtn.textContent = 'Launch IDE';
+      launchIdeBtn.style.background = 'var(--accent-purple)';
+    }, 1500);
+  }
+
+  function handleSendMessage() {
+    if (!chatInput || !chatInput.value.trim()) return;
+    
+    var message = chatInput.value.trim();
+    addAIMessage(message, true);
+    chatInput.value = '';
+    
+    setTimeout(function() {
+      var responses = [
+        '🤖 요청을 분석하고 있습니다. 잠시만 기다려주세요.',
+        '⚡ AI가 최적의 솔루션을 생성 중입니다...',
+        '🎯 완벽한 코드를 작성해드릴게요!',
+        '🔍 더 자세한 요구사항이 있다면 알려주세요.',
+        '✨ Field Nine AI가 도와드리겠습니다!'
+      ];
+      var randomResponse = responses[Math.floor(Math.random() * responses.length)];
       addAIMessage(randomResponse, false);
-    }, AI_ASSISTANT_CONFIG.responseDelay);
+    }, 800);
   }
-}
 
-function minimizeDeploymentMonitor() {
-  var monitor = document.getElementById('deploymentMonitor');
-  var toggleBtn = document.getElementById('toggleMonitor');
+  if (startCodingBtn) startCodingBtn.addEventListener('click', handleStartCoding);
+  if (view3DBtn) view3DBtn.addEventListener('click', handleView3D);
+  if (launchIdeBtn) launchIdeBtn.addEventListener('click', handleLaunchIDE);
+  if (toggleMonitor) toggleMonitor.addEventListener('click', minimizeDeploymentMonitor);
+  if (assistantToggle) assistantToggle.addEventListener('click', toggleAIAssistant);
+  if (sendBtn) sendBtn.addEventListener('click', handleSendMessage);
   
-  if (monitor && toggleBtn) {
-    var isMinimized = monitor.classList.contains('minimized');
-    
-    if (isMinimized) {
-      monitor.classList.remove('minimized');
-      toggleBtn.textContent = 'Minimize';
-    } else {
-      monitor.classList.add('minimized');
-      toggleBtn.textContent = 'Expand';
-    }
+  if (chatInput) {
+    chatInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        handleSendMessage();
+      }
+    });
   }
-}
 
-function create3DParticles() {
-  var particlesContainer = document.getElementById('particles');
-  if (!particlesContainer) return;
-  
-  for (var i = 0; i < 15; i++) {
-    var particle = document.createElement('div');
-    particle.className = 'particle';
-    particle.style.cssText = 
-      'position: absolute; width: 3px; height: 3px; background: rgba(139, 92, 246, 0.7); ' +
-      'border-radius: 50%; animation: float 8s ease-in-out infinite; ' +
-      'left: ' + Math.random() * 100 + '%; top: ' + Math.random() * 100 + '%; ' +
-      'animation-delay: ' + Math.random() * 8 + 's;';
-    
-    particlesContainer.appendChild(particle);
-  }
-}
-
-function animateCounters() {
-  var counters = [
-    { id: 'aiGeneratedLines', target: 127, suffix: 'K' },
-    { id: 'productivityBoost', target: 847, suffix: '%' },
-    { id: 'bugReduction', target: 94, suffix: '%' }
-  ];
-  
-  counters.forEach(function(counter, index) {
-    setTimeout(function() {
-      animateNumber(counter.id, counter.target, counter.suffix);
-    }, index * 300);
+  var quickBtns = document.querySelectorAll('.quick-btn');
+  quickBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var action = this.getAttribute('data-action');
+      addAIMessage(this.textContent + ' 기능을 실행합니다.', true);
+      handleQuickAction(action);
+    });
   });
-}
 
-function animateNumber(elementId, target, suffix) {
-  var element = document.getElementById(elementId);
-  if (!element) return;
-  
-  var current = 0;
-  var increment = target / 60;
-  var timer = setInterval(function() {
-    current += increment;
-    if (current >= target) {
-      current = target;
-      clearInterval(timer);
-    }
-    element.textContent = Math.floor(current) + suffix;
-  }, 30);
-}
-
-function switchDashboardView(view) {
-  var buttons = document.querySelectorAll('.control-btn');
-  buttons.forEach(function(btn) {
-    btn.classList.remove('active');
+  var controlBtns = document.querySelectorAll('.control-btn');
+  controlBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var view = this.getAttribute('data-view');
+      switchDashboardView(view);
+    });
   });
+
+  create3DParticles();
+  animateCounters();
   
-  event.target.classList.add('active');
-  console.log('Dashboard view switched to:', view);
-}
+  document.body.style.opacity = '0';
+  setTimeout(function() {
+    document.body.style.opacity = '1';
+    document.body.style.transition = 'opacity 0.8s ease';
+  }, 200);
+
+  console.log('✅ Field Nine v2.0 초기화 완료');
+  console.log('🌐 Domain:', window.location.hostname);
+  console.log('🤖 AI Assistant: 준비완료');
+  console.log('📊 3D Dashboard: 활성화');
+  console.log('🚀 All Systems: Operational');
+});
