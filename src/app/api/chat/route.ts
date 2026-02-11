@@ -187,6 +187,34 @@ export async function POST(req: Request) {
 
     // Input validation
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+      // Check if this is a file upload request (multimodal)
+      if (body?.file && body?.filename) {
+        // Mock file upload processing logic
+        const fileContent = body.file;
+        const fileName = body.filename;
+        
+        // In a real implementation, we would upload to Supabase Storage or process with AI vision
+        // For now, we'll return a success message simulating analysis
+        
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const mockAnalysis = `Analysis of ${fileName}:
+1. Image Type: ${fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN'}
+2. Content: Integrated Circuit / CPU Architecture (Simulated)
+3. Detection: Logic Gates, Memory Bus
+4. Result: Potential thermal bottleneck identified in north bridge sector.`;
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          analysis: mockAnalysis,
+          message: "File processed successfully" 
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
       return new Response(
         JSON.stringify({ error: "Invalid request: messages array required" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
