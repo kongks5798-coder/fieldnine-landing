@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Field Nine OS — Infrastructure</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
@@ -15,14 +15,14 @@
         <span>Field Nine OS</span>
       </div>
       <div class="nav-right">
-        <span class="global-dot ok" id="globalDot"></span>
-        <button class="btn-refresh" id="refreshBtn">↻</button>
+        <span class="global-dot ok"></span>
+        <button class="btn-refresh" onclick="handleRefresh()">↻</button>
       </div>
     </nav>
 
     <header class="header">
       <h1>Infrastructure Status</h1>
-      <p class="header-sub" id="lastUpdated">All systems operational</p>
+      <p class="header-sub">All systems operational</p>
     </header>
 
     <section class="services">
@@ -57,7 +57,7 @@
         <div class="service-body">
           <div class="stat-row">
             <span class="stat-label">도메인</span>
-            <span class="stat-value">field9-dashboard.vercel.app</span>
+            <span class="stat-value">field9.vercel.app</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">배포 수</span>
@@ -116,8 +116,16 @@
     </section>
   </div>
 
-  <script src="data.js"></script>
-  <script src="ui.js"></script>
-  <script src="app.js"></script>
+  <script>
+    function handleRefresh() {
+      var btn = document.querySelector('.btn-refresh');
+      if (btn) {
+        btn.style.animation = 'spin 1s linear';
+        setTimeout(function() {
+          btn.style.animation = '';
+        }, 1000);
+      }
+    }
+  </script>
 </body>
 </html>
