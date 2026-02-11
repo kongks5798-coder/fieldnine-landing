@@ -813,35 +813,39 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           }
         };
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          sseBuffer += decoder.decode(value, { stream: true });
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            sseBuffer += decoder.decode(value, { stream: true });
 
-          // Split into complete lines; keep last (potentially partial) line in buffer
-          const lines = sseBuffer.split("\n");
-          sseBuffer = lines.pop() || "";
+            // Split into complete lines; keep last (potentially partial) line in buffer
+            const lines = sseBuffer.split("\n");
+            sseBuffer = lines.pop() || "";
 
-          for (const line of lines) {
-            try {
-              processLine(line);
-            } catch (e) {
-              if (e instanceof SyntaxError) continue; // partial JSON, skip
-              throw e;
+            for (const line of lines) {
+              try {
+                processLine(line);
+              } catch (e) {
+                if (e instanceof SyntaxError) continue; // partial JSON, skip
+                throw e;
+              }
             }
           }
-        }
 
-        // Flush remaining buffer (decoder may hold trailing bytes)
-        sseBuffer += decoder.decode();
-        if (sseBuffer.trim()) {
-          for (const line of sseBuffer.split("\n")) {
-            try {
-              processLine(line);
-            } catch (e) {
-              if (!(e instanceof SyntaxError)) console.warn("[AIChatPanel] SSE flush error:", e);
+          // Flush remaining buffer (decoder may hold trailing bytes)
+          sseBuffer += decoder.decode();
+          if (sseBuffer.trim()) {
+            for (const line of sseBuffer.split("\n")) {
+              try {
+                processLine(line);
+              } catch (e) {
+                if (!(e instanceof SyntaxError)) console.warn("[AIChatPanel] SSE flush error:", e);
+              }
             }
           }
+        } finally {
+          reader.releaseLock();
         }
 
         console.log("[AIChatPanel] Stream done. Text length:", fullText.length);

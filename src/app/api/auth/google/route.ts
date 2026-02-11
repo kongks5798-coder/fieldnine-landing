@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing credential" }, { status: 400 });
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
     if (!clientId) {
       return NextResponse.json({ error: "GOOGLE_CLIENT_ID not configured" }, { status: 503 });
     }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Set auth cookie — use ACCESS_TOKEN_SECRET as cookie value for middleware compatibility
-    const accessToken = process.env.ACCESS_TOKEN_SECRET;
+    const accessToken = process.env.ACCESS_TOKEN_SECRET?.trim();
     if (!accessToken) {
       return NextResponse.json({ error: "ACCESS_TOKEN_SECRET not configured" }, { status: 503 });
     }

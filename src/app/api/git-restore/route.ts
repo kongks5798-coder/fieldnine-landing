@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
   const rlKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rl = checkRateLimit(`git-restore-${rlKey}`, { limit: 10, windowSec: 60 });
   if (!rl.allowed) {
-    return NextResponse.json({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }, { status: 429 });
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
   }
 
   if (!GITHUB_TOKEN) {
@@ -56,7 +59,10 @@ export async function GET(req: NextRequest) {
       if (entry.path.startsWith(".") || entry.path.includes("/.")) continue;
 
       const blobRes = await ghFetch(`${API}/repos/${GITHUB_REPO}/git/blobs/${entry.sha}`);
-      if (!blobRes.ok) continue;
+      if (!blobRes.ok) {
+        console.warn(`[git-restore] Failed to fetch blob ${entry.path}: ${blobRes.status}`);
+        continue;
+      }
       const blobData = await blobRes.json();
       files[entry.path] = blobData.encoding === "base64"
         ? Buffer.from(blobData.content, "base64").toString("utf-8")

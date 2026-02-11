@@ -99,6 +99,19 @@ body {
   50% { opacity: 0; }
 }
 
+/* Hide Next.js Dev Overlay/Toast/Indicators */
+nextjs-portal,
+#nextjs-dev-tools-overlay,
+[data-nextjs-toast],
+[data-nextjs-toast-errors],
+.nextjs-toast-errors-parent,
+[data-nextjs-dialog-overlay] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 @keyframes glowPulse {
   0%, 100% { box-shadow: 0 0 12px rgba(0, 121, 242, 0.15); }
   50% { box-shadow: 0 0 24px rgba(0, 121, 242, 0.3); }

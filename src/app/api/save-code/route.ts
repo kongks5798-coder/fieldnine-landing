@@ -156,7 +156,10 @@ export async function POST(request: NextRequest) {
   const rlKey = sessionMatch?.[1] ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rl = checkRateLimit(`save-code-${rlKey}`, { limit: 10, windowSec: 60 });
   if (!rl.allowed) {
-    return NextResponse.json({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }, { status: 429 });
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
   }
 
   // Validate token
@@ -198,6 +201,22 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // Server-side root file protection (defense in depth)
+    const PROTECTED_FILES = new Set(["index.html", "style.css", "data.js", "ui.js", "app.js"]);
+    body.files = body.files.filter((f) => {
+      if (PROTECTED_FILES.has(f.path)) {
+        console.warn(`[save-code] BLOCKED: ${f.path} — root file overwrite rejected`);
+        return false;
+      }
+      return true;
+    });
+    if (body.files.length === 0) {
+      return NextResponse.json(
+        { error: "All files were protected root files — nothing to commit" },
+        { status: 400 },
+      );
     }
 
     // Completeness guard: reject truncated code before committing

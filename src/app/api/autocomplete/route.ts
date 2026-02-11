@@ -15,8 +15,10 @@ export async function POST(req: Request) {
     });
   }
 
-  const hasOpenAI = !!process.env.OPENAI_API_KEY;
-  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const openaiKey = (process.env.OPENAI_API_KEY ?? "").trim();
+  const anthropicKey = (process.env.ANTHROPIC_API_KEY ?? "").trim();
+  const hasOpenAI = !!openaiKey;
+  const hasAnthropic = !!anthropicKey;
 
   if (!hasOpenAI && !hasAnthropic) {
     return new Response(JSON.stringify({ completion: "" }), {
@@ -37,8 +39,8 @@ export async function POST(req: Request) {
 
     // Use the fastest/cheapest model for autocomplete
     const model = hasOpenAI
-      ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })("gpt-4o-mini")
-      : createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })("claude-sonnet-4-20250514");
+      ? createOpenAI({ apiKey: openaiKey })("gpt-4o-mini")
+      : createAnthropic({ apiKey: anthropicKey })("claude-sonnet-4-20250514");
 
     const result = await generateText({
       model,

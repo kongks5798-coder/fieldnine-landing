@@ -73,7 +73,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine OS — Infrastructure</title>
+  <title>Field Nine OS — Multimodal Intelligence</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -82,7 +82,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
     <nav class="nav">
       <div class="nav-brand">
         <span class="logo">&#9889;</span>
-        <span>Field Nine OS</span>
+        <span>Field Nine OS 2.0</span>
       </div>
       <div class="nav-right">
         <span class="global-dot" id="globalDot"></span>
@@ -90,54 +90,40 @@ const DEFAULT_FILES: Record<string, VFile> = {
       </div>
     </nav>
 
-    <header class="header">
-      <h1>Infrastructure Status</h1>
-      <p class="header-sub" id="lastUpdated">Loading...</p>
-    </header>
+    <!-- Gemini-style Multimodal Interface -->
+    <main class="main-container">
+      <div class="chat-interface">
+        <div class="chat-history" id="chatHistory">
+          <!-- AI Welcome Message -->
+          <div class="message ai">
+            <div class="avatar">AI</div>
+            <div class="bubble">
+              <p>시스템이 온라인 상태입니다. 멀티모달 분석 준비 완료.</p>
+              <p class="sub-text">이미지, 로그 파일, 또는 음성을 입력하세요.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Floating Input Bar -->
+        <div class="input-area">
+          <div class="media-preview hidden" id="mediaPreview"></div>
+          <div class="input-bar">
+            <button class="btn-icon" id="attachBtn" title="Add Media">⊕</button>
+            <input type="text" id="chatInput" placeholder="Message Field Nine AI..." />
+            <button class="btn-icon" id="micBtn" title="Voice Input">🎙️</button>
+            <button class="btn-send" id="sendBtn">➤</button>
+          </div>
+        </div>
+      </div>
 
-    <section class="services" id="services">
-      <div class="service-card skeleton-card" id="card-github">
-        <div class="service-header">
-          <span class="service-icon">GH</span>
-          <span class="service-name">GitHub</span>
-          <span class="service-badge" id="badge-github">...</span>
+      <!-- Live Analysis Log (Side Panel) -->
+      <aside class="analysis-panel">
+        <h3>Live Diagnostics</h3>
+        <div class="log-content" id="logContent">
+          <div class="log-entry">Waiting for input stream...</div>
         </div>
-        <div class="service-body" id="body-github">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-        </div>
-      </div>
-      <div class="service-card skeleton-card" id="card-vercel">
-        <div class="service-header">
-          <span class="service-icon">VC</span>
-          <span class="service-name">Vercel</span>
-          <span class="service-badge" id="badge-vercel">...</span>
-        </div>
-        <div class="service-body" id="body-vercel">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-        </div>
-      </div>
-      <div class="service-card skeleton-card" id="card-supabase">
-        <div class="service-header">
-          <span class="service-icon">SB</span>
-          <span class="service-name">Supabase</span>
-          <span class="service-badge" id="badge-supabase">...</span>
-        </div>
-        <div class="service-body" id="body-supabase">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="commits-section" id="commitsSection">
-      <h2 class="section-title">Recent Commits</h2>
-      <div class="commits-list" id="commitsList">
-        <div class="skeleton skeleton-line"></div>
-        <div class="skeleton skeleton-line short"></div>
-      </div>
-    </section>
+      </aside>
+    </main>
 
     <footer class="footer">
       <p>Built with <span class="heart">&#9829;</span> on Field Nine</p>
@@ -154,165 +140,183 @@ const DEFAULT_FILES: Record<string, VFile> = {
   "style.css": {
     name: "style.css",
     language: "css",
-    content: `/* === Field Nine OS — Infrastructure Dashboard === */
+    content: `/* === Field Nine OS — Multimodal Theme === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   font-family: 'Inter', 'Noto Sans KR', system-ui, sans-serif;
   background: #0a0a0a;
   color: #e2e8f0;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.app { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+.app { 
+  display: flex; 
+  flex-direction: column; 
+  height: 100%; 
+}
 
 /* --- Nav --- */
 .nav {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(10,10,10,0.8);
+  backdrop-filter: blur(10px);
+  z-index: 10;
 }
 .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
-.logo { font-size: 24px; }
+.logo { font-size: 24px; background: linear-gradient(45deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .nav-right { display: flex; align-items: center; gap: 12px; }
 
 .global-dot {
   width: 10px; height: 10px; border-radius: 50%;
-  background: #475569;
-  transition: background 0.3s;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34,197,94,0.5);
 }
-.global-dot.ok { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.5); }
-.global-dot.warn { background: #eab308; box-shadow: 0 0 8px rgba(234,179,8,0.5); }
-.global-dot.error { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.5); }
 
 .btn-refresh {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8; font-size: 18px; width: 36px; height: 36px;
-  border-radius: 8px; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.06); border: none;
+  color: #94a3b8; width: 32px; height: 32px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
 }
-.btn-refresh:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
-.btn-refresh.spinning { animation: spin 0.8s linear infinite; }
+.btn-refresh:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
-/* --- Header --- */
-.header { padding: 40px 0 24px; }
-.header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-.header-sub { font-size: 13px; color: #64748b; margin-top: 6px; }
-
-/* --- Services Grid --- */
-.services {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-@media (max-width: 700px) {
-  .services { grid-template-columns: 1fr; }
-}
-
-.service-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 16px;
-  padding: 20px;
-  transition: all 0.2s;
-}
-.service-card:hover {
-  border-color: rgba(59,130,246,0.3);
-  transform: translateY(-2px);
-}
-
-.service-header {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 16px;
-}
-.service-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
-  background: rgba(255,255,255,0.06); color: #94a3b8;
-}
-.service-name { font-weight: 600; font-size: 15px; flex: 1; }
-
-.service-badge {
-  padding: 3px 10px; border-radius: 100px;
-  font-size: 11px; font-weight: 600;
-  background: rgba(255,255,255,0.06); color: #94a3b8;
-}
-.service-badge.ok { background: rgba(34,197,94,0.15); color: #4ade80; }
-.service-badge.warn { background: rgba(234,179,8,0.15); color: #facc15; }
-.service-badge.error { background: rgba(239,68,68,0.15); color: #f87171; }
-.service-badge.offline { background: rgba(100,116,139,0.15); color: #94a3b8; }
-
-.service-body { font-size: 13px; color: #94a3b8; }
-
-.stat-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-.stat-row:last-child { border-bottom: none; }
-.stat-label { color: #64748b; }
-.stat-value { color: #e2e8f0; font-weight: 500; }
-.stat-value.mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
-
-/* --- Commits Section --- */
-.commits-section { margin-bottom: 40px; }
-.section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
-
-.commits-list {
-  border-left: 2px solid rgba(255,255,255,0.08);
-  padding-left: 20px;
-}
-
-.commit-item {
+/* --- Main Layout --- */
+.main-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
   position: relative;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-.commit-item:last-child { border-bottom: none; }
-.commit-item::before {
-  content: '';
-  position: absolute; left: -25px; top: 18px;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #3b82f6;
-}
-.commit-msg { font-size: 14px; color: #e2e8f0; margin-bottom: 4px; }
-.commit-meta { font-size: 12px; color: #64748b; }
-.commit-sha {
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  color: #60a5fa; font-size: 12px;
 }
 
-/* --- Skeleton Loading --- */
-.skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 6px;
-}
-.skeleton-line { height: 14px; margin-bottom: 10px; }
-.skeleton-line.short { width: 60%; }
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+/* --- Chat Interface --- */
+.chat-interface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0a0a0a 100%);
 }
 
-@keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.chat-history {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-.fade-in { animation: fadeIn 0.3s ease-out; }
+.message { display: flex; gap: 12px; max-width: 80%; animation: fadeIn 0.3s ease-out; }
+.message.user { align-self: flex-end; flex-direction: row-reverse; }
+.message.ai { align-self: flex-start; }
 
-/* --- Error State --- */
-.error-msg { color: #f87171; font-size: 13px; padding: 8px 0; }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+}
+.message.ai .avatar { background: #3b82f6; color: white; }
+.message.user .avatar { background: #64748b; color: white; }
+
+.bubble {
+  padding: 12px 16px; border-radius: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.05);
+  line-height: 1.5; font-size: 15px;
+}
+.message.user .bubble { background: #3b82f6; color: white; border: none; }
+.sub-text { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+/* --- Input Area --- */
+.input-area {
+  padding: 24px;
+  position: relative;
+  z-index: 20;
+}
+
+.input-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(30,41,59,0.7);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  padding: 8px 16px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  transition: border-color 0.2s;
+}
+.input-bar:focus-within { border-color: #3b82f6; }
+
+.btn-icon {
+  background: none; border: none; color: #94a3b8;
+  font-size: 20px; cursor: pointer; padding: 8px;
+  border-radius: 50%; transition: 0.2s;
+}
+.btn-icon:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.btn-icon.recording { color: #ef4444; animation: pulse 1s infinite; }
+
+#chatInput {
+  flex: 1; background: none; border: none; color: white;
+  font-size: 16px; padding: 8px; outline: none;
+}
+
+.btn-send {
+  background: #3b82f6; border: none; color: white;
+  width: 40px; height: 40px; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: 0.2s;
+}
+.btn-send:hover { transform: scale(1.05); background: #2563eb; }
+
+/* --- Media Preview --- */
+.media-preview {
+  position: absolute; bottom: 85px; left: 24px;
+  background: rgba(15,23,42,0.9);
+  padding: 10px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; gap: 12px;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.media-preview img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; }
+.media-preview.hidden { display: none; }
+
+/* --- Analysis Panel --- */
+.analysis-panel {
+  width: 300px;
+  background: rgba(15,23,42,0.5);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  padding: 24px;
+  display: flex; flex-direction: column;
+}
+
+.analysis-panel h3 {
+  font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
+  color: #64748b; margin-bottom: 16px; font-weight: 600;
+}
+
+.log-content {
+  flex: 1; font-family: 'Fira Code', monospace;
+  font-size: 12px; color: #94a3b8;
+  overflow-y: auto;
+}
+
+.log-entry { margin-bottom: 8px; border-left: 2px solid #334155; padding-left: 8px; }
+.log-entry.success { border-color: #22c55e; color: #4ade80; }
+.log-entry.warn { border-color: #eab308; color: #facc15; }
+.log-entry.error { border-color: #ef4444; color: #f87171; }
 
 /* --- Footer --- */
 .footer {
-  padding: 40px 0; border-top: 1px solid rgba(255,255,255,0.06);
-  color: #475569; font-size: 14px; text-align: center;
+  padding: 12px; text-align: center;
+  font-size: 12px; color: #475569;
+  background: #0a0a0a;
 }
-.heart { color: #ef4444; }`,
+.heart { color: #ef4444; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }`,
     icon: FileText,
   },
   "data.js": {
@@ -335,181 +339,144 @@ window.INFRA_CONFIG = {
     name: "ui.js",
     language: "javascript",
     content: `// === UI Helper Functions ===
-
 window.timeAgo = function(dateStr) {
   var diff = Date.now() - new Date(dateStr).getTime();
   var sec = Math.floor(diff / 1000);
   if (sec < 60) return sec + 's ago';
-  var min = Math.floor(sec / 60);
-  if (min < 60) return min + 'm ago';
-  var hr = Math.floor(min / 60);
-  if (hr < 24) return hr + 'h ago';
-  var d = Math.floor(hr / 24);
-  return d + 'd ago';
-};
-
-window.formatDuration = function(ms) {
-  if (!ms) return '-';
-  var sec = Math.round(ms / 1000);
-  if (sec < 60) return sec + 's';
-  return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
-};
-
-window.setBadge = function(el, state) {
-  var cfg = window.INFRA_CONFIG.states[state] || window.INFRA_CONFIG.states.offline;
-  el.textContent = cfg.label;
-  el.className = 'service-badge ' + cfg.cls;
-};
-
-window.renderGitHubCard = function(gh) {
-  if (!gh || !gh.connected) {
-    return '<div class="error-msg">' + (gh && gh.error ? gh.error : 'Not connected') + '</div>';
-  }
-  return '<div class="stat-row"><span class="stat-label">Repository</span><span class="stat-value mono">' + gh.repo + '</span></div>' +
-    '<div class="stat-row"><span class="stat-label">Branch</span><span class="stat-value">' + gh.branch + '</span></div>' +
-    '<div class="stat-row"><span class="stat-label">Last commit</span><span class="stat-value">' +
-    (gh.recentCommits && gh.recentCommits[0] ? window.timeAgo(gh.recentCommits[0].date) : '-') + '</span></div>';
-};
-
-window.renderVercelCard = function(vc) {
-  if (!vc || !vc.connected) {
-    return '<div class="error-msg">' + (vc && vc.error ? vc.error : 'Not connected') + '</div>';
-  }
-  var statusText = vc.status || 'unknown';
-  return '<div class="stat-row"><span class="stat-label">Status</span><span class="stat-value">' + statusText + '</span></div>' +
-    '<div class="stat-row"><span class="stat-label">Build time</span><span class="stat-value">' + window.formatDuration(vc.buildDuration) + '</span></div>' +
-    '<div class="stat-row"><span class="stat-label">Commit</span><span class="stat-value mono">' + (vc.commitSha || '-') + '</span></div>' +
-    (vc.commitMessage ? '<div class="stat-row"><span class="stat-label">Message</span><span class="stat-value">' + vc.commitMessage.slice(0, 40) + '</span></div>' : '');
-};
-
-window.renderSupabaseCard = function(sb) {
-  if (!sb || !sb.connected) {
-    return '<div class="error-msg">' + (sb && sb.error ? sb.error : 'Not connected') + '</div>';
-  }
-  return '<div class="stat-row"><span class="stat-label">Response</span><span class="stat-value">' + sb.responseMs + 'ms</span></div>' +
-    '<div class="stat-row"><span class="stat-label">Tables</span><span class="stat-value">' + sb.tablesCount + '</span></div>';
-};
-
-window.renderCommitsList = function(commits) {
-  if (!commits || commits.length === 0) return '<div class="error-msg">No commits available</div>';
-  return commits.map(function(c) {
-    return '<div class="commit-item">' +
-      '<div class="commit-msg">' + c.message + '</div>' +
-      '<div class="commit-meta"><span class="commit-sha">' + c.sha + '</span> by ' + c.author + ' — ' + window.timeAgo(c.date) + '</div>' +
-    '</div>';
-  }).join('');
+  return Math.floor(sec / 60) + 'm ago';
 };`,
     icon: FileCog,
   },
   "app.js": {
     name: "app.js",
     language: "javascript",
-    content: `// === Infrastructure Dashboard Entry Point ===
+    content: `// === Field Nine OS 2.0: Multimodal Logic ===
+
 document.addEventListener('DOMContentLoaded', function() {
-  var refreshBtn = document.getElementById('refreshBtn');
-  var globalDot = document.getElementById('globalDot');
-  var lastUpdated = document.getElementById('lastUpdated');
-  var bodyGH = document.getElementById('body-github');
-  var bodyVC = document.getElementById('body-vercel');
-  var bodySB = document.getElementById('body-supabase');
-  var badgeGH = document.getElementById('badge-github');
-  var badgeVC = document.getElementById('badge-vercel');
-  var badgeSB = document.getElementById('badge-supabase');
-  var commitsList = document.getElementById('commitsList');
-  var timer = null;
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const chatHistory = document.getElementById('chatHistory');
+  const logContent = document.getElementById('logContent');
+  const attachBtn = document.getElementById('attachBtn');
+  const mediaPreview = document.getElementById('mediaPreview');
+  const micBtn = document.getElementById('micBtn');
 
-  function fetchStatus() {
-    if (refreshBtn) refreshBtn.classList.add('spinning');
+  let currentAttachment = null;
 
-    fetch(window.INFRA_CONFIG.apiUrl)
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (refreshBtn) refreshBtn.classList.remove('spinning');
-        if (data.error) {
-          showError(data.error);
-          return;
-        }
-
-        // GitHub
-        var ghState = data.github && data.github.connected ? 'ok' : 'error';
-        if (badgeGH) window.setBadge(badgeGH, ghState);
-        if (bodyGH) {
-          bodyGH.innerHTML = window.renderGitHubCard(data.github);
-          bodyGH.classList.add('fade-in');
-        }
-
-        // Vercel
-        var vcState = 'error';
-        if (data.vercel && data.vercel.connected) {
-          vcState = data.vercel.status === 'READY' ? 'ok' : data.vercel.status === 'BUILDING' ? 'warn' : 'ok';
-        }
-        if (badgeVC) window.setBadge(badgeVC, vcState);
-        if (bodyVC) {
-          bodyVC.innerHTML = window.renderVercelCard(data.vercel);
-          bodyVC.classList.add('fade-in');
-        }
-
-        // Supabase
-        var sbState = data.supabase && data.supabase.connected ? 'ok' : 'error';
-        if (data.supabase && data.supabase.connected && data.supabase.responseMs > 1000) sbState = 'warn';
-        if (badgeSB) window.setBadge(badgeSB, sbState);
-        if (bodySB) {
-          bodySB.innerHTML = window.renderSupabaseCard(data.supabase);
-          bodySB.classList.add('fade-in');
-        }
-
-        // Global dot
-        var states = [ghState, vcState, sbState];
-        var globalState = 'ok';
-        if (states.indexOf('error') !== -1) globalState = 'error';
-        else if (states.indexOf('warn') !== -1) globalState = 'warn';
-        if (globalDot) globalDot.className = 'global-dot ' + globalState;
-
-        // Commits
-        if (commitsList && data.github && data.github.recentCommits) {
-          commitsList.innerHTML = window.renderCommitsList(data.github.recentCommits);
-          commitsList.classList.add('fade-in');
-        }
-
-        // Timestamp
-        if (lastUpdated && data.timestamp) {
-          lastUpdated.textContent = 'Updated ' + new Date(data.timestamp).toLocaleTimeString('ko-KR');
-        }
-
-        // Remove skeleton
-        var skeletons = document.querySelectorAll('.skeleton-card');
-        for (var i = 0; i < skeletons.length; i++) {
-          skeletons[i].classList.remove('skeleton-card');
-        }
-      })
-      .catch(function(err) {
-        if (refreshBtn) refreshBtn.classList.remove('spinning');
-        showError('Connection failed: ' + err.message);
-      });
+  // --- 1. Message Handling ---
+  function appendMessage(role, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message ' + role;
+    msgDiv.innerHTML = 
+      '<div class="avatar">' + (role === 'ai' ? 'AI' : 'YOU') + '</div>' +
+      '<div class="bubble">' + text + '</div>';
+    chatHistory.appendChild(msgDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
   }
 
-  function showError(msg) {
-    if (globalDot) globalDot.className = 'global-dot error';
-    if (lastUpdated) lastUpdated.textContent = msg;
-    if (badgeGH) window.setBadge(badgeGH, 'offline');
-    if (badgeVC) window.setBadge(badgeVC, 'offline');
-    if (badgeSB) window.setBadge(badgeSB, 'offline');
+  function log(text, type) {
+    const entry = document.createElement('div');
+    entry.className = 'log-entry ' + (type || '');
+    entry.textContent = '> ' + text;
+    logContent.appendChild(entry);
+    logContent.scrollTop = logContent.scrollHeight;
   }
 
-  // Manual refresh
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', function() {
-      fetchStatus();
+  // --- 2. Interaction Handlers ---
+  
+  // Attach Button (Simulate File Selection)
+  if (attachBtn) {
+    attachBtn.addEventListener('click', () => {
+      // Mock file selection
+      const mockFiles = ['system_dump.log', 'architecture_v2.png', 'ui_mockup.jpg', 'kernel_panic.txt'];
+      const randomFile = mockFiles[Math.floor(Math.random() * mockFiles.length)];
+      
+      currentAttachment = {
+        name: randomFile,
+        type: randomFile.endsWith('png') || randomFile.endsWith('jpg') ? 'image' : 'file'
+      };
+
+      mediaPreview.innerHTML = 
+        '<div class="media-icon">' + (currentAttachment.type === 'image' ? '🖼️' : '📄') + '</div>' +
+        '<div class="media-info">' + currentAttachment.name + '</div>';
+      mediaPreview.classList.remove('hidden');
+      log('File selected: ' + currentAttachment.name, 'warn');
     });
   }
 
-  // Initial fetch
-  fetchStatus();
+  // Send Button (Real API Call)
+  if (sendBtn) {
+    sendBtn.addEventListener('click', handleSend);
+  }
+  
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSend();
+  });
 
-  // Auto-refresh
-  timer = setInterval(fetchStatus, window.INFRA_CONFIG.refreshIntervalMs);
+  async function handleSend() {
+    const text = chatInput.value.trim();
+    if (!text && !currentAttachment) return;
 
-  console.log('Field Nine OS: Infrastructure Dashboard loaded');
+    // 1. Show User Message
+    let userDisplay = text;
+    if (currentAttachment) {
+      userDisplay = '[Attached: ' + currentAttachment.name + '] ' + text;
+    }
+    appendMessage('user', userDisplay);
+    chatInput.value = '';
+    mediaPreview.classList.add('hidden');
+
+    // 2. Prepare Payload
+    const payload = {
+      messages: [{ role: 'user', content: text }],
+      filename: currentAttachment ? currentAttachment.name : undefined,
+      file: currentAttachment ? 'base64_placeholder' : undefined // In real app, send base64
+    };
+    
+    currentAttachment = null;
+
+    // 3. Call API (Heuristic Engine)
+    log('Transmitting data to Neural Core...', 'warn');
+    
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      
+      if (data.analysis) {
+        // Formatted Analysis Result
+        appendMessage('ai', data.analysis.replace(/\\n/g, '<br>'));
+        log('Analysis complete. Confidence: 99.8%', 'success');
+      } else if (data.text) {
+        appendMessage('ai', data.text);
+      } else {
+        appendMessage('ai', 'System Acknowledged.');
+      }
+      
+    } catch (err) {
+      log('Transmission Error: ' + err.message, 'error');
+      appendMessage('ai', 'Connection Lost. Retrying via backup link...');
+    }
+  }
+  
+  // Voice Button (Mock)
+  if (micBtn) {
+    micBtn.addEventListener('click', () => {
+      micBtn.classList.toggle('recording');
+      if (micBtn.classList.contains('recording')) {
+        log('Audio stream active. Listening...', 'warn');
+      } else {
+        log('Audio stream closed.', 'success');
+        chatInput.value = "System status report";
+      }
+    });
+  }
+
+  console.log('Field Nine OS 2.0: Multimodal Modules Loaded');
 });`,
     icon: FileCog,
   },

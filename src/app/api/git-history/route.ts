@@ -33,7 +33,10 @@ export async function GET(req: NextRequest) {
   const rlKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rl = checkRateLimit(`git-history-${rlKey}`, { limit: 20, windowSec: 60 });
   if (!rl.allowed) {
-    return NextResponse.json({ commits: [], error: "Rate limit exceeded" }, { status: 429 });
+    return NextResponse.json(
+      { commits: [], error: "Rate limit exceeded" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
   }
 
   if (!GITHUB_TOKEN) {
@@ -60,8 +63,7 @@ export async function GET(req: NextRequest) {
       );
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`GitHub API ${res.status}: ${text}`);
+        throw new Error(`GitHub API ${res.status}`);
       }
 
       const data: GitHubCommit[] = await res.json();

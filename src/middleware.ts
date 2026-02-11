@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ACCESS_TOKEN = process.env.ACCESS_TOKEN_SECRET ?? "";
+const ACCESS_TOKEN = (process.env.ACCESS_TOKEN_SECRET ?? "").trim();
 const COOKIE_NAME = "f9_access";
 
 /** Content Security Policy */
