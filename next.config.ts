@@ -8,6 +8,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   compress: true,
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
+  devIndicators: false,
   turbopack: {
     root: process.cwd(),
   },
