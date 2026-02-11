@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Field Nine OS — Infrastructure</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -15,203 +15,109 @@
         <span>Field Nine OS</span>
       </div>
       <div class="nav-right">
-        <span class="global-dot" id="globalDot"></span>
-        <button class="btn-refresh" id="refreshBtn" title="새로고침">↻</button>
+        <span class="global-dot ok" id="globalDot"></span>
+        <button class="btn-refresh" id="refreshBtn">↻</button>
       </div>
     </nav>
 
     <header class="header">
       <h1>Infrastructure Status</h1>
-      <p class="header-sub" id="lastUpdated">시스템 상태를 확인하는 중...</p>
+      <p class="header-sub" id="lastUpdated">All systems operational</p>
     </header>
 
-    <section class="services" id="services">
-      <div class="service-card" id="card-github">
+    <section class="services">
+      <div class="service-card">
         <div class="service-header">
           <span class="service-icon">🐙</span>
           <span class="service-name">GitHub</span>
-          <span class="service-badge" id="badge-github">확인 중...</span>
+          <span class="service-badge ok">정상 운영</span>
         </div>
-        <div class="service-body" id="body-github">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
+        <div class="service-body">
+          <div class="stat-row">
+            <span class="stat-label">저장소</span>
+            <span class="stat-value">field-nine/dashboard</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">브랜치</span>
+            <span class="stat-value">main</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">마지막 커밋</span>
+            <span class="stat-value">2분 전</span>
+          </div>
         </div>
       </div>
 
-      <div class="service-card" id="card-vercel">
+      <div class="service-card">
         <div class="service-header">
           <span class="service-icon">▲</span>
           <span class="service-name">Vercel</span>
-          <span class="service-badge" id="badge-vercel">확인 중...</span>
+          <span class="service-badge ok">준비 완료</span>
         </div>
-        <div class="service-body" id="body-vercel">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
+        <div class="service-body">
+          <div class="stat-row">
+            <span class="stat-label">도메인</span>
+            <span class="stat-value">field9-dashboard.vercel.app</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">배포 수</span>
+            <span class="stat-value">12개</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">마지막 배포</span>
+            <span class="stat-value">5분 전</span>
+          </div>
         </div>
       </div>
 
-      <div class="service-card" id="card-supabase">
+      <div class="service-card">
         <div class="service-header">
           <span class="service-icon">🗄️</span>
           <span class="service-name">Supabase</span>
-          <span class="service-badge" id="badge-supabase">확인 중...</span>
+          <span class="service-badge ok">활성</span>
         </div>
-        <div class="service-body" id="body-supabase">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
+        <div class="service-body">
+          <div class="stat-row">
+            <span class="stat-label">데이터베이스</span>
+            <span class="stat-value">field9-prod</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">활성 연결</span>
+            <span class="stat-value">23개</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">스토리지</span>
+            <span class="stat-value">2.1 GB</span>
+          </div>
         </div>
       </div>
 
-      <div class="service-card" id="card-cloudflare">
+      <div class="service-card">
         <div class="service-header">
           <span class="service-icon">☁️</span>
           <span class="service-name">Cloudflare</span>
-          <span class="service-badge" id="badge-cloudflare">확인 중...</span>
+          <span class="service-badge ok">활성</span>
         </div>
-        <div class="service-body" id="body-cloudflare">
-          <div class="skeleton skeleton-line"></div>
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
+        <div class="service-body">
+          <div class="stat-row">
+            <span class="stat-label">요청 수</span>
+            <span class="stat-value">1.2M/일</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">대역폭</span>
+            <span class="stat-value">45.2 GB</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">캐시 적중률</span>
+            <span class="stat-value">94%</span>
+          </div>
         </div>
       </div>
     </section>
-
-    <section class="commits-section" id="commitsSection" style="display: none;">
-      <h3>최근 활동</h3>
-      <div class="commits-list" id="commitsList"></div>
-    </section>
   </div>
 
-  <script>
-    // 모든 스크립트를 인라인으로 통합하여 로딩 문제 해결
-    var INFRA_CONFIG = {
-      refreshInterval: 30000,
-      mockData: {
-        github: {
-          connected: true,
-          status: 'operational',
-          repo: 'field-nine/dashboard',
-          branch: 'main',
-          lastCommit: '2분 전'
-        },
-        vercel: {
-          connected: true,
-          status: 'ready',
-          deployments: 12,
-          lastDeploy: '5분 전',
-          domain: 'field9-dashboard.vercel.app'
-        },
-        supabase: {
-          connected: true,
-          status: 'active',
-          database: 'field9-prod',
-          connections: 23,
-          storage: '2.1 GB'
-        },
-        cloudflare: {
-          connected: true,
-          status: 'active',
-          requests: '1.2M/일',
-          bandwidth: '45.2 GB',
-          cache: '94%'
-        }
-      }
-    };
-
-    function createStatRow(label, value) {
-      return '<div class="stat-row">' +
-        '<span class="stat-label">' + label + '</span>' +
-        '<span class="stat-value">' + value + '</span>' +
-        '</div>';
-    }
-
-    function setBadgeStatus(badge, status) {
-      var statusMap = {
-        'operational': { text: '정상 운영', class: 'ok' },
-        'ready': { text: '준비 완료', class: 'ok' },
-        'active': { text: '활성', class: 'ok' }
-      };
-      
-      var config = statusMap[status] || { text: '오류', class: 'error' };
-      badge.textContent = config.text;
-      badge.className = 'service-badge ' + config.class;
-    }
-
-    function updateServiceCard(service, data) {
-      var badge = document.getElementById('badge-' + service);
-      var body = document.getElementById('body-' + service);
-      
-      if (!badge || !body || !data) return;
-      
-      setBadgeStatus(badge, data.status);
-      
-      var html = '';
-      if (service === 'github') {
-        html = createStatRow('저장소', data.repo) +
-               createStatRow('브랜치', data.branch) +
-               createStatRow('마지막 커밋', data.lastCommit);
-      } else if (service === 'vercel') {
-        html = createStatRow('도메인', data.domain) +
-               createStatRow('배포 수', data.deployments + '개') +
-               createStatRow('마지막 배포', data.lastDeploy);
-      } else if (service === 'supabase') {
-        html = createStatRow('데이터베이스', data.database) +
-               createStatRow('활성 연결', data.connections + '개') +
-               createStatRow('스토리지', data.storage);
-      } else if (service === 'cloudflare') {
-        html = createStatRow('요청 수', data.requests) +
-               createStatRow('대역폭', data.bandwidth) +
-               createStatRow('캐시 적중률', data.cache);
-      }
-      
-      body.innerHTML = html;
-    }
-
-    function updateGlobalStatus() {
-      var globalDot = document.getElementById('globalDot');
-      if (globalDot) {
-        globalDot.className = 'global-dot ok';
-      }
-    }
-
-    function fetchServiceStatus() {
-      var refreshBtn = document.getElementById('refreshBtn');
-      var lastUpdated = document.getElementById('lastUpdated');
-      
-      if (refreshBtn) refreshBtn.classList.add('spinning');
-      if (lastUpdated) lastUpdated.textContent = '업데이트 중...';
-      
-      setTimeout(function() {
-        var data = INFRA_CONFIG.mockData;
-        var services = ['github', 'vercel', 'supabase', 'cloudflare'];
-        
-        services.forEach(function(service) {
-          updateServiceCard(service, data[service]);
-        });
-        
-        updateGlobalStatus();
-        
-        if (lastUpdated) {
-          lastUpdated.textContent = '마지막 업데이트: ' + new Date().toLocaleTimeString('ko-KR');
-        }
-        if (refreshBtn) refreshBtn.classList.remove('spinning');
-        
-      }, 1000);
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      var refreshBtn = document.getElementById('refreshBtn');
-      
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', fetchServiceStatus);
-      }
-
-      fetchServiceStatus();
-      setInterval(fetchServiceStatus, INFRA_CONFIG.refreshInterval);
-    });
-  </script>
+  <script src="data.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
