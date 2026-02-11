@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
+const GITHUB_TOKEN = (process.env.GITHUB_TOKEN ?? "").trim();
+const GITHUB_REPO = (process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os").trim();
 const API = "https://api.github.com";
 
 const ALLOWED_EXTENSIONS = /\.(html|htm|css|js|ts|json|md|txt|svg|xml)$/i;

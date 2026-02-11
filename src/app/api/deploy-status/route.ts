@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 
-const VERCEL_TOKEN = process.env.F9_VERCEL_TOKEN ?? process.env.VERCEL_TOKEN ?? "";
-const VERCEL_PROJECT_ID = process.env.F9_VERCEL_PROJECT_ID ?? process.env.VERCEL_PROJECT_ID ?? "";
-const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID ?? "";
+const VERCEL_TOKEN = (process.env.F9_VERCEL_TOKEN ?? process.env.VERCEL_TOKEN ?? "").trim();
+const VERCEL_PROJECT_ID = (process.env.F9_VERCEL_PROJECT_ID ?? process.env.VERCEL_PROJECT_ID ?? "").trim();
+const VERCEL_TEAM_ID = (process.env.VERCEL_TEAM_ID ?? "").trim();
 
 export const dynamic = "force-dynamic";
 

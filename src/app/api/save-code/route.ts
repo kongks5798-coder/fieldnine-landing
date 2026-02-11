@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { isCodeComplete, extToLanguage } from "@/lib/codeValidator";
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
+const GITHUB_TOKEN = (process.env.GITHUB_TOKEN ?? "").trim();
+const GITHUB_REPO = (process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os").trim();
+const GITHUB_BRANCH = (process.env.GITHUB_BRANCH ?? "main").trim();
 const API = "https://api.github.com";
 
 interface FileChange {

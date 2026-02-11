@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { cached } from "@/lib/apiCache";
 import { checkRateLimit } from "@/lib/rateLimit";
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os";
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
+const GITHUB_TOKEN = (process.env.GITHUB_TOKEN ?? "").trim();
+const GITHUB_REPO = (process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os").trim();
+const GITHUB_BRANCH = (process.env.GITHUB_BRANCH ?? "main").trim();
 
-const VERCEL_TOKEN = process.env.F9_VERCEL_TOKEN ?? process.env.VERCEL_TOKEN ?? "";
-const VERCEL_PROJECT_ID = process.env.F9_VERCEL_PROJECT_ID ?? process.env.VERCEL_PROJECT_ID ?? "";
-const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID ?? "";
+const VERCEL_TOKEN = (process.env.F9_VERCEL_TOKEN ?? process.env.VERCEL_TOKEN ?? "").trim();
+const VERCEL_PROJECT_ID = (process.env.F9_VERCEL_PROJECT_ID ?? process.env.VERCEL_PROJECT_ID ?? "").trim();
+const VERCEL_TEAM_ID = (process.env.VERCEL_TEAM_ID ?? "").trim();
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
 
 export const dynamic = "force-dynamic";
 
