@@ -1,253 +1,77 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Field Nine OS — Infrastructure Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Field Nine OS — Infrastructure</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
-    <nav class="nav" role="navigation" aria-label="메인 네비게이션">
+    <nav class="nav">
       <div class="nav-brand">
-        <span class="logo" role="img" aria-label="Field Nine 로고">⚡</span>
+        <span class="logo">&#9889;</span>
         <span>Field Nine OS</span>
       </div>
       <div class="nav-right">
-        <div class="status-indicator">
-          <span class="global-dot ok" id="globalStatus" role="status" aria-label="전체 시스템 상태"></span>
-          <span class="status-text" id="statusText">모든 시스템 정상</span>
-        </div>
-        <button class="btn-refresh" id="refreshBtn" type="button" title="새로고침" aria-label="시스템 상태 새로고침">
-          <span aria-hidden="true">↻</span>
-        </button>
-        <button class="btn-settings" id="settingsBtn" type="button" title="설정" aria-label="설정 열기">
-          <span aria-hidden="true">⚙️</span>
-        </button>
+        <span class="global-dot" id="globalDot"></span>
+        <button class="btn-refresh" id="refreshBtn" title="Refresh">&#8635;</button>
       </div>
     </nav>
 
     <header class="header">
       <h1>Infrastructure Status</h1>
-      <p class="header-sub" id="lastUpdated">시스템 초기화 중...</p>
-      <div class="metrics-summary" role="region" aria-label="시스템 메트릭">
-        <div class="metric">
-          <span class="metric-value" id="uptimeValue" aria-label="업타임">99.9%</span>
-          <span class="metric-label">Uptime</span>
-        </div>
-        <div class="metric">
-          <span class="metric-value" id="responseValue" aria-label="평균 응답 시간">--ms</span>
-          <span class="metric-label">Avg Response</span>
-        </div>
-        <div class="metric">
-          <span class="metric-value" id="requestsValue" aria-label="일일 요청 수">2.4M</span>
-          <span class="metric-label">Requests/Day</span>
-        </div>
-      </div>
+      <p class="header-sub" id="lastUpdated">Loading...</p>
     </header>
 
-    <main class="content">
-      <section class="services" aria-label="서비스 상태">
-        <div class="service-card" data-service="github" tabindex="0" role="region" aria-label="GitHub 서비스 상태">
-          <div class="service-header">
-            <span class="service-icon" role="img" aria-label="GitHub 아이콘">🐙</span>
-            <span class="service-name">GitHub</span>
-            <span class="service-badge ok" id="github-status">정상 운영</span>
-          </div>
-          <div class="service-body">
-            <div class="stat-row">
-              <span class="stat-label">저장소</span>
-              <span class="stat-value">field-nine/dashboard</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">브랜치</span>
-              <span class="stat-value">main</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">마지막 커밋</span>
-              <span class="stat-value" id="github-commit">2분 전</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="github-response">--ms</span>
-            </div>
-          </div>
+    <section class="services" id="services">
+      <div class="service-card skeleton-card" id="card-github">
+        <div class="service-header">
+          <span class="service-icon">GH</span>
+          <span class="service-name">GitHub</span>
+          <span class="service-badge" id="badge-github">...</span>
         </div>
-
-        <div class="service-card" data-service="vercel" tabindex="0" role="region" aria-label="Vercel 서비스 상태">
-          <div class="service-header">
-            <span class="service-icon" role="img" aria-label="Vercel 아이콘">▲</span>
-            <span class="service-name">Vercel</span>
-            <span class="service-badge ok" id="vercel-status">준비 완료</span>
-          </div>
-          <div class="service-body">
-            <div class="stat-row">
-              <span class="stat-label">도메인</span>
-              <span class="stat-value">field9.vercel.app</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">배포 수</span>
-              <span class="stat-value" id="vercel-deployments">12개</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">마지막 배포</span>
-              <span class="stat-value" id="vercel-deploy">5분 전</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="vercel-response">--ms</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="service-card" data-service="supabase" tabindex="0" role="region" aria-label="Supabase 서비스 상태">
-          <div class="service-header">
-            <span class="service-icon" role="img" aria-label="Supabase 아이콘">🗄️</span>
-            <span class="service-name">Supabase</span>
-            <span class="service-badge ok" id="supabase-status">활성</span>
-          </div>
-          <div class="service-body">
-            <div class="stat-row">
-              <span class="stat-label">데이터베이스</span>
-              <span class="stat-value">field9-prod</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">활성 연결</span>
-              <span class="stat-value" id="supabase-connections">23개</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">스토리지</span>
-              <span class="stat-value" id="supabase-storage">2.1 GB</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="supabase-response">--ms</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="service-card" data-service="cloudflare" tabindex="0" role="region" aria-label="Cloudflare 서비스 상태">
-          <div class="service-header">
-            <span class="service-icon" role="img" aria-label="Cloudflare 아이콘">☁️</span>
-            <span class="service-name">Cloudflare</span>
-            <span class="service-badge ok" id="cloudflare-status">활성</span>
-          </div>
-          <div class="service-body">
-            <div class="stat-row">
-              <span class="stat-label">요청 수</span>
-              <span class="stat-value" id="cloudflare-requests">1.2M/일</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">대역폭</span>
-              <span class="stat-value" id="cloudflare-bandwidth">45.2 GB</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">캐시 적중률</span>
-              <span class="stat-value" id="cloudflare-cache">94%</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="cloudflare-response">--ms</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="incidents" aria-label="인시던트 정보">
-        <div class="section-header">
-          <h2>최근 인시던트</h2>
-          <span class="section-badge" id="incidentBadge">0 활성</span>
-        </div>
-        <div class="incident-list" id="incidentList">
-          <div class="no-incidents">
-            <span class="check-icon" role="img" aria-label="체크 마크">✅</span>
-            <p>지난 30일간 인시던트가 없습니다</p>
-            <small>모든 서비스가 정상적으로 운영되고 있습니다</small>
-          </div>
-        </div>
-      </section>
-
-      <section class="system-info" aria-label="시스템 정보">
-        <div class="section-header">
-          <h2>시스템 정보</h2>
-          <span class="section-badge">v1.2.0</span>
-        </div>
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">대시보드 버전</span>
-            <span class="info-value" id="dashboardVersion">1.2.0</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">마지막 배포</span>
-            <span class="info-value" id="lastDeploy">오늘 14:30</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">모니터링 시작</span>
-            <span class="info-value" id="monitoringStart">2024년 1월</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">총 업타임</span>
-            <span class="info-value" id="totalUptime">99.95%</span>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer" role="contentinfo">
-      <p>&copy; 2024 Field Nine OS. 모든 권리 보유.</p>
-      <p>실시간 인프라 모니터링 대시보드</p>
-    </footer>
-
-    <div class="notification" id="notification" role="alert" aria-live="polite">
-      <span class="notification-icon" aria-hidden="true">ℹ️</span>
-      <span class="notification-text" id="notificationText"></span>
-      <button class="notification-close" id="notificationClose" type="button" aria-label="알림 닫기">
-        <span aria-hidden="true">×</span>
-      </button>
-    </div>
-
-    <div class="settings-modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="settings-title">설정</h3>
-          <button class="modal-close" id="modalClose" type="button" aria-label="설정 닫기">
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="setting-item">
-            <label for="autoRefreshToggle">자동 새로고침</label>
-            <input type="checkbox" id="autoRefreshToggle" checked aria-describedby="auto-refresh-desc">
-            <small id="auto-refresh-desc" class="sr-only">자동으로 시스템 상태를 새로고침합니다</small>
-          </div>
-          <div class="setting-item">
-            <label for="refreshInterval">새로고침 간격 (초)</label>
-            <select id="refreshInterval" aria-describedby="interval-desc">
-              <option value="15">15초</option>
-              <option value="30" selected>30초</option>
-              <option value="60">60초</option>
-            </select>
-            <small id="interval-desc" class="sr-only">자동 새로고침 주기를 설정합니다</small>
-          </div>
-          <div class="setting-item">
-            <label for="themeSelect">테마</label>
-            <select id="themeSelect" aria-describedby="theme-desc">
-              <option value="dark" selected>다크</option>
-              <option value="light">라이트</option>
-            </select>
-            <small id="theme-desc" class="sr-only">대시보드 테마를 선택합니다</small>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" id="resetSettings" type="button">초기화</button>
-          <button class="btn-primary" id="saveSettings" type="button">저장</button>
+        <div class="service-body" id="body-github">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
         </div>
       </div>
-    </div>
+      <div class="service-card skeleton-card" id="card-vercel">
+        <div class="service-header">
+          <span class="service-icon">VC</span>
+          <span class="service-name">Vercel</span>
+          <span class="service-badge" id="badge-vercel">...</span>
+        </div>
+        <div class="service-body" id="body-vercel">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+      <div class="service-card skeleton-card" id="card-supabase">
+        <div class="service-header">
+          <span class="service-icon">SB</span>
+          <span class="service-name">Supabase</span>
+          <span class="service-badge" id="badge-supabase">...</span>
+        </div>
+        <div class="service-body" id="body-supabase">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="commits-section" id="commitsSection">
+      <h2 class="section-title">Recent Commits</h2>
+      <div class="commits-list" id="commitsList">
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Built with <span class="heart">&#9829;</span> on Field Nine</p>
+    </footer>
   </div>
 
   <script src="data.js"></script>

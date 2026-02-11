@@ -1,112 +1,65 @@
-function updateRefreshButton(isRefreshing) {
-  var button = document.getElementById('refreshBtn');
-  if (!button) return;
-  
-  if (isRefreshing) {
-    button.classList.add('spinning');
-    button.disabled = true;
-  } else {
-    button.classList.remove('spinning');
-    button.disabled = false;
-  }
-}
+// === UI Helper Functions ===
 
-function showNotification(message, type) {
-  var notification = document.getElementById('notification');
-  var text = document.getElementById('notificationText');
-  var icon = document.getElementById('notification').querySelector('.notification-icon');
-  
-  if (notification && text) {
-    text.textContent = message;
-    
-    if (type === 'success') {
-      icon.textContent = '✅';
-    } else if (type === 'warning') {
-      icon.textContent = '⚠️';
-    } else if (type === 'error') {
-      icon.textContent = '❌';
-    } else {
-      icon.textContent = 'ℹ️';
-    }
-    
-    notification.classList.add('show');
-    
-    setTimeout(function() {
-      hideNotification();
-    }, 4000);
-  }
-}
+window.timeAgo = function(dateStr) {
+  var diff = Date.now() - new Date(dateStr).getTime();
+  var sec = Math.floor(diff / 1000);
+  if (sec < 60) return sec + 's ago';
+  var min = Math.floor(sec / 60);
+  if (min < 60) return min + 'm ago';
+  var hr = Math.floor(min / 60);
+  if (hr < 24) return hr + 'h ago';
+  var d = Math.floor(hr / 24);
+  return d + 'd ago';
+};
 
-function hideNotification() {
-  var notification = document.getElementById('notification');
-  if (notification) {
-    notification.classList.remove('show');
-  }
-}
+window.formatDuration = function(ms) {
+  if (!ms) return '-';
+  var sec = Math.round(ms / 1000);
+  if (sec < 60) return sec + 's';
+  return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+};
 
-function updateLastRefreshTime() {
-  var element = document.getElementById('lastUpdated');
-  if (element) {
-    var now = new Date();
-    element.textContent = '마지막 업데이트: ' + now.toLocaleTimeString('ko-KR');
-    appConfig.lastUpdate = now;
-  }
-}
+window.setBadge = function(el, state) {
+  var cfg = window.INFRA_CONFIG.states[state] || window.INFRA_CONFIG.states.offline;
+  el.textContent = cfg.label;
+  el.className = 'service-badge ' + cfg.cls;
+};
 
-function updateServiceResponseTimes() {
-  Object.keys(serviceData).forEach(function(serviceKey) {
-    var service = serviceData[serviceKey];
-    var variation = Math.floor(Math.random() * 20) - 10;
-    service.responseTime = Math.max(1, service.baseResponseTime + variation);
-    
-    var element = document.getElementById(serviceKey + '-response');
-    if (element) {
-      element.textContent = service.responseTime + 'ms';
-    }
-  });
-  
-  var totalResponse = Object.values(serviceData).reduce(function(sum, service) {
-    return sum + service.responseTime;
-  }, 0);
-  systemMetrics.avgResponseTime = Math.round(totalResponse / Object.keys(serviceData).length);
-  
-  var avgElement = document.getElementById('responseValue');
-  if (avgElement) {
-    avgElement.textContent = systemMetrics.avgResponseTime + 'ms';
+window.renderGitHubCard = function(gh) {
+  if (!gh || !gh.connected) {
+    return '<div class="error-msg">' + (gh && gh.error ? gh.error : 'Not connected') + '</div>';
   }
-}
+  return '<div class="stat-row"><span class="stat-label">Repository</span><span class="stat-value mono">' + gh.repo + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Branch</span><span class="stat-value">' + gh.branch + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Last commit</span><span class="stat-value">' +
+    (gh.recentCommits && gh.recentCommits[0] ? window.timeAgo(gh.recentCommits[0].date) : '-') + '</span></div>';
+};
 
-function showSettingsModal() {
-  var modal = document.getElementById('settingsModal');
-  if (modal) {
-    modal.classList.add('show');
-    document.body.style.overflow = 'hidden';
+window.renderVercelCard = function(vc) {
+  if (!vc || !vc.connected) {
+    return '<div class="error-msg">' + (vc && vc.error ? vc.error : 'Not connected') + '</div>';
   }
-}
+  var statusText = vc.status || 'unknown';
+  return '<div class="stat-row"><span class="stat-label">Status</span><span class="stat-value">' + statusText + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Build time</span><span class="stat-value">' + window.formatDuration(vc.buildDuration) + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Commit</span><span class="stat-value mono">' + (vc.commitSha || '-') + '</span></div>' +
+    (vc.commitMessage ? '<div class="stat-row"><span class="stat-label">Message</span><span class="stat-value">' + vc.commitMessage.slice(0, 40) + '</span></div>' : '');
+};
 
-function hideSettingsModal() {
-  var modal = document.getElementById('settingsModal');
-  if (modal) {
-    modal.classList.remove('show');
-    document.body.style.overflow = '';
+window.renderSupabaseCard = function(sb) {
+  if (!sb || !sb.connected) {
+    return '<div class="error-msg">' + (sb && sb.error ? sb.error : 'Not connected') + '</div>';
   }
-}
+  return '<div class="stat-row"><span class="stat-label">Response</span><span class="stat-value">' + sb.responseMs + 'ms</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Tables</span><span class="stat-value">' + sb.tablesCount + '</span></div>';
+};
 
-function updateGlobalStatus() {
-  var allOperational = Object.values(serviceData).every(function(service) {
-    return service.status === 'operational';
-  });
-  
-  var statusDot = document.getElementById('globalStatus');
-  var statusText = document.getElementById('statusText');
-  
-  if (statusDot && statusText) {
-    if (allOperational) {
-      statusDot.className = 'global-dot ok';
-      statusText.textContent = '모든 시스템 정상';
-    } else {
-      statusDot.className = 'global-dot warn';
-      statusText.textContent = '일부 시스템 확인 필요';
-    }
-  }
-}
+window.renderCommitsList = function(commits) {
+  if (!commits || commits.length === 0) return '<div class="error-msg">No commits available</div>';
+  return commits.map(function(c) {
+    return '<div class="commit-item">' +
+      '<div class="commit-msg">' + c.message + '</div>' +
+      '<div class="commit-meta"><span class="commit-sha">' + c.sha + '</span> by ' + c.author + ' — ' + window.timeAgo(c.date) + '</div>' +
+    '</div>';
+  }).join('');
+};

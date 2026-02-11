@@ -1,153 +1,107 @@
-function simulateDataUpdate() {
-  updateServiceResponseTimes();
-  
-  var connections = Math.floor(Math.random() * 10) + 20;
-  var element = document.getElementById('supabase-connections');
-  if (element) {
-    element.textContent = connections + '개';
-  }
-  
-  var deployments = Math.floor(Math.random() * 5) + 10;
-  var deploymentsElement = document.getElementById('vercel-deployments');
-  if (deploymentsElement) {
-    deploymentsElement.textContent = deployments + '개';
-  }
-  
-  var cacheHit = Math.floor(Math.random() * 5) + 92;
-  var cacheElement = document.getElementById('cloudflare-cache');
-  if (cacheElement) {
-    cacheElement.textContent = cacheHit + '%';
-  }
-  
-  updateGlobalStatus();
-}
+// === Infrastructure Dashboard Entry Point ===
+document.addEventListener('DOMContentLoaded', function() {
+  var refreshBtn = document.getElementById('refreshBtn');
+  var globalDot = document.getElementById('globalDot');
+  var lastUpdated = document.getElementById('lastUpdated');
+  var bodyGH = document.getElementById('body-github');
+  var bodyVC = document.getElementById('body-vercel');
+  var bodySB = document.getElementById('body-supabase');
+  var badgeGH = document.getElementById('badge-github');
+  var badgeVC = document.getElementById('badge-vercel');
+  var badgeSB = document.getElementById('badge-supabase');
+  var commitsList = document.getElementById('commitsList');
+  var timer = null;
 
-function handleRefresh() {
-  updateRefreshButton(true);
-  simulateDataUpdate();
-  updateLastRefreshTime();
-  showNotification('시스템 상태를 성공적으로 새로고침했습니다.', 'success');
-  
-  setTimeout(function() {
-    updateRefreshButton(false);
-  }, 1200);
-}
+  function fetchStatus() {
+    if (refreshBtn) refreshBtn.classList.add('spinning');
 
-function loadSettings() {
-  var autoRefreshToggle = document.getElementById('autoRefreshToggle');
-  var refreshInterval = document.getElementById('refreshInterval');
-  var themeSelect = document.getElementById('themeSelect');
-  
-  if (autoRefreshToggle) autoRefreshToggle.checked = settings.autoRefresh;
-  if (refreshInterval) refreshInterval.value = settings.refreshInterval;
-  if (themeSelect) themeSelect.value = settings.theme;
-}
+    fetch(window.INFRA_CONFIG.apiUrl)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
 
-function saveSettings() {
-  var autoRefreshToggle = document.getElementById('autoRefreshToggle');
-  var refreshInterval = document.getElementById('refreshInterval');
-  var themeSelect = document.getElementById('themeSelect');
-  
-  if (autoRefreshToggle) settings.autoRefresh = autoRefreshToggle.checked;
-  if (refreshInterval) settings.refreshInterval = parseInt(refreshInterval.value);
-  if (themeSelect) settings.theme = themeSelect.value;
-  
-  appConfig.autoRefresh = settings.autoRefresh;
-  appConfig.refreshInterval = settings.refreshInterval * 1000;
-  
-  hideSettingsModal();
-  showNotification('설정이 저장되었습니다.', 'success');
-  
-  setupAutoRefresh();
-}
+        // GitHub
+        var ghState = data.github && data.github.connected ? 'ok' : 'error';
+        if (badgeGH) window.setBadge(badgeGH, ghState);
+        if (bodyGH) {
+          bodyGH.innerHTML = window.renderGitHubCard(data.github);
+          bodyGH.classList.add('fade-in');
+        }
 
-function resetSettings() {
-  settings.autoRefresh = true;
-  settings.refreshInterval = 30;
-  settings.theme = 'dark';
-  
-  loadSettings();
-  showNotification('설정이 초기화되었습니다.', 'info');
-}
+        // Vercel
+        var vcState = 'error';
+        if (data.vercel && data.vercel.connected) {
+          vcState = data.vercel.status === 'READY' ? 'ok' : data.vercel.status === 'BUILDING' ? 'warn' : 'ok';
+        }
+        if (badgeVC) window.setBadge(badgeVC, vcState);
+        if (bodyVC) {
+          bodyVC.innerHTML = window.renderVercelCard(data.vercel);
+          bodyVC.classList.add('fade-in');
+        }
 
-var refreshTimer = null;
+        // Supabase
+        var sbState = data.supabase && data.supabase.connected ? 'ok' : 'error';
+        if (data.supabase && data.supabase.connected && data.supabase.responseMs > 1000) sbState = 'warn';
+        if (badgeSB) window.setBadge(badgeSB, sbState);
+        if (bodySB) {
+          bodySB.innerHTML = window.renderSupabaseCard(data.supabase);
+          bodySB.classList.add('fade-in');
+        }
 
-function setupAutoRefresh() {
-  if (refreshTimer) {
-    clearInterval(refreshTimer);
-  }
-  
-  if (appConfig.autoRefresh) {
-    refreshTimer = setInterval(function() {
-      simulateDataUpdate();
-      updateLastRefreshTime();
-    }, appConfig.refreshInterval);
-  }
-}
+        // Global dot
+        var states = [ghState, vcState, sbState];
+        var globalState = 'ok';
+        if (states.indexOf('error') !== -1) globalState = 'error';
+        else if (states.indexOf('warn') !== -1) globalState = 'warn';
+        if (globalDot) globalDot.className = 'global-dot ' + globalState;
 
-function initializeApp() {
-  var refreshButton = document.getElementById('refreshBtn');
-  var settingsButton = document.getElementById('settingsBtn');
-  var closeButton = document.getElementById('notificationClose');
-  var modalClose = document.getElementById('modalClose');
-  var saveSettingsBtn = document.getElementById('saveSettings');
-  var resetSettingsBtn = document.getElementById('resetSettings');
-  
-  if (refreshButton) {
-    refreshButton.addEventListener('click', handleRefresh);
+        // Commits
+        if (commitsList && data.github && data.github.recentCommits) {
+          commitsList.innerHTML = window.renderCommitsList(data.github.recentCommits);
+          commitsList.classList.add('fade-in');
+        }
+
+        // Timestamp
+        if (lastUpdated && data.timestamp) {
+          lastUpdated.textContent = 'Updated ' + new Date(data.timestamp).toLocaleTimeString('ko-KR');
+        }
+
+        // Remove skeleton
+        var skeletons = document.querySelectorAll('.skeleton-card');
+        for (var i = 0; i < skeletons.length; i++) {
+          skeletons[i].classList.remove('skeleton-card');
+        }
+      })
+      .catch(function(err) {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
+        showError('Connection failed: ' + err.message);
+      });
   }
-  
-  if (settingsButton) {
-    settingsButton.addEventListener('click', showSettingsModal);
+
+  function showError(msg) {
+    if (globalDot) globalDot.className = 'global-dot error';
+    if (lastUpdated) lastUpdated.textContent = msg;
+    if (badgeGH) window.setBadge(badgeGH, 'offline');
+    if (badgeVC) window.setBadge(badgeVC, 'offline');
+    if (badgeSB) window.setBadge(badgeSB, 'offline');
   }
-  
-  if (closeButton) {
-    closeButton.addEventListener('click', hideNotification);
-  }
-  
-  if (modalClose) {
-    modalClose.addEventListener('click', hideSettingsModal);
-  }
-  
-  if (saveSettingsBtn) {
-    saveSettingsBtn.addEventListener('click', saveSettings);
-  }
-  
-  if (resetSettingsBtn) {
-    resetSettingsBtn.addEventListener('click', resetSettings);
-  }
-  
-  var modal = document.getElementById('settingsModal');
-  if (modal) {
-    modal.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        hideSettingsModal();
-      }
+
+  // Manual refresh
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      fetchStatus();
     });
   }
-  
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      hideSettingsModal();
-      hideNotification();
-    }
-  });
-  
-  simulateDataUpdate();
-  updateLastRefreshTime();
-  loadSettings();
-  setupAutoRefresh();
-  updateGlobalStatus();
-  
-  showNotification('Field Nine OS Dashboard v' + appConfig.version + ' 초기화 완료', 'success');
-  
-  console.log('🚀 Field Nine OS Dashboard v' + appConfig.version + ' initialized successfully');
-  console.log('📊 Services loaded:', Object.keys(serviceData).length);
-  console.log('⚙️ Auto-refresh:', appConfig.autoRefresh ? 'enabled (' + (appConfig.refreshInterval / 1000) + 's)' : 'disabled');
-}
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-  initializeApp();
-}
+  // Initial fetch
+  fetchStatus();
+
+  // Auto-refresh
+  timer = setInterval(fetchStatus, window.INFRA_CONFIG.refreshIntervalMs);
+
+  console.log('Field Nine OS: Infrastructure Dashboard loaded');
+});
