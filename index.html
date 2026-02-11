@@ -16,7 +16,7 @@
       </div>
       <div class="nav-right">
         <span class="global-dot ok"></span>
-        <button class="btn-refresh" onclick="handleRefresh()">↻</button>
+        <button class="btn-refresh" id="refreshBtn" type="button">↻</button>
       </div>
     </nav>
 
@@ -25,7 +25,7 @@
       <p class="header-sub">All systems operational</p>
     </header>
 
-    <section class="services">
+    <main class="services">
       <div class="service-card">
         <div class="service-header">
           <span class="service-icon">🐙</span>
@@ -113,19 +113,11 @@
           </div>
         </div>
       </div>
-    </section>
+    </main>
   </div>
 
-  <script>
-    function handleRefresh() {
-      var btn = document.querySelector('.btn-refresh');
-      if (btn) {
-        btn.style.animation = 'spin 1s linear';
-        setTimeout(function() {
-          btn.style.animation = '';
-        }, 1000);
-      }
-    }
-  </script>
+  <script src="data.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
