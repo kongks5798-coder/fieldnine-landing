@@ -1,11 +1,1 @@
-// === Infrastructure Dashboard Configuration ===
-window.INFRA_CONFIG = {
-  apiUrl: '/api/infra-status',
-  refreshIntervalMs: 60000,
-  states: {
-    ok:      { label: 'Operational', cls: 'ok' },
-    warn:    { label: 'Degraded',    cls: 'warn' },
-    error:   { label: 'Down',        cls: 'error' },
-    offline: { label: 'Offline',     cls: 'offline' }
-  }
-};
+// 이 파일은 비워둡니다 - 모든 로직을 HTML에 인라인으로 이동했습니다
