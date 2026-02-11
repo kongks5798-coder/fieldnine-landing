@@ -644,6 +644,18 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
   /* ===== Shadow Commit Handler (passed to AIChatPanel) ===== */
   const handleShadowCommit = useCallback(
     async (fileChanges: { path: string; content: string }[], commitMsg: string): Promise<boolean> => {
+      // Root file protection: prevent AI from overwriting infra dashboard files
+      const PROTECTED_FILES = new Set(["index.html", "style.css", "data.js", "ui.js", "app.js"]);
+      const filtered = fileChanges.filter((f) => {
+        if (PROTECTED_FILES.has(f.path)) {
+          console.warn(`[shadow-commit] PROTECTED: ${f.path} — root file overwrite blocked`);
+          return false;
+        }
+        return true;
+      });
+      if (filtered.length === 0) return false;
+      fileChanges = filtered;
+
       // Completeness guard: block truncated code from reaching GitHub
       for (const file of fileChanges) {
         const ext = file.path.split(".").pop()?.toLowerCase() ?? "";
@@ -698,10 +710,11 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
             return;
           }
         }
-        const fileChanges = Object.entries(files).map(([name, f]) => ({
-          path: name,
-          content: f.content,
-        }));
+        const PROTECTED_ROOT = new Set(["index.html", "style.css", "data.js", "ui.js", "app.js"]);
+        const fileChanges = Object.entries(files)
+          .filter(([name]) => !PROTECTED_ROOT.has(name))
+          .map(([name, f]) => ({ path: name, content: f.content }));
+        if (fileChanges.length === 0) return;
         // Fire-and-forget: don't block UI waiting for commit
         handleShadowCommit(fileChanges, "chore: auto-save code changes").catch(() => {});
       }, 5_000);
