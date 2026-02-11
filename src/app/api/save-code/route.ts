@@ -203,18 +203,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Server-side root file protection (defense in depth)
-    const PROTECTED_FILES = new Set(["index.html", "style.css", "data.js", "ui.js", "app.js"]);
+    // Server-side allowlist: ONLY these files can be committed via shadow commit.
+    // This prevents the AI from creating rogue files (server.js, Agent_Engine.js, etc.)
+    const ALLOWED_FILES = new Set([
+      "index.html", "style.css", "data.js", "ui.js", "app.js",
+      "manifest.json", "favicon.ico",
+    ]);
+    // Also allow files in explicit subdirectories the user creates
+    const ALLOWED_PATTERNS = [/^components\//i, /^pages\//i, /^assets\//i, /^lib\//i];
+
     body.files = body.files.filter((f) => {
-      if (PROTECTED_FILES.has(f.path)) {
-        console.warn(`[save-code] BLOCKED: ${f.path} — root file overwrite rejected`);
-        return false;
-      }
-      return true;
+      if (ALLOWED_FILES.has(f.path)) return true;
+      if (ALLOWED_PATTERNS.some((p) => p.test(f.path))) return true;
+      console.warn(`[save-code] BLOCKED: ${f.path} — not in allowlist`);
+      return false;
     });
     if (body.files.length === 0) {
       return NextResponse.json(
-        { error: "All files were protected root files — nothing to commit" },
+        { error: "No allowed files to commit" },
         { status: 400 },
       );
     }
