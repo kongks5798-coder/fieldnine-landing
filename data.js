@@ -1,8 +1,9 @@
 var appConfig = {
-  version: '1.0.0',
+  version: '1.2.0',
   lastUpdate: null,
   refreshInterval: 30000,
-  autoRefresh: true
+  autoRefresh: true,
+  theme: 'dark'
 };
 
 var serviceData = {
@@ -11,7 +12,8 @@ var serviceData = {
     status: 'operational',
     icon: '🐙',
     responseTime: 89,
-    lastCommit: '2분 전'
+    lastCommit: '2분 전',
+    baseResponseTime: 85
   },
   vercel: {
     name: 'Vercel',
@@ -19,7 +21,8 @@ var serviceData = {
     icon: '▲',
     responseTime: 156,
     deployments: 12,
-    lastDeploy: '5분 전'
+    lastDeploy: '5분 전',
+    baseResponseTime: 150
   },
   supabase: {
     name: 'Supabase',
@@ -27,7 +30,8 @@ var serviceData = {
     icon: '🗄️',
     responseTime: 45,
     connections: 23,
-    storage: '2.1 GB'
+    storage: '2.1 GB',
+    baseResponseTime: 40
   },
   cloudflare: {
     name: 'Cloudflare',
@@ -36,12 +40,23 @@ var serviceData = {
     responseTime: 12,
     requests: '1.2M/일',
     bandwidth: '45.2 GB',
-    cacheHit: '94%'
+    cacheHit: '94%',
+    baseResponseTime: 10
   }
 };
 
 var systemMetrics = {
-  uptime: 99.9,
-  avgResponseTime: 142,
-  dailyRequests: '2.4M'
+  uptime: 99.95,
+  avgResponseTime: 75,
+  dailyRequests: '2.4M',
+  totalUptime: 99.95
+};
+
+var incidents = [];
+
+var settings = {
+  autoRefresh: true,
+  refreshInterval: 30,
+  theme: 'dark',
+  notifications: true
 };
