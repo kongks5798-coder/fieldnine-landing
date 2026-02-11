@@ -1,15 +1,23 @@
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+}
+
 body {
-  font-family: 'Inter', 'Noto Sans KR', system-ui, sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
   color: #e2e8f0;
   min-height: 100vh;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .app {
@@ -58,6 +66,16 @@ body {
   box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
 }
 
+.global-dot.warn {
+  background: #eab308;
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+}
+
+.global-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
 .btn-refresh {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -71,12 +89,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  outline: none;
 }
 
 .btn-refresh:hover {
   background: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
   border-color: rgba(59, 130, 246, 0.3);
+}
+
+.btn-refresh:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.btn-refresh.spinning {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -119,6 +147,21 @@ body {
   padding: 24px;
   transition: all 0.3s ease;
   min-height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .service-card:hover {
@@ -127,15 +170,22 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
+.service-card:hover::before {
+  opacity: 1;
+}
+
 .service-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .service-icon {
   font-size: 24px;
+  line-height: 1;
 }
 
 .service-name {
@@ -151,11 +201,27 @@ body {
   font-weight: 500;
   background: #374151;
   color: #9ca3af;
+  white-space: nowrap;
 }
 
 .service-badge.ok {
   background: rgba(34, 197, 94, 0.2);
   color: #22c55e;
+}
+
+.service-badge.warn {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.service-badge.error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.service-body {
+  position: relative;
+  z-index: 1;
 }
 
 .stat-row {
@@ -178,15 +244,47 @@ body {
 .stat-value {
   font-weight: 500;
   font-size: 0.9rem;
+  text-align: right;
 }
 
 @media (max-width: 768px) {
+  .app {
+    padding: 0 16px;
+  }
+  
+  .header h1 {
+    font-size: 2.2rem;
+  }
+  
   .services {
     grid-template-columns: 1fr;
     gap: 16px;
   }
   
+  .service-card {
+    padding: 20px;
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav {
+    padding: 16px 0;
+  }
+  
+  .nav-brand {
+    font-size: 18px;
+  }
+  
+  .header {
+    padding: 32px 0 24px;
+  }
+  
   .header h1 {
-    font-size: 2.2rem;
+    font-size: 1.8rem;
+  }
+  
+  .service-card {
+    padding: 16px;
   }
 }
