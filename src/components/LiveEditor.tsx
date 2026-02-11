@@ -73,7 +73,7 @@ const DEFAULT_FILES: Record<string, VFile> = {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My App — Field Nine</title>
+  <title>Field Nine OS — Infrastructure</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -81,34 +81,66 @@ const DEFAULT_FILES: Record<string, VFile> = {
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
-        <span>Field Nine App</span>
+        <span class="logo">&#9889;</span>
+        <span>Field Nine OS</span>
       </div>
-      <div class="nav-links">
-        <a href="#" class="active">Home</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
+      <div class="nav-right">
+        <span class="global-dot" id="globalDot"></span>
+        <button class="btn-refresh" id="refreshBtn" title="Refresh">&#8635;</button>
       </div>
     </nav>
 
-    <main class="hero">
-      <div class="hero-badge">🚀 AI-Powered Development</div>
-      <h1>Build Anything,<br/><span class="gradient-text">Ship Everywhere</span></h1>
-      <p>이 에디터에서 직접 코드를 수정해보세요.<br/>실시간으로 결과가 반영됩니다.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="startBtn">시작하기</button>
-        <button class="btn btn-secondary" id="addCardBtn">카드 추가</button>
-      </div>
-      <div class="counter-display">
-        클릭: <span id="count">0</span>회 | 카드: <span id="cardCount">0</span>개
-      </div>
-    </main>
+    <header class="header">
+      <h1>Infrastructure Status</h1>
+      <p class="header-sub" id="lastUpdated">Loading...</p>
+    </header>
 
-    <section class="cards" id="cardContainer">
+    <section class="services" id="services">
+      <div class="service-card skeleton-card" id="card-github">
+        <div class="service-header">
+          <span class="service-icon">GH</span>
+          <span class="service-name">GitHub</span>
+          <span class="service-badge" id="badge-github">...</span>
+        </div>
+        <div class="service-body" id="body-github">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+      <div class="service-card skeleton-card" id="card-vercel">
+        <div class="service-header">
+          <span class="service-icon">VC</span>
+          <span class="service-name">Vercel</span>
+          <span class="service-badge" id="badge-vercel">...</span>
+        </div>
+        <div class="service-body" id="body-vercel">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+      <div class="service-card skeleton-card" id="card-supabase">
+        <div class="service-header">
+          <span class="service-icon">SB</span>
+          <span class="service-name">Supabase</span>
+          <span class="service-badge" id="badge-supabase">...</span>
+        </div>
+        <div class="service-body" id="body-supabase">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="commits-section" id="commitsSection">
+      <h2 class="section-title">Recent Commits</h2>
+      <div class="commits-list" id="commitsList">
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
     </section>
 
     <footer class="footer">
-      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+      <p>Built with <span class="heart">&#9829;</span> on Field Nine</p>
     </footer>
   </div>
 
@@ -122,201 +154,180 @@ const DEFAULT_FILES: Record<string, VFile> = {
   "style.css": {
     name: "style.css",
     language: "css",
-    content: `/* === Field Nine App Styles === */
+    content: `/* === Field Nine OS — Infrastructure Dashboard === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', system-ui, sans-serif;
   background: #0a0a0a;
   color: #e2e8f0;
   min-height: 100vh;
 }
 
-.app {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
+.app { max-width: 960px; margin: 0 auto; padding: 0 24px; }
 
-/* --- Navigation --- */
+/* --- Nav --- */
 .nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 18px;
-}
-
+.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
 .logo { font-size: 24px; }
+.nav-right { display: flex; align-items: center; gap: 12px; }
 
-.nav-links { display: flex; gap: 24px; }
-
-.nav-links a {
-  color: #64748b;
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s;
+.global-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #475569;
+  transition: background 0.3s;
 }
+.global-dot.ok { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+.global-dot.warn { background: #eab308; box-shadow: 0 0 8px rgba(234,179,8,0.5); }
+.global-dot.error { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.5); }
 
-.nav-links a:hover,
-.nav-links a.active { color: #f1f5f9; }
-
-/* --- Hero --- */
-.hero {
-  text-align: center;
-  padding: 80px 0 60px;
+.btn-refresh {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: #94a3b8; font-size: 18px; width: 36px; height: 36px;
+  border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
 }
+.btn-refresh:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+.btn-refresh.spinning { animation: spin 0.8s linear infinite; }
 
-.hero-badge {
-  display: inline-block;
-  padding: 6px 16px;
-  background: rgba(37, 99, 235, 0.15);
-  border: 1px solid rgba(37, 99, 235, 0.3);
-  border-radius: 100px;
-  font-size: 13px;
-  color: #60a5fa;
-  margin-bottom: 24px;
-}
+/* --- Header --- */
+.header { padding: 40px 0 24px; }
+.header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.header-sub { font-size: 13px; color: #64748b; margin-top: 6px; }
 
-.hero h1 {
-  font-size: 48px;
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 20px;
-  letter-spacing: -1px;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero p {
-  color: #94a3b8;
-  font-size: 16px;
-  line-height: 1.7;
+/* --- Services Grid --- */
+.services {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   margin-bottom: 32px;
 }
 
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 24px;
+@media (max-width: 700px) {
+  .services { grid-template-columns: 1fr; }
 }
 
-.btn {
-  padding: 12px 28px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
-}
-
-.btn-secondary {
-  background: rgba(255,255,255,0.06);
-  color: #cbd5e1;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-
-.btn-secondary:hover {
-  background: rgba(255,255,255,0.1);
-  transform: translateY(-2px);
-}
-
-.counter-display {
-  font-size: 14px;
-  color: #64748b;
-  padding: 12px 20px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 8px;
-  display: inline-block;
-}
-
-.counter-display span {
-  color: #3b82f6;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-/* --- Cards --- */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-  padding: 40px 0;
-}
-
-.card {
+.service-card {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px;
-  padding: 24px;
-  animation: slideUp 0.4s ease-out;
+  padding: 20px;
   transition: all 0.2s;
 }
-
-.card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+.service-card:hover {
+  border-color: rgba(59,130,246,0.3);
+  transform: translateY(-2px);
 }
 
-.card-emoji { font-size: 32px; margin-bottom: 12px; }
-.card h3 { font-size: 16px; margin-bottom: 8px; }
-.card p { font-size: 13px; color: #64748b; line-height: 1.5; }
-.card-time { font-size: 11px; color: #475569; margin-top: 12px; }
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+.service-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
 }
+.service-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: rgba(255,255,255,0.06); color: #94a3b8;
+}
+.service-name { font-weight: 600; font-size: 15px; flex: 1; }
+
+.service-badge {
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,0.06); color: #94a3b8;
+}
+.service-badge.ok { background: rgba(34,197,94,0.15); color: #4ade80; }
+.service-badge.warn { background: rgba(234,179,8,0.15); color: #facc15; }
+.service-badge.error { background: rgba(239,68,68,0.15); color: #f87171; }
+.service-badge.offline { background: rgba(100,116,139,0.15); color: #94a3b8; }
+
+.service-body { font-size: 13px; color: #94a3b8; }
+
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: #64748b; }
+.stat-value { color: #e2e8f0; font-weight: 500; }
+.stat-value.mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+
+/* --- Commits Section --- */
+.commits-section { margin-bottom: 40px; }
+.section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+
+.commits-list {
+  border-left: 2px solid rgba(255,255,255,0.08);
+  padding-left: 20px;
+}
+
+.commit-item {
+  position: relative;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.commit-item:last-child { border-bottom: none; }
+.commit-item::before {
+  content: '';
+  position: absolute; left: -25px; top: 18px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #3b82f6;
+}
+.commit-msg { font-size: 14px; color: #e2e8f0; margin-bottom: 4px; }
+.commit-meta { font-size: 12px; color: #64748b; }
+.commit-sha {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #60a5fa; font-size: 12px;
+}
+
+/* --- Skeleton Loading --- */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+.skeleton-line { height: 14px; margin-bottom: 10px; }
+.skeleton-line.short { width: 60%; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.fade-in { animation: fadeIn 0.3s ease-out; }
+
+/* --- Error State --- */
+.error-msg { color: #f87171; font-size: 13px; padding: 8px 0; }
 
 /* --- Footer --- */
 .footer {
-  text-align: center;
-  padding: 40px 0;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  color: #475569;
-  font-size: 14px;
+  padding: 40px 0; border-top: 1px solid rgba(255,255,255,0.06);
+  color: #475569; font-size: 14px; text-align: center;
 }
-
 .heart { color: #ef4444; }`,
     icon: FileText,
   },
   "data.js": {
     name: "data.js",
     language: "javascript",
-    content: `// === Data & Configuration ===
-var APP_DATA = {
-  emojis: ['🚀', '⚡', '🎨', '🔥', '💡', '🎯', '✨', '🌈', '🎮', '🛸'],
-  titles: ['새로운 프로젝트', 'AI 분석 완료', '배포 성공!', '성능 최적화', '버그 수정됨'],
-  descs: [
-    'Field Nine으로 빠르게 구축했습니다.',
-    'AI가 코드를 최적화했습니다.',
-    '전 세계에 배포 완료.'
-  ]
+    content: `// === Infrastructure Dashboard Configuration ===
+window.INFRA_CONFIG = {
+  apiUrl: '/api/infra-status',
+  refreshIntervalMs: 60000,
+  states: {
+    ok:      { label: 'Operational', cls: 'ok' },
+    warn:    { label: 'Degraded',    cls: 'warn' },
+    error:   { label: 'Down',        cls: 'error' },
+    offline: { label: 'Offline',     cls: 'offline' }
+  }
 };`,
     icon: FileCog,
   },
@@ -324,67 +335,181 @@ var APP_DATA = {
     name: "ui.js",
     language: "javascript",
     content: `// === UI Helper Functions ===
-function pickRandom(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
-function createCard(emoji, title, desc) {
-  var card = document.createElement('div');
-  card.className = 'card';
-  var time = new Date().toLocaleTimeString('ko-KR');
-  card.innerHTML =
-    '<div class="card-emoji">' + emoji + '</div>' +
-    '<h3>' + title + '</h3>' +
-    '<p>' + desc + '</p>' +
-    '<div class="card-time">' + time + '에 생성됨</div>';
-  return card;
-}`,
+window.timeAgo = function(dateStr) {
+  var diff = Date.now() - new Date(dateStr).getTime();
+  var sec = Math.floor(diff / 1000);
+  if (sec < 60) return sec + 's ago';
+  var min = Math.floor(sec / 60);
+  if (min < 60) return min + 'm ago';
+  var hr = Math.floor(min / 60);
+  if (hr < 24) return hr + 'h ago';
+  var d = Math.floor(hr / 24);
+  return d + 'd ago';
+};
+
+window.formatDuration = function(ms) {
+  if (!ms) return '-';
+  var sec = Math.round(ms / 1000);
+  if (sec < 60) return sec + 's';
+  return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+};
+
+window.setBadge = function(el, state) {
+  var cfg = window.INFRA_CONFIG.states[state] || window.INFRA_CONFIG.states.offline;
+  el.textContent = cfg.label;
+  el.className = 'service-badge ' + cfg.cls;
+};
+
+window.renderGitHubCard = function(gh) {
+  if (!gh || !gh.connected) {
+    return '<div class="error-msg">' + (gh && gh.error ? gh.error : 'Not connected') + '</div>';
+  }
+  return '<div class="stat-row"><span class="stat-label">Repository</span><span class="stat-value mono">' + gh.repo + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Branch</span><span class="stat-value">' + gh.branch + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Last commit</span><span class="stat-value">' +
+    (gh.recentCommits && gh.recentCommits[0] ? window.timeAgo(gh.recentCommits[0].date) : '-') + '</span></div>';
+};
+
+window.renderVercelCard = function(vc) {
+  if (!vc || !vc.connected) {
+    return '<div class="error-msg">' + (vc && vc.error ? vc.error : 'Not connected') + '</div>';
+  }
+  var statusText = vc.status || 'unknown';
+  return '<div class="stat-row"><span class="stat-label">Status</span><span class="stat-value">' + statusText + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Build time</span><span class="stat-value">' + window.formatDuration(vc.buildDuration) + '</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Commit</span><span class="stat-value mono">' + (vc.commitSha || '-') + '</span></div>' +
+    (vc.commitMessage ? '<div class="stat-row"><span class="stat-label">Message</span><span class="stat-value">' + vc.commitMessage.slice(0, 40) + '</span></div>' : '');
+};
+
+window.renderSupabaseCard = function(sb) {
+  if (!sb || !sb.connected) {
+    return '<div class="error-msg">' + (sb && sb.error ? sb.error : 'Not connected') + '</div>';
+  }
+  return '<div class="stat-row"><span class="stat-label">Response</span><span class="stat-value">' + sb.responseMs + 'ms</span></div>' +
+    '<div class="stat-row"><span class="stat-label">Tables</span><span class="stat-value">' + sb.tablesCount + '</span></div>';
+};
+
+window.renderCommitsList = function(commits) {
+  if (!commits || commits.length === 0) return '<div class="error-msg">No commits available</div>';
+  return commits.map(function(c) {
+    return '<div class="commit-item">' +
+      '<div class="commit-msg">' + c.message + '</div>' +
+      '<div class="commit-meta"><span class="commit-sha">' + c.sha + '</span> by ' + c.author + ' — ' + window.timeAgo(c.date) + '</div>' +
+    '</div>';
+  }).join('');
+};`,
     icon: FileCog,
   },
   "app.js": {
     name: "app.js",
     language: "javascript",
-    content: `// === Main Entry Point ===
+    content: `// === Infrastructure Dashboard Entry Point ===
 document.addEventListener('DOMContentLoaded', function() {
-  var clickCount = 0;
-  var cardCount = 0;
+  var refreshBtn = document.getElementById('refreshBtn');
+  var globalDot = document.getElementById('globalDot');
+  var lastUpdated = document.getElementById('lastUpdated');
+  var bodyGH = document.getElementById('body-github');
+  var bodyVC = document.getElementById('body-vercel');
+  var bodySB = document.getElementById('body-supabase');
+  var badgeGH = document.getElementById('badge-github');
+  var badgeVC = document.getElementById('badge-vercel');
+  var badgeSB = document.getElementById('badge-supabase');
+  var commitsList = document.getElementById('commitsList');
+  var timer = null;
 
-  var countEl = document.getElementById('count');
-  var cardCountEl = document.getElementById('cardCount');
-  var container = document.getElementById('cardContainer');
-  var startBtn = document.getElementById('startBtn');
-  var addCardBtn = document.getElementById('addCardBtn');
+  function fetchStatus() {
+    if (refreshBtn) refreshBtn.classList.add('spinning');
 
-  function handleStart() {
-    clickCount++;
-    if (countEl) countEl.textContent = clickCount;
-    var hue = (clickCount * 15) % 360;
-    document.body.style.background =
-      'linear-gradient(135deg, hsl(' + hue + ', 20%, 4%) 0%, hsl(' + (hue + 30) + ', 15%, 8%) 100%)';
+    fetch(window.INFRA_CONFIG.apiUrl)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+
+        // GitHub
+        var ghState = data.github && data.github.connected ? 'ok' : 'error';
+        if (badgeGH) window.setBadge(badgeGH, ghState);
+        if (bodyGH) {
+          bodyGH.innerHTML = window.renderGitHubCard(data.github);
+          bodyGH.classList.add('fade-in');
+        }
+
+        // Vercel
+        var vcState = 'error';
+        if (data.vercel && data.vercel.connected) {
+          vcState = data.vercel.status === 'READY' ? 'ok' : data.vercel.status === 'BUILDING' ? 'warn' : 'ok';
+        }
+        if (badgeVC) window.setBadge(badgeVC, vcState);
+        if (bodyVC) {
+          bodyVC.innerHTML = window.renderVercelCard(data.vercel);
+          bodyVC.classList.add('fade-in');
+        }
+
+        // Supabase
+        var sbState = data.supabase && data.supabase.connected ? 'ok' : 'error';
+        if (data.supabase && data.supabase.connected && data.supabase.responseMs > 1000) sbState = 'warn';
+        if (badgeSB) window.setBadge(badgeSB, sbState);
+        if (bodySB) {
+          bodySB.innerHTML = window.renderSupabaseCard(data.supabase);
+          bodySB.classList.add('fade-in');
+        }
+
+        // Global dot
+        var states = [ghState, vcState, sbState];
+        var globalState = 'ok';
+        if (states.indexOf('error') !== -1) globalState = 'error';
+        else if (states.indexOf('warn') !== -1) globalState = 'warn';
+        if (globalDot) globalDot.className = 'global-dot ' + globalState;
+
+        // Commits
+        if (commitsList && data.github && data.github.recentCommits) {
+          commitsList.innerHTML = window.renderCommitsList(data.github.recentCommits);
+          commitsList.classList.add('fade-in');
+        }
+
+        // Timestamp
+        if (lastUpdated && data.timestamp) {
+          lastUpdated.textContent = 'Updated ' + new Date(data.timestamp).toLocaleTimeString('ko-KR');
+        }
+
+        // Remove skeleton
+        var skeletons = document.querySelectorAll('.skeleton-card');
+        for (var i = 0; i < skeletons.length; i++) {
+          skeletons[i].classList.remove('skeleton-card');
+        }
+      })
+      .catch(function(err) {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
+        showError('Connection failed: ' + err.message);
+      });
   }
 
-  function addCard() {
-    cardCount++;
-    if (cardCountEl) cardCountEl.textContent = cardCount;
-    if (!container) return;
-    var card = createCard(
-      pickRandom(APP_DATA.emojis),
-      pickRandom(APP_DATA.titles),
-      pickRandom(APP_DATA.descs)
-    );
-    container.prepend(card);
+  function showError(msg) {
+    if (globalDot) globalDot.className = 'global-dot error';
+    if (lastUpdated) lastUpdated.textContent = msg;
+    if (badgeGH) window.setBadge(badgeGH, 'offline');
+    if (badgeVC) window.setBadge(badgeVC, 'offline');
+    if (badgeSB) window.setBadge(badgeSB, 'offline');
   }
 
-  if (startBtn) startBtn.addEventListener('click', handleStart);
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
-
-  for (var i = 0; i < 3; i++) {
-    setTimeout(addCard, i * 200);
+  // Manual refresh
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      fetchStatus();
+    });
   }
 
-  console.log('🚀 Field Nine App loaded!');
-  console.log('📦 Files: index.html, style.css, data.js, ui.js, app.js');
-  console.log('✅ Ready to dev!');
+  // Initial fetch
+  fetchStatus();
+
+  // Auto-refresh
+  timer = setInterval(fetchStatus, window.INFRA_CONFIG.refreshIntervalMs);
+
+  console.log('Field Nine OS: Infrastructure Dashboard loaded');
 });`,
     icon: FileCog,
   },

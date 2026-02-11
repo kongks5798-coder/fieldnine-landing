@@ -1,93 +1,107 @@
-// === Field Nine OS Logic ===
+// === Infrastructure Dashboard Entry Point ===
 document.addEventListener('DOMContentLoaded', function() {
-  // --- Legacy Counter Logic ---
-  var cardCount = 0;
-  var container = document.getElementById('cardContainer');
-  var addCardBtn = document.getElementById('addCardBtn');
+  var refreshBtn = document.getElementById('refreshBtn');
+  var globalDot = document.getElementById('globalDot');
+  var lastUpdated = document.getElementById('lastUpdated');
+  var bodyGH = document.getElementById('body-github');
+  var bodyVC = document.getElementById('body-vercel');
+  var bodySB = document.getElementById('body-supabase');
+  var badgeGH = document.getElementById('badge-github');
+  var badgeVC = document.getElementById('badge-vercel');
+  var badgeSB = document.getElementById('badge-supabase');
+  var commitsList = document.getElementById('commitsList');
+  var timer = null;
 
-  function addCard() {
-    cardCount++;
-    if (!container) return;
-    
-    // Using window.APP_DATA and window.createCard to ensure scope safety
-    var card = window.createCard(
-      window.pickRandom(window.APP_DATA.emojis),
-      window.pickRandom(window.APP_DATA.titles),
-      window.pickRandom(window.APP_DATA.descs)
-    );
-    container.prepend(card);
+  function fetchStatus() {
+    if (refreshBtn) refreshBtn.classList.add('spinning');
+
+    fetch(window.INFRA_CONFIG.apiUrl)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+
+        // GitHub
+        var ghState = data.github && data.github.connected ? 'ok' : 'error';
+        if (badgeGH) window.setBadge(badgeGH, ghState);
+        if (bodyGH) {
+          bodyGH.innerHTML = window.renderGitHubCard(data.github);
+          bodyGH.classList.add('fade-in');
+        }
+
+        // Vercel
+        var vcState = 'error';
+        if (data.vercel && data.vercel.connected) {
+          vcState = data.vercel.status === 'READY' ? 'ok' : data.vercel.status === 'BUILDING' ? 'warn' : 'ok';
+        }
+        if (badgeVC) window.setBadge(badgeVC, vcState);
+        if (bodyVC) {
+          bodyVC.innerHTML = window.renderVercelCard(data.vercel);
+          bodyVC.classList.add('fade-in');
+        }
+
+        // Supabase
+        var sbState = data.supabase && data.supabase.connected ? 'ok' : 'error';
+        if (data.supabase && data.supabase.connected && data.supabase.responseMs > 1000) sbState = 'warn';
+        if (badgeSB) window.setBadge(badgeSB, sbState);
+        if (bodySB) {
+          bodySB.innerHTML = window.renderSupabaseCard(data.supabase);
+          bodySB.classList.add('fade-in');
+        }
+
+        // Global dot
+        var states = [ghState, vcState, sbState];
+        var globalState = 'ok';
+        if (states.indexOf('error') !== -1) globalState = 'error';
+        else if (states.indexOf('warn') !== -1) globalState = 'warn';
+        if (globalDot) globalDot.className = 'global-dot ' + globalState;
+
+        // Commits
+        if (commitsList && data.github && data.github.recentCommits) {
+          commitsList.innerHTML = window.renderCommitsList(data.github.recentCommits);
+          commitsList.classList.add('fade-in');
+        }
+
+        // Timestamp
+        if (lastUpdated && data.timestamp) {
+          lastUpdated.textContent = 'Updated ' + new Date(data.timestamp).toLocaleTimeString('ko-KR');
+        }
+
+        // Remove skeleton
+        var skeletons = document.querySelectorAll('.skeleton-card');
+        for (var i = 0; i < skeletons.length; i++) {
+          skeletons[i].classList.remove('skeleton-card');
+        }
+      })
+      .catch(function(err) {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
+        showError('Connection failed: ' + err.message);
+      });
   }
 
-  if (addCardBtn) addCardBtn.addEventListener('click', addCard);
+  function showError(msg) {
+    if (globalDot) globalDot.className = 'global-dot error';
+    if (lastUpdated) lastUpdated.textContent = msg;
+    if (badgeGH) window.setBadge(badgeGH, 'offline');
+    if (badgeVC) window.setBadge(badgeVC, 'offline');
+    if (badgeSB) window.setBadge(badgeSB, 'offline');
+  }
 
-  // --- Gemini-style AI Control ---
-  const attachBtn = document.getElementById('attachBtn');
-  const micBtn = document.getElementById('micBtn');
-  const sendBtn = document.getElementById('sendBtn');
-  const chatInput = document.getElementById('chatInput');
-  const mediaPreview = document.getElementById('mediaPreview');
-  const analysisLog = document.getElementById('analysisLog');
-  const logContent = document.getElementById('logContent');
-
-  // Simulate Media Attachment
-  if (attachBtn) {
-    attachBtn.addEventListener('click', () => {
-      // Show mock preview
-      mediaPreview.innerHTML = `
-        <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=200&q=80" alt="Chipset" />
-        <div class="media-info">
-          <div>system_arch.png</div>
-          <div style="color:#64748b">2.4 MB • PNG Image</div>
-        </div>
-      `;
-      mediaPreview.classList.remove('hidden');
-      chatInput.placeholder = "Image attached. Ask for analysis...";
+  // Manual refresh
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      fetchStatus();
     });
   }
 
-  // Simulate Voice Command
-  if (micBtn) {
-    micBtn.addEventListener('click', () => {
-      micBtn.style.color = '#ef4444'; // Recording red
-      chatInput.placeholder = "Listening...";
-      setTimeout(() => {
-        chatInput.value = "Analyze this system architecture for bottlenecks.";
-        micBtn.style.color = '';
-        chatInput.placeholder = "Ask Field Nine AI...";
-      }, 1500);
-    });
-  }
+  // Initial fetch
+  fetchStatus();
 
-  // Handle Send / Analysis
-  if (sendBtn) {
-    sendBtn.addEventListener('click', () => {
-      const query = chatInput.value;
-      if (!query && mediaPreview.classList.contains('hidden')) return;
+  // Auto-refresh
+  timer = setInterval(fetchStatus, window.INFRA_CONFIG.refreshIntervalMs);
 
-      // Clear input
-      chatInput.value = '';
-      mediaPreview.classList.add('hidden');
-      
-      // Show Analysis Log
-      analysisLog.classList.remove('hidden');
-      logContent.innerHTML = '<span style="color:#58a6ff">System</span>: Processing input stream...';
-
-      // Simulate Analysis Steps
-      setTimeout(() => {
-        logContent.innerHTML += '\n<span style="color:#238636">✔</span> Image recognized: Integrated Circuit / CPU Architecture';
-      }, 800);
-
-      setTimeout(() => {
-        logContent.innerHTML += '\n<span style="color:#238636">✔</span> Object Detection: Logic Gates, Memory Bus detected';
-      }, 1600);
-
-      setTimeout(() => {
-        logContent.innerHTML += '\n<span style="color:#d29922">⚠</span> <strong style="color:white">Analysis Result:</strong>\nFound potential thermal bottleneck in the north bridge sector. Suggest rerouting data lanes or increasing cooling capacity.';
-        addCard(); // Add a card as a result
-      }, 2500);
-    });
-  }
-
-  console.log('🚀 Field Nine OS: AI Core Online');
-  console.log('✅ Integrated Control Environment Ready');
+  console.log('Field Nine OS: Infrastructure Dashboard loaded');
 });

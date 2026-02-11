@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine OS — AI Control</title>
+  <title>Field Nine OS — Infrastructure</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,54 +11,69 @@
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">⚡</span>
+        <span class="logo">&#9889;</span>
         <span>Field Nine OS</span>
       </div>
-      <div class="nav-links">
-        <a href="#" class="active">Control</a>
-        <a href="#">Logs</a>
-        <a href="#">Settings</a>
+      <div class="nav-right">
+        <span class="global-dot" id="globalDot"></span>
+        <button class="btn-refresh" id="refreshBtn" title="Refresh">&#8635;</button>
       </div>
     </nav>
 
-    <main class="hero">
-      <div class="hero-badge">🚀 Integrated AI Control Environment</div>
-      <h1>Multimodal <span class="gradient-text">Intelligence</span></h1>
-      <p>Upload images, speak commands, or chat with the system.<br/>Field Nine AI is ready.</p>
-      
-      <!-- Gemini-style Chat Interface -->
-      <div class="ai-control-panel">
-        <div class="chat-input-container">
-          <button class="btn-icon" id="attachBtn" title="Add Media">⊕</button>
-          <input type="text" id="chatInput" placeholder="Ask Field Nine AI or upload media..." />
-          <button class="btn-icon" id="micBtn" title="Voice Command">🎙️</button>
-          <button class="btn-send" id="sendBtn">➤</button>
+    <header class="header">
+      <h1>Infrastructure Status</h1>
+      <p class="header-sub" id="lastUpdated">Loading...</p>
+    </header>
+
+    <section class="services" id="services">
+      <div class="service-card skeleton-card" id="card-github">
+        <div class="service-header">
+          <span class="service-icon">GH</span>
+          <span class="service-name">GitHub</span>
+          <span class="service-badge" id="badge-github">...</span>
         </div>
-        <div id="mediaPreview" class="media-preview hidden"></div>
-      </div>
-
-      <!-- Analysis Log -->
-      <div id="analysisLog" class="analysis-log hidden">
-        <div class="log-header">
-          <span class="spinner">↻</span> Analyzing media content...
+        <div class="service-body" id="body-github">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
         </div>
-        <div id="logContent" class="log-content"></div>
       </div>
-
-      <div class="hero-actions" style="margin-top: 40px;">
-        <button class="btn btn-secondary" id="addCardBtn">Generate Status Card</button>
+      <div class="service-card skeleton-card" id="card-vercel">
+        <div class="service-header">
+          <span class="service-icon">VC</span>
+          <span class="service-name">Vercel</span>
+          <span class="service-badge" id="badge-vercel">...</span>
+        </div>
+        <div class="service-body" id="body-vercel">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
       </div>
-    </main>
+      <div class="service-card skeleton-card" id="card-supabase">
+        <div class="service-header">
+          <span class="service-icon">SB</span>
+          <span class="service-name">Supabase</span>
+          <span class="service-badge" id="badge-supabase">...</span>
+        </div>
+        <div class="service-body" id="body-supabase">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+    </section>
 
-    <section class="cards" id="cardContainer">
+    <section class="commits-section" id="commitsSection">
+      <h2 class="section-title">Recent Commits</h2>
+      <div class="commits-list" id="commitsList">
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
     </section>
 
     <footer class="footer">
-      <p>Built with <span class="heart">♥</span> on Field Nine</p>
+      <p>Built with <span class="heart">&#9829;</span> on Field Nine</p>
     </footer>
   </div>
 
-  <!-- Load Scripts in Order -->
   <script src="data.js"></script>
   <script src="ui.js"></script>
   <script src="app.js"></script>
