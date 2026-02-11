@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Field Nine OS — Infrastructure</title>
+  <title>Field Nine OS — Infrastructure Dashboard</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,22 +19,22 @@
           <span class="global-dot ok" id="globalStatus"></span>
           <span class="status-text" id="statusText">모든 시스템 정상</span>
         </div>
-        <button class="btn-refresh" id="refreshBtn" type="button">↻</button>
-        <button class="btn-settings" id="settingsBtn" type="button">⚙️</button>
+        <button class="btn-refresh" id="refreshBtn" type="button" title="새로고침">↻</button>
+        <button class="btn-settings" id="settingsBtn" type="button" title="설정">⚙️</button>
       </div>
     </nav>
 
     <header class="header">
       <h1>Infrastructure Status</h1>
-      <p class="header-sub" id="lastUpdated">All systems operational</p>
+      <p class="header-sub" id="lastUpdated">시스템 초기화 중...</p>
       <div class="metrics-summary">
         <div class="metric">
           <span class="metric-value" id="uptimeValue">99.9%</span>
           <span class="metric-label">Uptime</span>
         </div>
         <div class="metric">
-          <span class="metric-value" id="responseValue">142ms</span>
-          <span class="metric-label">Response Time</span>
+          <span class="metric-value" id="responseValue">--ms</span>
+          <span class="metric-label">Avg Response</span>
         </div>
         <div class="metric">
           <span class="metric-value" id="requestsValue">2.4M</span>
@@ -66,7 +66,7 @@
             </div>
             <div class="stat-row">
               <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="github-response">89ms</span>
+              <span class="stat-value response-time" id="github-response">--ms</span>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@
             </div>
             <div class="stat-row">
               <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="vercel-response">156ms</span>
+              <span class="stat-value response-time" id="vercel-response">--ms</span>
             </div>
           </div>
         </div>
@@ -118,7 +118,7 @@
             </div>
             <div class="stat-row">
               <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="supabase-response">45ms</span>
+              <span class="stat-value response-time" id="supabase-response">--ms</span>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@
             </div>
             <div class="stat-row">
               <span class="stat-label">응답 시간</span>
-              <span class="stat-value response-time" id="cloudflare-response">12ms</span>
+              <span class="stat-value response-time" id="cloudflare-response">--ms</span>
             </div>
           </div>
         </div>
@@ -153,20 +153,86 @@
       <section class="incidents">
         <div class="section-header">
           <h2>최근 인시던트</h2>
-          <span class="section-badge">0 활성</span>
+          <span class="section-badge" id="incidentBadge">0 활성</span>
         </div>
         <div class="incident-list" id="incidentList">
           <div class="no-incidents">
             <span class="check-icon">✅</span>
             <p>지난 30일간 인시던트가 없습니다</p>
+            <small>모든 서비스가 정상적으로 운영되고 있습니다</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="system-info">
+        <div class="section-header">
+          <h2>시스템 정보</h2>
+          <span class="section-badge">v1.2.0</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">대시보드 버전</span>
+            <span class="info-value" id="dashboardVersion">1.2.0</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">마지막 배포</span>
+            <span class="info-value" id="lastDeploy">오늘 14:30</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">모니터링 시작</span>
+            <span class="info-value" id="monitoringStart">2024년 1월</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">총 업타임</span>
+            <span class="info-value" id="totalUptime">99.95%</span>
           </div>
         </div>
       </section>
     </main>
 
+    <footer class="footer">
+      <p>&copy; 2024 Field Nine OS. 모든 권리 보유.</p>
+      <p>실시간 인프라 모니터링 대시보드</p>
+    </footer>
+
     <div class="notification" id="notification">
+      <span class="notification-icon">ℹ️</span>
       <span class="notification-text" id="notificationText"></span>
-      <button class="notification-close" id="notificationClose">×</button>
+      <button class="notification-close" id="notificationClose" type="button">×</button>
+    </div>
+
+    <div class="settings-modal" id="settingsModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>설정</h3>
+          <button class="modal-close" id="modalClose" type="button">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-item">
+            <label for="autoRefreshToggle">자동 새로고침</label>
+            <input type="checkbox" id="autoRefreshToggle" checked>
+          </div>
+          <div class="setting-item">
+            <label for="refreshInterval">새로고침 간격 (초)</label>
+            <select id="refreshInterval">
+              <option value="15">15초</option>
+              <option value="30" selected>30초</option>
+              <option value="60">60초</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label for="themeSelect">테마</label>
+            <select id="themeSelect">
+              <option value="dark" selected>다크</option>
+              <option value="light">라이트</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="resetSettings" type="button">초기화</button>
+          <button class="btn-primary" id="saveSettings" type="button">저장</button>
+        </div>
+      </div>
     </div>
   </div>
 
