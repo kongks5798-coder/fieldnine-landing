@@ -15,105 +15,159 @@
         <span>Field Nine OS</span>
       </div>
       <div class="nav-right">
-        <span class="global-dot ok"></span>
+        <div class="status-indicator">
+          <span class="global-dot ok" id="globalStatus"></span>
+          <span class="status-text" id="statusText">모든 시스템 정상</span>
+        </div>
         <button class="btn-refresh" id="refreshBtn" type="button">↻</button>
+        <button class="btn-settings" id="settingsBtn" type="button">⚙️</button>
       </div>
     </nav>
 
     <header class="header">
       <h1>Infrastructure Status</h1>
-      <p class="header-sub">All systems operational</p>
+      <p class="header-sub" id="lastUpdated">All systems operational</p>
+      <div class="metrics-summary">
+        <div class="metric">
+          <span class="metric-value" id="uptimeValue">99.9%</span>
+          <span class="metric-label">Uptime</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value" id="responseValue">142ms</span>
+          <span class="metric-label">Response Time</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value" id="requestsValue">2.4M</span>
+          <span class="metric-label">Requests/Day</span>
+        </div>
+      </div>
     </header>
 
-    <main class="services">
-      <div class="service-card">
-        <div class="service-header">
-          <span class="service-icon">🐙</span>
-          <span class="service-name">GitHub</span>
-          <span class="service-badge ok">정상 운영</span>
+    <main class="content">
+      <section class="services">
+        <div class="service-card" data-service="github">
+          <div class="service-header">
+            <span class="service-icon">🐙</span>
+            <span class="service-name">GitHub</span>
+            <span class="service-badge ok" id="github-status">정상 운영</span>
+          </div>
+          <div class="service-body">
+            <div class="stat-row">
+              <span class="stat-label">저장소</span>
+              <span class="stat-value">field-nine/dashboard</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">브랜치</span>
+              <span class="stat-value">main</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">마지막 커밋</span>
+              <span class="stat-value" id="github-commit">2분 전</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">응답 시간</span>
+              <span class="stat-value response-time" id="github-response">89ms</span>
+            </div>
+          </div>
         </div>
-        <div class="service-body">
-          <div class="stat-row">
-            <span class="stat-label">저장소</span>
-            <span class="stat-value">field-nine/dashboard</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">브랜치</span>
-            <span class="stat-value">main</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">마지막 커밋</span>
-            <span class="stat-value">2분 전</span>
-          </div>
-        </div>
-      </div>
 
-      <div class="service-card">
-        <div class="service-header">
-          <span class="service-icon">▲</span>
-          <span class="service-name">Vercel</span>
-          <span class="service-badge ok">준비 완료</span>
+        <div class="service-card" data-service="vercel">
+          <div class="service-header">
+            <span class="service-icon">▲</span>
+            <span class="service-name">Vercel</span>
+            <span class="service-badge ok" id="vercel-status">준비 완료</span>
+          </div>
+          <div class="service-body">
+            <div class="stat-row">
+              <span class="stat-label">도메인</span>
+              <span class="stat-value">field9.vercel.app</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">배포 수</span>
+              <span class="stat-value" id="vercel-deployments">12개</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">마지막 배포</span>
+              <span class="stat-value" id="vercel-deploy">5분 전</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">응답 시간</span>
+              <span class="stat-value response-time" id="vercel-response">156ms</span>
+            </div>
+          </div>
         </div>
-        <div class="service-body">
-          <div class="stat-row">
-            <span class="stat-label">도메인</span>
-            <span class="stat-value">field9.vercel.app</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">배포 수</span>
-            <span class="stat-value">12개</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">마지막 배포</span>
-            <span class="stat-value">5분 전</span>
-          </div>
-        </div>
-      </div>
 
-      <div class="service-card">
-        <div class="service-header">
-          <span class="service-icon">🗄️</span>
-          <span class="service-name">Supabase</span>
-          <span class="service-badge ok">활성</span>
+        <div class="service-card" data-service="supabase">
+          <div class="service-header">
+            <span class="service-icon">🗄️</span>
+            <span class="service-name">Supabase</span>
+            <span class="service-badge ok" id="supabase-status">활성</span>
+          </div>
+          <div class="service-body">
+            <div class="stat-row">
+              <span class="stat-label">데이터베이스</span>
+              <span class="stat-value">field9-prod</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">활성 연결</span>
+              <span class="stat-value" id="supabase-connections">23개</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">스토리지</span>
+              <span class="stat-value" id="supabase-storage">2.1 GB</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">응답 시간</span>
+              <span class="stat-value response-time" id="supabase-response">45ms</span>
+            </div>
+          </div>
         </div>
-        <div class="service-body">
-          <div class="stat-row">
-            <span class="stat-label">데이터베이스</span>
-            <span class="stat-value">field9-prod</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">활성 연결</span>
-            <span class="stat-value">23개</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">스토리지</span>
-            <span class="stat-value">2.1 GB</span>
-          </div>
-        </div>
-      </div>
 
-      <div class="service-card">
-        <div class="service-header">
-          <span class="service-icon">☁️</span>
-          <span class="service-name">Cloudflare</span>
-          <span class="service-badge ok">활성</span>
+        <div class="service-card" data-service="cloudflare">
+          <div class="service-header">
+            <span class="service-icon">☁️</span>
+            <span class="service-name">Cloudflare</span>
+            <span class="service-badge ok" id="cloudflare-status">활성</span>
+          </div>
+          <div class="service-body">
+            <div class="stat-row">
+              <span class="stat-label">요청 수</span>
+              <span class="stat-value" id="cloudflare-requests">1.2M/일</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">대역폭</span>
+              <span class="stat-value" id="cloudflare-bandwidth">45.2 GB</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">캐시 적중률</span>
+              <span class="stat-value" id="cloudflare-cache">94%</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">응답 시간</span>
+              <span class="stat-value response-time" id="cloudflare-response">12ms</span>
+            </div>
+          </div>
         </div>
-        <div class="service-body">
-          <div class="stat-row">
-            <span class="stat-label">요청 수</span>
-            <span class="stat-value">1.2M/일</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">대역폭</span>
-            <span class="stat-value">45.2 GB</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">캐시 적중률</span>
-            <span class="stat-value">94%</span>
+      </section>
+
+      <section class="incidents">
+        <div class="section-header">
+          <h2>최근 인시던트</h2>
+          <span class="section-badge">0 활성</span>
+        </div>
+        <div class="incident-list" id="incidentList">
+          <div class="no-incidents">
+            <span class="check-icon">✅</span>
+            <p>지난 30일간 인시던트가 없습니다</p>
           </div>
         </div>
-      </div>
+      </section>
     </main>
+
+    <div class="notification" id="notification">
+      <span class="notification-text" id="notificationText"></span>
+      <button class="notification-close" id="notificationClose">×</button>
+    </div>
   </div>
 
   <script src="data.js"></script>
