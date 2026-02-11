@@ -12,10 +12,31 @@ function updateRefreshButton(isRefreshing) {
 }
 
 function showNotification(message) {
-  console.log('Notification:', message);
+  var notification = document.getElementById('notification');
+  var text = document.getElementById('notificationText');
+  
+  if (notification && text) {
+    text.textContent = message;
+    notification.classList.add('show');
+    
+    setTimeout(function() {
+      hideNotification();
+    }, 3000);
+  }
+}
+
+function hideNotification() {
+  var notification = document.getElementById('notification');
+  if (notification) {
+    notification.classList.remove('show');
+  }
 }
 
 function updateLastRefreshTime() {
-  appConfig.lastUpdate = new Date();
-  console.log('Last updated:', appConfig.lastUpdate.toLocaleString('ko-KR'));
+  var element = document.getElementById('lastUpdated');
+  if (element) {
+    var now = new Date();
+    element.textContent = '마지막 업데이트: ' + now.toLocaleTimeString('ko-KR');
+    appConfig.lastUpdate = now;
+  }
 }
