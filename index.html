@@ -11,67 +11,78 @@
   <div class="app">
     <nav class="nav">
       <div class="nav-brand">
-        <span class="logo">&#9889;</span>
+        <span class="logo">⚡</span>
         <span>Field Nine OS</span>
       </div>
       <div class="nav-right">
         <span class="global-dot" id="globalDot"></span>
-        <button class="btn-refresh" id="refreshBtn" title="Refresh">&#8635;</button>
+        <button class="btn-refresh" id="refreshBtn" title="새로고침">↻</button>
       </div>
     </nav>
 
     <header class="header">
       <h1>Infrastructure Status</h1>
-      <p class="header-sub" id="lastUpdated">Loading...</p>
+      <p class="header-sub" id="lastUpdated">시스템 상태를 확인하는 중...</p>
     </header>
 
     <section class="services" id="services">
-      <div class="service-card skeleton-card" id="card-github">
+      <div class="service-card" id="card-github">
         <div class="service-header">
-          <span class="service-icon">GH</span>
+          <span class="service-icon">🐙</span>
           <span class="service-name">GitHub</span>
-          <span class="service-badge" id="badge-github">...</span>
+          <span class="service-badge" id="badge-github">확인 중...</span>
         </div>
         <div class="service-body" id="body-github">
           <div class="skeleton skeleton-line"></div>
           <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
         </div>
       </div>
-      <div class="service-card skeleton-card" id="card-vercel">
+
+      <div class="service-card" id="card-vercel">
         <div class="service-header">
-          <span class="service-icon">VC</span>
+          <span class="service-icon">▲</span>
           <span class="service-name">Vercel</span>
-          <span class="service-badge" id="badge-vercel">...</span>
+          <span class="service-badge" id="badge-vercel">확인 중...</span>
         </div>
         <div class="service-body" id="body-vercel">
           <div class="skeleton skeleton-line"></div>
           <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
         </div>
       </div>
-      <div class="service-card skeleton-card" id="card-supabase">
+
+      <div class="service-card" id="card-supabase">
         <div class="service-header">
-          <span class="service-icon">SB</span>
+          <span class="service-icon">🗄️</span>
           <span class="service-name">Supabase</span>
-          <span class="service-badge" id="badge-supabase">...</span>
+          <span class="service-badge" id="badge-supabase">확인 중...</span>
         </div>
         <div class="service-body" id="body-supabase">
           <div class="skeleton skeleton-line"></div>
           <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      </div>
+
+      <div class="service-card" id="card-cloudflare">
+        <div class="service-header">
+          <span class="service-icon">☁️</span>
+          <span class="service-name">Cloudflare</span>
+          <span class="service-badge" id="badge-cloudflare">확인 중...</span>
+        </div>
+        <div class="service-body" id="body-cloudflare">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton skeleton-line"></div>
         </div>
       </div>
     </section>
 
-    <section class="commits-section" id="commitsSection">
-      <h2 class="section-title">Recent Commits</h2>
-      <div class="commits-list" id="commitsList">
-        <div class="skeleton skeleton-line"></div>
-        <div class="skeleton skeleton-line short"></div>
-      </div>
+    <section class="commits-section" id="commitsSection" style="display: none;">
+      <h3>최근 활동</h3>
+      <div class="commits-list" id="commitsList"></div>
     </section>
-
-    <footer class="footer">
-      <p>Built with <span class="heart">&#9829;</span> on Field Nine</p>
-    </footer>
   </div>
 
   <script src="data.js"></script>
