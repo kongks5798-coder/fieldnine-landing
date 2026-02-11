@@ -59,7 +59,8 @@ export async function findCachedResponse(
     const results = await searchMemories(projectId, query, 1, 0.85);
     if (results.length > 0 && results[0].memory.type === "conversation") {
       const cached = results[0].memory.content;
-      const aiPart = cached.split("\n\nAI: ")[1];
+      const parts = cached.split("\n\nAI: ");
+      const aiPart = parts.length > 1 ? parts[1] : null;
       if (aiPart && aiPart.length > 50) return aiPart;
     }
   } catch (e) {

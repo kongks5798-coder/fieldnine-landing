@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "search") {
-      const query = body?.query as string;
+      const query = ((body?.query as string) ?? "").trim();
       const topK = (body?.topK as number) ?? 5;
       if (!query || query.length < 2) {
         return Response.json({ error: "Query too short (min 2 chars)" }, { status: 400 });

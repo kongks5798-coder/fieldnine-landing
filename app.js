@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function fetchStatus() {
     if (refreshBtn) refreshBtn.classList.add('spinning');
 
-    fetch(window.INFRA_CONFIG.apiUrl)
+    fetch(window.INFRA_CONFIG ? window.INFRA_CONFIG.apiUrl : '/api/infra-status')
       .then(function(res) { return res.json(); })
       .then(function(data) {
         if (refreshBtn) refreshBtn.classList.remove('spinning');
@@ -100,8 +100,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initial fetch
   fetchStatus();
 
-  // Auto-refresh
-  timer = setInterval(fetchStatus, window.INFRA_CONFIG.refreshIntervalMs);
+  // Auto-refresh (guard against missing config)
+  var interval = window.INFRA_CONFIG ? window.INFRA_CONFIG.refreshIntervalMs : 60000;
+  timer = setInterval(fetchStatus, interval);
 
   console.log('Field Nine OS: Infrastructure Dashboard loaded');
 });

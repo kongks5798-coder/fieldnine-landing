@@ -4,6 +4,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { parseAIResponse } from "@/lib/parseAIResponse";
 import { validateJS, sanitizeJS } from "@/lib/codeValidator";
+
+/** Check if a file needs JS sanitization (covers all JS/TS variants) */
+const needsSanitize = (f: string) => /\.(js|mjs|jsx|ts|tsx)$/i.test(f);
+/** Sanitize JS content if file is a JS/TS variant, otherwise return as-is */
+const safeSanitize = (content: string, file: string) => needsSanitize(file) ? sanitizeJS(content) : content;
 import TaskProgressCard, { type TaskStage } from "./TaskProgressCard";
 import DeployReportCard, { type DeployReportData } from "./DeployReportCard";
 import {
@@ -325,16 +330,16 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       const parsed = parseAIResponse(content);
       if (parsed.codeBlocks.length === 0) return;
 
-      // Sanitize JS code blocks (strip stray "pp.js" lines etc.)
+      // Sanitize JS/TS code blocks (strip stray "pp.js" lines etc.)
       for (const block of parsed.codeBlocks) {
-        if (block.targetFile.endsWith(".js") || block.targetFile.endsWith(".ts")) {
+        if (needsSanitize(block.targetFile)) {
           block.code = sanitizeJS(block.code);
         }
       }
 
       // Validate JS code blocks before insertion
       const jsBlocks = parsed.codeBlocks.filter(
-        (b) => b.targetFile.endsWith(".js") || b.targetFile.endsWith(".ts")
+        (b) => needsSanitize(b.targetFile)
       );
       const validationErrors: string[] = [];
       for (const block of jsBlocks) {
@@ -583,11 +588,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               }
 
               if (evt.type === "code" && evt.file && evt.content && String(evt.content).trim().length > 5) {
-                onInsertCode(
-                  (evt.file.endsWith(".js") || evt.file.endsWith(".ts")) ? sanitizeJS(evt.content) : evt.content,
-                  evt.file,
-                  true,
-                );
+                onInsertCode(safeSanitize(evt.content, evt.file), evt.file, true);
               }
 
               if (evt.type === "review" && evt.issues?.length > 0) {
@@ -598,7 +599,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
               if (evt.type === "complete" && Array.isArray(evt.files)) {
                 const fileChanges = (evt.files as { path: string; content: string }[]).map((f) => ({
                   path: f.path,
-                  content: (f.path.endsWith(".js") || f.path.endsWith(".ts")) ? sanitizeJS(f.content) : f.content,
+                  content: safeSanitize(f.content, f.path),
                 }));
                 statusText += `\n${fileChanges.length}개 파일 완성 — 커밋 중...`;
                 setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: statusText } : m));
@@ -795,10 +796,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 }
                 for (let i = insertedBlocks; i < parsed.codeBlocks.length; i++) {
                   const block = parsed.codeBlocks[i];
-                  const code = (block.targetFile.endsWith(".js") || block.targetFile.endsWith(".ts"))
-                    ? sanitizeJS(block.code)
-                    : block.code;
-                  onInsertCode(code, block.targetFile, true);
+                  onInsertCode(safeSanitize(block.code, block.targetFile), block.targetFile, true);
                 }
                 insertedBlocks = parsed.codeBlocks.length;
               }
@@ -885,8 +883,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             // Background commit — don't await, let user continue immediately
             const fileChanges = parsed.codeBlocks.map((b) => ({
               path: b.targetFile,
-              content: (b.targetFile.endsWith(".js") || b.targetFile.endsWith(".ts"))
-                ? sanitizeJS(b.code) : b.code,
+              content: safeSanitize(b.code, b.targetFile),
             }));
             shadowCommit(fileChanges, commitMsg).then((result) => {
               if (result.success) {
@@ -1054,10 +1051,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                       <button
                         type="button"
                         onClick={() => {
-                          const code = (block.targetFile.endsWith(".js") || block.targetFile.endsWith(".ts"))
-                            ? sanitizeJS(block.code)
-                            : block.code;
-                          onInsertCode(code, block.targetFile);
+                          onInsertCode(safeSanitize(block.code, block.targetFile), block.targetFile);
                         }}
                         className="flex items-center gap-1 text-[10px] bg-[#0079F2] text-white px-1.5 py-0.5 rounded hover:bg-[#0066CC] transition-colors"
                       >

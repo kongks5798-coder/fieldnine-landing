@@ -683,7 +683,9 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
           .map(([name, f]) => ({ path: name, content: f.content }));
         if (fileChanges.length === 0) return;
         // Fire-and-forget: don't block UI waiting for commit
-        handleShadowCommit(fileChanges, "chore: auto-save code changes").catch(() => {});
+        handleShadowCommit(fileChanges, "chore: auto-save code changes").catch((e) => {
+          console.warn("[auto-commit] Failed:", e instanceof Error ? e.message : e);
+        });
       }, 5_000);
     },
     [handleShadowCommit],

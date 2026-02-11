@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[save-code] Error:", error);
     return NextResponse.json(
-      { error: (error as Error).message },
+      { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
