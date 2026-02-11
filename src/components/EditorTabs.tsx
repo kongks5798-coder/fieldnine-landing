@@ -6,9 +6,9 @@ import { getFileInfo } from "./FileExplorer";
 import type { VFile } from "./FileExplorer";
 import { useRef, useCallback } from "react";
 
-// Configure Monaco to only load needed languages (reduces CDN fetch)
+// Configure Monaco — use default English UI (ko locale file missing from CDN)
 loader.config({
-  "vs/nls": { availableLanguages: { "*": "ko" } },
+  "vs/nls": { availableLanguages: {} },
 });
 
 type EditorTheme = "vs-dark" | "light" | "hc-black";
