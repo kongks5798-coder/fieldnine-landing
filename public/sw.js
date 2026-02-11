@@ -3,8 +3,8 @@
  * Caches static assets + editor pages for offline access.
  */
 
-const CACHE_NAME = "f9-cache-v1";
-const STATIC_ASSETS = ["/", "/globals.css"];
+const CACHE_NAME = "f9-cache-v2";
+const STATIC_ASSETS = ["/"];
 
 // Install: pre-cache essential assets
 self.addEventListener("install", (event) => {

@@ -7,6 +7,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 const nextConfig: NextConfig = {
   compress: true,
+  reactStrictMode: false,
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
   devIndicators: false,
   turbopack: {
