@@ -1,1 +1,4 @@
-// 이 파일은 비워둡니다 - 모든 로직을 HTML에 인라인으로 이동했습니다
+var appData = {
+  lastUpdate: new Date(),
+  refreshInterval: 30000
+};

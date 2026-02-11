@@ -1,1 +1,16 @@
-// 이 파일은 비워둡니다 - 모든 로직을 HTML에 인라인으로 이동했습니다
+document.addEventListener('DOMContentLoaded', function() {
+  var refreshBtn = document.getElementById('refreshBtn');
+  
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      animateRefresh();
+      updateTimestamp();
+    });
+  }
+  
+  updateTimestamp();
+  
+  setInterval(function() {
+    updateTimestamp();
+  }, appData.refreshInterval);
+});
