@@ -31,12 +31,12 @@ function addSecurityHeaders(res: NextResponse) {
 }
 
 /** Check if request carries a valid auth cookie */
-export function isAuthenticated(req: NextRequest): boolean {
+function isAuthenticated(req: NextRequest): boolean {
   if (!ACCESS_TOKEN) return false;
   return req.cookies.get(COOKIE_NAME)?.value === ACCESS_TOKEN;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   // 0. Fail-closed: if token not configured, block everything
   if (!ACCESS_TOKEN) {
     return addSecurityHeaders(
