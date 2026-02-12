@@ -1,8 +1,49 @@
 /**
- * Simple in-memory rate limiter (token bucket).
- * No external dependencies. Resets on server restart.
+ * Hybrid rate limiter: Upstash Redis when configured, in-memory fallback.
+ * Upstash works across Vercel serverless invocations; in-memory is dev-only.
+ *
+ * Required env for Redis mode:
+ *   UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
  */
 
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+/* ===== Types ===== */
+interface RateLimitConfig {
+  limit: number;
+  windowSec: number;
+}
+
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  retryAfterSec: number;
+}
+
+/* ===== Upstash Redis (production) ===== */
+const redisUrl = (process.env.UPSTASH_REDIS_REST_URL ?? "").trim();
+const redisToken = (process.env.UPSTASH_REDIS_REST_TOKEN ?? "").trim();
+const useRedis = !!(redisUrl && redisToken);
+
+const redisLimiters = new Map<string, Ratelimit>();
+
+function getRedisLimiter(config: RateLimitConfig): Ratelimit {
+  const cacheKey = `${config.limit}:${config.windowSec}`;
+  let limiter = redisLimiters.get(cacheKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: new Redis({ url: redisUrl, token: redisToken }),
+      limiter: Ratelimit.slidingWindow(config.limit, `${config.windowSec} s`),
+      analytics: false,
+      prefix: "f9os",
+    });
+    redisLimiters.set(cacheKey, limiter);
+  }
+  return limiter;
+}
+
+/* ===== In-memory fallback (dev / no Redis) ===== */
 interface BucketEntry {
   tokens: number;
   lastRefill: number;
@@ -10,29 +51,20 @@ interface BucketEntry {
 
 const buckets = new Map<string, BucketEntry>();
 
-// Clean up stale entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of buckets) {
-    if (now - entry.lastRefill > 10 * 60 * 1000) buckets.delete(key);
-  }
-}, 5 * 60 * 1000);
-
-interface RateLimitConfig {
-  /** Max requests in the window */
-  limit: number;
-  /** Window size in seconds */
-  windowSec: number;
+if (typeof globalThis !== "undefined") {
+  // Clean stale entries every 5 min (only in long-running processes)
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of buckets) {
+      if (now - entry.lastRefill > 10 * 60 * 1000) buckets.delete(key);
+    }
+  }, 5 * 60 * 1000);
 }
 
-/**
- * Returns { allowed, remaining, retryAfterSec }.
- * `key` is typically the client IP.
- */
-export function checkRateLimit(
+function checkMemoryLimit(
   key: string,
-  config: RateLimitConfig = { limit: 15, windowSec: 60 },
-): { allowed: boolean; remaining: number; retryAfterSec: number } {
+  config: RateLimitConfig,
+): RateLimitResult {
   const now = Date.now();
   const entry = buckets.get(key);
 
@@ -41,7 +73,6 @@ export function checkRateLimit(
     return { allowed: true, remaining: config.limit - 1, retryAfterSec: 0 };
   }
 
-  // Refill tokens based on elapsed time
   const elapsed = (now - entry.lastRefill) / 1000;
   const refillRate = config.limit / config.windowSec;
   entry.tokens = Math.min(config.limit, entry.tokens + elapsed * refillRate);
@@ -54,4 +85,31 @@ export function checkRateLimit(
 
   const retryAfterSec = Math.ceil((1 - entry.tokens) / refillRate);
   return { allowed: false, remaining: 0, retryAfterSec };
+}
+
+/* ===== Public API ===== */
+
+/**
+ * Check rate limit. Uses Upstash Redis in production, in-memory in dev.
+ * Async because Redis calls are async; in-memory resolves instantly.
+ */
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig = { limit: 15, windowSec: 60 },
+): Promise<RateLimitResult> {
+  if (useRedis) {
+    try {
+      const limiter = getRedisLimiter(config);
+      const result = await limiter.limit(key);
+      return {
+        allowed: result.success,
+        remaining: result.remaining,
+        retryAfterSec: result.success ? 0 : Math.ceil((result.reset - Date.now()) / 1000),
+      };
+    } catch {
+      // Redis error → fall through to in-memory
+      return checkMemoryLimit(key, config);
+    }
+  }
+  return checkMemoryLimit(key, config);
 }

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const cookies = req.headers.get("cookie") ?? "";
   const sessionMatch = cookies.match(/f9_access=([^;]+)/);
   const rlKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`git-restore-${rlKey}`, { limit: 10, windowSec: 60 });
+  const rl = await checkRateLimit(`git-restore-${rlKey}`, { limit: 10, windowSec: 60 });
   if (!rl.allowed) {
     return NextResponse.json(
       { error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` },

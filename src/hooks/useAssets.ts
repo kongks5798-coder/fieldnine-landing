@@ -14,7 +14,9 @@ async function optimizeImage(file: File): Promise<File> {
 
   return new Promise((resolve) => {
     const img = new Image();
+    const blobUrl = URL.createObjectURL(file);
     img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
       const canvas = document.createElement("canvas");
       let { width, height } = img;
       if (width > MAX_IMAGE_WIDTH) {
@@ -30,15 +32,15 @@ async function optimizeImage(file: File): Promise<File> {
           if (blob && blob.size < file.size) {
             resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
           } else {
-            resolve(file); // Original was smaller, keep it
+            resolve(file);
           }
         },
         "image/webp",
         0.82,
       );
     };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
+    img.src = blobUrl;
   });
 }
 

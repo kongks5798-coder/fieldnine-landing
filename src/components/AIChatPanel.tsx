@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { parseAIResponse } from "@/lib/parseAIResponse";
 import { validateJS, sanitizeJS } from "@/lib/codeValidator";
 
@@ -39,6 +39,22 @@ import {
   Cpu,
 } from "lucide-react";
 import type { IDEAction } from "@/lib/ideActions";
+import type { ParsedAIResponse } from "@/lib/parseAIResponse";
+
+/** LRU-style cache for parseAIResponse to avoid re-parsing unchanged content */
+const parseCache = new Map<string, ParsedAIResponse>();
+const PARSE_CACHE_MAX = 100;
+function cachedParse(content: string): ParsedAIResponse {
+  const cached = parseCache.get(content);
+  if (cached) return cached;
+  const result = cachedParse(content);
+  if (parseCache.size >= PARSE_CACHE_MAX) {
+    const first = parseCache.keys().next().value;
+    if (first !== undefined) parseCache.delete(first);
+  }
+  parseCache.set(content, result);
+  return result;
+}
 
 interface FileChange {
   path: string;
@@ -220,7 +236,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     setProgressEvents((prev) => [
       ...prev.slice(-19),
       {
-        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        id: crypto.randomUUID(),
         type,
         message,
         timestamp: now(),
@@ -236,9 +252,23 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       const saved = localStorage.getItem(chatStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+        if (
+          Array.isArray(parsed) &&
+          parsed.length > 0 &&
+          parsed.every((m: unknown) =>
+            typeof m === "object" && m !== null &&
+            "role" in m && typeof (m as Record<string, unknown>).role === "string" &&
+            "content" in m && typeof (m as Record<string, unknown>).content === "string"
+          )
+        ) {
+          setMessages(parsed.slice(-50));
+        } else {
+          localStorage.removeItem(chatStorageKey);
+        }
       }
-    } catch {}
+    } catch {
+      try { localStorage.removeItem(chatStorageKey); } catch {}
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -270,7 +300,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const res = await fetch("/api/save-code", {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
           body: JSON.stringify({ files: fileChanges, message: commitMsg }),
         });
         if (!res.ok) return { success: false };
@@ -288,7 +318,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       setSystemMessages((prev) => [
         ...prev,
         {
-          id: Date.now().toString() + Math.random().toString(36).slice(2),
+          id: crypto.randomUUID(),
           afterMessageId,
           content,
           type,
@@ -309,7 +339,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       setSystemMessages((prev) => [
         ...prev,
         {
-          id: `deploy-report-${Date.now()}`,
+          id: `deploy-report-${crypto.randomUUID()}`,
           afterMessageId,
           content: "",
           type: "deploy-report" as const,
@@ -327,7 +357,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       // Plan mode: no code insertion or commit
       if (agentMode === "plan") return;
 
-      const parsed = parseAIResponse(content);
+      const parsed = cachedParse(content);
       if (parsed.codeBlocks.length === 0) return;
 
       // Sanitize JS/TS code blocks (strip stray "pp.js" lines etc.)
@@ -364,7 +394,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
 
         // Add fix request as user message and re-send
         const fixMsg: ChatMessage = {
-          id: `user-autofix-${Date.now()}`,
+          id: `user-autofix-${crypto.randomUUID()}`,
           role: "user",
           content: fixPrompt,
         };
@@ -451,7 +481,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             .join("\n\n");
           fetch("/api/memory", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
             body: JSON.stringify({
               type: "code",
               content: codeSnapshot,
@@ -506,7 +536,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       // Reset progress for this new run
       setProgressEvents([]);
 
-      const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: userText };
+      const userMsg: ChatMessage = { id: `user-${crypto.randomUUID()}`, role: "user", content: userText };
       const assistantId = `ai-agent-${Date.now()}`;
       const assistantMsg: ChatMessage = { id: assistantId, role: "assistant", content: "" };
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
@@ -525,7 +555,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const res = await fetch("/api/agent/run", {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
           body: JSON.stringify({ message: userText, fileContext }),
           signal: ctrl.signal,
         });
@@ -540,11 +570,20 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const decoder = new TextDecoder();
         let sseBuffer = "";
         let statusText = "";
+        const SSE_BUFFER_LIMIT = 16 * 1024; // 16KB max buffer
+        const STREAM_TIMEOUT_MS = 30_000; // 30s inactivity timeout
 
         while (true) {
-          const { done, value } = await reader.read();
+          const timeoutPromise = new Promise<{ done: true; value: undefined }>((resolve) =>
+            setTimeout(() => resolve({ done: true, value: undefined }), STREAM_TIMEOUT_MS)
+          );
+          const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
           if (done) break;
           sseBuffer += decoder.decode(value, { stream: true });
+          // Buffer overflow protection
+          if (sseBuffer.length > SSE_BUFFER_LIMIT) {
+            sseBuffer = sseBuffer.slice(-SSE_BUFFER_LIMIT);
+          }
           const lines = sseBuffer.split("\n");
           sseBuffer = lines.pop() || "";
 
@@ -686,7 +725,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           : undefined;
 
       const userMsg: ChatMessage = {
-        id: `user-${Date.now()}`,
+        id: `user-${crypto.randomUUID()}`,
         role: "user",
         content: userText,
       };
@@ -718,7 +757,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
         const res = await fetch("/api/chat", {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
           body: JSON.stringify({ messages: apiMessages, model: selectedModel, mode: agentMode, fileContext }),
           signal: abortController.signal,
         });
@@ -788,7 +827,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             // Live preview: when a new code block closes (```), insert it immediately
             // Skip live insertion in plan mode
             if (agentMode !== "plan" && agentMode !== "agent") {
-              const parsed = parseAIResponse(fullText);
+              const parsed = cachedParse(fullText);
               if (parsed.codeBlocks.length > insertedBlocks) {
                 // Lifecycle 2: First code block → advance planning→done, coding→active
                 if (insertedBlocks === 0) {
@@ -811,11 +850,19 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           }
         };
 
+        const SSE_BUFFER_LIMIT2 = 16 * 1024;
+        const STREAM_TIMEOUT2 = 30_000;
         try {
           while (true) {
-            const { done, value } = await reader.read();
+            const timeoutP = new Promise<{ done: true; value: undefined }>((r) =>
+              setTimeout(() => r({ done: true, value: undefined }), STREAM_TIMEOUT2)
+            );
+            const { done, value } = await Promise.race([reader.read(), timeoutP]);
             if (done) break;
             sseBuffer += decoder.decode(value, { stream: true });
+            if (sseBuffer.length > SSE_BUFFER_LIMIT2) {
+              sseBuffer = sseBuffer.slice(-SSE_BUFFER_LIMIT2);
+            }
 
             // Split into complete lines; keep last (potentially partial) line in buffer
             const lines = sseBuffer.split("\n");
@@ -864,7 +911,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           await handleAIResponseComplete(assistantId, fullText);
         } else if (fullText && insertedBlocks > 0) {
           // Live-streamed blocks already inserted → commit in background (non-blocking)
-          const parsed = parseAIResponse(fullText);
+          const parsed = cachedParse(fullText);
           if (parsed.codeBlocks.length > 0) {
             advanceStage(assistantId, "applying", `${parsed.codeBlocks.length}개 파일 삽입 완료`);
 
@@ -912,7 +959,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
           try {
             fetch("/api/memory", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
               body: JSON.stringify({
                 type: "conversation",
                 content: `User: ${userText}\n\nAI: ${fullText.slice(0, 3000)}`,
@@ -980,10 +1027,14 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       e.preventDefault();
       doSend();
     }
-  }, [doSend]);
+    if (e.key === "Escape" && isStreaming) {
+      agentAbortRef.current?.abort();
+      abortRef.current?.abort();
+    }
+  }, [doSend, isStreaming]);
 
   const renderMessageContent = (content: string, messageId: string) => {
-    const parsed = parseAIResponse(content);
+    const parsed = cachedParse(content);
     const stages = messageStages[messageId];
     const showCard = stages && stages.length > 0 && (
       isStreaming || stages.some((s) => s.status !== "done") || stages.every((s) => s.status === "done")
@@ -1033,7 +1084,8 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                         type="button"
                         onClick={() => toggleBlockExpand(blockId)}
                         className="text-[#858585] hover:text-white p-0.5 transition-colors"
-                        aria-label={isExpanded ? "Collapse" : "Expand"}
+                        aria-label={isExpanded ? "코드 접기" : "코드 펼치기"}
+                        aria-expanded={isExpanded}
                       >
                         {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                       </button>
@@ -1074,8 +1126,20 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
     );
   };
 
-  const getSystemMessagesAfter = (messageId: string) =>
-    systemMessages.filter((sm) => sm.afterMessageId === messageId);
+  const systemMessagesByParent = useMemo(() => {
+    const map = new Map<string, SystemMessage[]>();
+    for (const sm of systemMessages) {
+      const arr = map.get(sm.afterMessageId);
+      if (arr) arr.push(sm);
+      else map.set(sm.afterMessageId, [sm]);
+    }
+    return map;
+  }, [systemMessages]);
+
+  const getSystemMessagesAfter = useCallback(
+    (messageId: string) => systemMessagesByParent.get(messageId) ?? [],
+    [systemMessagesByParent],
+  );
 
   const modePlaceholders: Record<AgentMode, string> = {
     build: "기능을 지시하세요... (예: 빨간 버튼 만들어줘)",
@@ -1098,15 +1162,20 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             type="button"
             onClick={() => setShowModelMenu((v) => !v)}
             className="text-[10px] text-[var(--r-text-secondary)] bg-[var(--r-surface-hover)] px-1.5 py-0.5 rounded-md hover:text-[var(--r-text)] transition-colors"
+            aria-label="AI 모델 선택"
+            aria-expanded={showModelMenu}
+            aria-haspopup="listbox"
           >
             {AI_MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel}
           </button>
           {showModelMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-[var(--r-surface)] border border-[var(--r-border)] rounded-lg shadow-lg z-50 py-1 min-w-[120px]">
+            <div role="listbox" aria-label="AI 모델 목록" className="absolute top-full left-0 mt-1 bg-[var(--r-surface)] border border-[var(--r-border)] rounded-lg shadow-lg z-50 py-1 min-w-[120px]">
               {AI_MODELS.map((m) => (
                 <button
                   key={m.id}
                   type="button"
+                  role="option"
+                  aria-selected={selectedModel === m.id}
                   onClick={() => { setSelectedModel(m.id); setShowModelMenu(false); }}
                   className={`w-full text-left px-3 py-1 text-[11px] transition-colors flex items-center justify-between ${
                     selectedModel === m.id
@@ -1162,6 +1231,8 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
                 isActive ? "text-[#0079F2]" : "text-[var(--r-text-secondary)] hover:text-[var(--r-text)]"
               }`}
               title={mode.desc}
+              aria-pressed={isActive}
+              aria-label={`${mode.label} 모드: ${mode.desc}`}
             >
               <Icon size={12} />
               {mode.label}
@@ -1172,7 +1243,7 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0 bg-[var(--r-surface)]">
+      <div role="log" aria-live="polite" aria-label="AI 대화 내역" className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0 bg-[var(--r-surface)]">
         {/* Static welcome message */}
         <div className="flex gap-2">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0079F2] to-[#00c2ff] flex items-center justify-center shrink-0 mt-0.5">
@@ -1490,33 +1561,37 @@ export default function AIChatPanel({ onInsertCode, currentFiles, onShadowCommit
             type="button"
             onClick={() => { agentAbortRef.current?.abort(); abortRef.current?.abort(); }}
             className="text-[10px] text-[var(--r-text-muted)] hover:text-[#EF4444] transition-colors"
+            aria-label="AI 응답 중단 (Escape)"
           >
             중단
           </button>
         </div>
       )}
 
-      {/* Input — no <form>, direct onClick + Enter key */}
+      {/* Input — Neon Glow Flow */}
       <div className="px-3 py-2.5 border-t border-[var(--r-border)] bg-[var(--r-bg)] shrink-0">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={modePlaceholders[agentMode]}
-            className="flex-1 bg-[var(--r-surface)] text-[var(--r-text)] text-xs px-3 py-2 rounded-xl border border-[var(--r-border)] focus:border-[#0079F2] focus:ring-1 focus:ring-[#0079F2]/20 outline-none placeholder-[#9DA5B0] transition-all"
-            disabled={isStreaming || isCommitting}
-          />
-          <button
-            type="button"
-            onClick={doSend}
-            disabled={!inputValue.trim() || isStreaming || isCommitting}
-            className="p-2 bg-[#0079F2] text-white rounded-xl hover:bg-[#0066CC] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            aria-label="Send message"
-          >
-            <Send size={12} />
-          </button>
+        <div className={`neon-glow-wrapper ${isStreaming ? "streaming" : inputValue.trim() ? "active" : ""}`}>
+          <div className="neon-glow-inner flex gap-2 px-1.5 py-1.5">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={modePlaceholders[agentMode]}
+              aria-label="AI에게 메시지 입력"
+              className="flex-1 bg-transparent text-[var(--r-text)] text-xs px-2 py-1.5 outline-none placeholder-[#9DA5B0] transition-all"
+              disabled={isStreaming || isCommitting}
+            />
+            <button
+              type="button"
+              onClick={doSend}
+              disabled={!inputValue.trim() || isStreaming || isCommitting}
+              className={`neon-send-btn p-2 bg-[#0079F2] text-white rounded-xl hover:bg-[#0066CC] disabled:opacity-30 disabled:cursor-not-allowed transition-all ${inputValue.trim() && !isStreaming ? "glow" : ""}`}
+              aria-label="Send message"
+            >
+              <Send size={12} />
+            </button>
+          </div>
         </div>
         <div className="flex items-center justify-between mt-1.5">
           <div className="text-[9px] text-[var(--r-text-muted)]">

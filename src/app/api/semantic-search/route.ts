@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const cookies = req.headers.get("cookie") ?? "";
   const sessionMatch = cookies.match(/f9_access=([^;]+)/);
   const rateLimitKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`semantic-${rateLimitKey}`, { limit: 20, windowSec: 60 });
+  const rl = await checkRateLimit(`semantic-${rateLimitKey}`, { limit: 20, windowSec: 60 });
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }),
@@ -61,8 +61,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json({ error: "Invalid action. Use: index, search, stats" }, { status: 400 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[semantic-search]", message);
-    return Response.json({ error: message }, { status: 500 });
+    console.error("[semantic-search]", err instanceof Error ? err.message : err);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

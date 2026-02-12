@@ -171,7 +171,7 @@ export default function PreviewPanel({
             title="Live Preview"
             className="bg-white border-0 h-full transition-all duration-300"
             style={{ width: viewportWidths[viewport], maxWidth: "100%" }}
-            sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
+            sandbox="allow-scripts allow-forms"
           />
         ) : (
           <div className="flex items-center justify-center h-full">

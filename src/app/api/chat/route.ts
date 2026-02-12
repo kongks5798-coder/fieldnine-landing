@@ -2,6 +2,7 @@ import { streamText, convertToModelMessages, type SystemModelMessage } from "ai"
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { chatSchema, validateRequest } from "@/lib/apiValidation";
 import { indexProject, searchCode, isIndexed } from "@/lib/semanticIndex";
 import { searchMemories, isMemoryEnabled } from "@/lib/supabaseMemory";
 import {
@@ -139,7 +140,7 @@ export async function POST(req: Request) {
   const cookies = req.headers.get("cookie") ?? "";
   const sessionMatch = cookies.match(/f9_access=([^;]+)/);
   const rateLimitKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(rateLimitKey, { limit: 15, windowSec: 60 });
+  const rl = await checkRateLimit(rateLimitKey, { limit: 15, windowSec: 60 });
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }),
@@ -181,11 +182,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
-    const rawMessages = body?.messages;
-    const requestedModel = body?.model as string | undefined; // e.g. "gpt-4o", "gpt-4o-mini", "claude-sonnet", "auto"
-    const mode = (body?.mode as string) ?? "build"; // "build" | "plan" | "edit"
-    const fileContext = body?.fileContext as Record<string, string> | undefined;
+    // Validate request body with Zod (size + structure)
+    const validated = await validateRequest(req, chatSchema, 5 * 1024 * 1024);
+    if (validated.error) return validated.error;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = validated.data as any;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawMessages = body.messages as any[] | undefined;
+    const requestedModel = body.model as string | undefined;
+    const mode = (body.mode as string) ?? "build";
+    const fileContext = body.fileContext as Record<string, string> | undefined;
 
     // Input validation
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
@@ -512,8 +519,8 @@ The user is in PLAN mode. Your job is to explain architecture, structure, and st
     response.headers.set("X-Daily-Usage", `${usage.count}/${usage.limit}`);
     return response;
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
+    console.error("[api/chat] Error:", err instanceof Error ? err.message : err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

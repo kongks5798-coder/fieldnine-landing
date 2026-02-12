@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SignJWT, jwtVerify } from "jose";
 
 const ACCESS_TOKEN = (process.env.ACCESS_TOKEN_SECRET ?? "").trim();
-const COOKIE_NAME = "f9_access";
+const COOKIE_NAME = "f9_jwt";
+const JWT_SECRET = new TextEncoder().encode(ACCESS_TOKEN || "fallback-insecure-key");
+const JWT_EXPIRY = "8h";
 
 /** Content Security Policy */
 const CSP_DIRECTIVES = [
@@ -20,6 +23,9 @@ const CSP_DIRECTIVES = [
 const SECURITY_HEADERS: Record<string, string> = {
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Content-Security-Policy": CSP_DIRECTIVES,
 };
 
@@ -30,10 +36,30 @@ function addSecurityHeaders(res: NextResponse) {
   return res;
 }
 
-/** Check if request carries a valid auth cookie */
-function isAuthenticated(req: NextRequest): boolean {
+/** Issue a signed JWT */
+async function issueJWT(): Promise<string> {
+  return new SignJWT({ sub: "f9-user", iat: Math.floor(Date.now() / 1000) })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime(JWT_EXPIRY)
+    .sign(JWT_SECRET);
+}
+
+/** Verify JWT from cookie */
+async function verifyJWT(token: string): Promise<boolean> {
+  try {
+    await jwtVerify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Check if request carries a valid JWT cookie */
+async function isAuthenticated(req: NextRequest): Promise<boolean> {
   if (!ACCESS_TOKEN) return false;
-  return req.cookies.get(COOKIE_NAME)?.value === ACCESS_TOKEN;
+  const jwt = req.cookies.get(COOKIE_NAME)?.value;
+  if (!jwt) return false;
+  return verifyJWT(jwt);
 }
 
 export async function proxy(req: NextRequest) {
@@ -44,37 +70,47 @@ export async function proxy(req: NextRequest) {
     );
   }
 
-  // 1. API 라우트 — 쿠키 인증 필수
+  // 1. API 라우트 — JWT 인증 + CSRF 헤더 검증
   if (req.nextUrl.pathname.startsWith("/api/")) {
-    if (!isAuthenticated(req)) {
+    if (!(await isAuthenticated(req))) {
       return addSecurityHeaders(
         NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
       );
     }
+    // CSRF protection: mutating requests must include X-Requested-With header
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method)) {
+      const csrf = req.headers.get("x-requested-with");
+      if (csrf !== "F9OS") {
+        return addSecurityHeaders(
+          NextResponse.json({ error: "CSRF validation failed" }, { status: 403 }),
+        );
+      }
+    }
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 2. URL 토큰으로 접근 → 쿠키 설정 후 리다이렉트 (토큰이 URL에 남지 않게)
+  // 2. URL 토큰으로 접근 → JWT 쿠키 설정 후 리다이렉트
   const tokenParam = req.nextUrl.searchParams.get("access");
   if (tokenParam === ACCESS_TOKEN) {
     const url = req.nextUrl.clone();
     url.searchParams.delete("access");
     const res = NextResponse.redirect(url);
-    res.cookies.set(COOKIE_NAME, ACCESS_TOKEN, {
+    const jwt = await issueJWT();
+    res.cookies.set(COOKIE_NAME, jwt, {
       httpOnly: true,
-      secure: req.nextUrl.protocol === "https:",
+      secure: true,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24시간
+      maxAge: 60 * 60 * 8,
     });
     return addSecurityHeaders(res);
   }
 
-  // 3. 쿠키에 토큰이 있으면 통과
-  if (isAuthenticated(req)) {
+  // 3. 쿠키에 JWT가 유효하면 통과
+  if (await isAuthenticated(req)) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // 4. 로그인 페이지 표시 (JS로 ?access= 파라미터 전송)
+  // 4. 로그인 페이지 표시
   return addSecurityHeaders(
     new NextResponse(
       `<!DOCTYPE html>

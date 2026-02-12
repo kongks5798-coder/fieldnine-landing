@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { isCodeComplete, extToLanguage } from "@/lib/codeValidator";
+import { saveCodeSchema, validateRequest } from "@/lib/apiValidation";
 
 const GITHUB_TOKEN = (process.env.GITHUB_TOKEN ?? "").trim();
 const GITHUB_REPO = (process.env.GITHUB_REPO ?? "kongks5798-coder/field-nine-os").trim();
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
   const cookies = request.headers.get("cookie") ?? "";
   const sessionMatch = cookies.match(/f9_access=([^;]+)/);
   const rlKey = sessionMatch?.[1] ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`save-code-${rlKey}`, { limit: 10, windowSec: 60 });
+  const rl = await checkRateLimit(`save-code-${rlKey}`, { limit: 10, windowSec: 60 });
   if (!rl.allowed) {
     return NextResponse.json(
       { error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` },
@@ -165,20 +166,15 @@ export async function POST(request: NextRequest) {
   // Validate token
   if (!GITHUB_TOKEN) {
     return NextResponse.json(
-      { error: "GITHUB_TOKEN not configured", hint: "Add GITHUB_TOKEN to .env.local" },
+      { error: "Server configuration error" },
       { status: 500 }
     );
   }
 
   try {
-    const body = (await request.json()) as SaveCodeBody;
-
-    if (!body.files || !Array.isArray(body.files) || body.files.length === 0) {
-      return NextResponse.json(
-        { error: "No files provided" },
-        { status: 400 }
-      );
-    }
+    const validated = await validateRequest(request, saveCodeSchema);
+    if (validated.error) return validated.error;
+    const body = validated.data as SaveCodeBody;
 
     if (body.files.length > MAX_FILES) {
       return NextResponse.json(
@@ -250,7 +246,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[save-code] Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

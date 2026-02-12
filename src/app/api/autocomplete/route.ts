@@ -2,12 +2,13 @@ import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { autocompleteSchema, validateRequest } from "@/lib/apiValidation";
 
 export async function POST(req: Request) {
   const cookies = req.headers.get("cookie") ?? "";
   const sessionMatch = cookies.match(/f9_access=([^;]+)/);
   const rateLimitKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`autocomplete-${rateLimitKey}`, { limit: 30, windowSec: 60 });
+  const rl = await checkRateLimit(`autocomplete-${rateLimitKey}`, { limit: 30, windowSec: 60 });
   if (!rl.allowed) {
     return new Response(JSON.stringify({ completion: "" }), {
       status: 200,
@@ -28,14 +29,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prefix, suffix, language, fileName } = await req.json();
-
-    if (!prefix || typeof prefix !== "string") {
-      return new Response(JSON.stringify({ completion: "" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const validated = await validateRequest(req, autocompleteSchema);
+    if (validated.error) return new Response(JSON.stringify({ completion: "" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    const { prefix, suffix, language, fileName } = validated.data;
 
     // Use the fastest/cheapest model for autocomplete
     const model = hasOpenAI

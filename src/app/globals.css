@@ -32,6 +32,16 @@
   --r-editor-gutter: #252526;
   --r-editor-border: #333333;
 
+  /* Glassmorphism */
+  --glass-bg: rgba(37, 37, 38, 0.65);
+  --glass-bg-light: rgba(37, 37, 38, 0.40);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-accent: rgba(0, 121, 242, 0.20);
+  --glass-blur: 16px;
+  --glass-mesh-blue: rgba(0, 121, 242, 0.06);
+  --glass-mesh-purple: rgba(139, 92, 246, 0.06);
+  --glass-mesh-green: rgba(0, 184, 148, 0.04);
+
   --background: var(--r-bg);
   --foreground: var(--r-text);
 }
@@ -97,6 +107,84 @@ body {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+/* ========================================
+   Neon Glow Flow — Chat Input
+   ======================================== */
+
+@property --neon-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes neonRotate {
+  to { --neon-angle: 360deg; }
+}
+
+@keyframes neonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.neon-glow-wrapper {
+  position: relative;
+  border-radius: 16px;
+  padding: 1.5px;
+  background: var(--r-border);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.neon-glow-wrapper.active {
+  background: conic-gradient(
+    from var(--neon-angle),
+    #0079f2,
+    #8b5cf6,
+    #00b894,
+    #0079f2
+  );
+  animation: neonRotate 3s linear infinite;
+  box-shadow:
+    0 0 12px rgba(0, 121, 242, 0.25),
+    0 0 24px rgba(139, 92, 246, 0.12),
+    0 0 36px rgba(0, 184, 148, 0.08);
+}
+
+.neon-glow-wrapper.streaming {
+  background: conic-gradient(
+    from var(--neon-angle),
+    #8b5cf6,
+    #f59e0b,
+    #ef4444,
+    #8b5cf6
+  );
+  animation: neonRotate 2s linear infinite;
+  box-shadow:
+    0 0 12px rgba(139, 92, 246, 0.3),
+    0 0 24px rgba(245, 158, 11, 0.15);
+}
+
+.neon-glow-inner {
+  border-radius: 14.5px;
+  background: var(--r-surface);
+}
+
+.neon-send-btn {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.neon-send-btn.glow {
+  box-shadow:
+    0 0 8px rgba(0, 121, 242, 0.4),
+    0 0 16px rgba(0, 121, 242, 0.2);
+}
+
+.neon-send-btn.glow:hover {
+  box-shadow:
+    0 0 12px rgba(0, 121, 242, 0.5),
+    0 0 24px rgba(0, 121, 242, 0.3);
 }
 
 /* Hide Next.js Dev Overlay/Toast/Indicators */
@@ -208,7 +296,7 @@ nextjs-portal,
 
 .splitter-handle-v {
   width: 3px;
-  background: var(--r-border);
+  background: rgba(255, 255, 255, 0.06);
   transition: background 0.15s ease;
   position: relative;
 }
@@ -216,12 +304,12 @@ nextjs-portal,
 .splitter-handle-v:hover,
 .splitter-handle-v[data-resize-handle-active],
 .splitter-handle-v:active {
-  background: var(--r-accent);
+  background: rgba(0, 121, 242, 0.6);
 }
 
 .splitter-handle-h {
   height: 3px;
-  background: var(--r-border);
+  background: rgba(255, 255, 255, 0.06);
   transition: background 0.15s ease;
   position: relative;
 }
@@ -229,9 +317,9 @@ nextjs-portal,
 .splitter-handle-h:hover,
 .splitter-handle-h[data-resize-handle-active],
 .splitter-handle-h:active {
-  background: var(--r-accent);
+  background: rgba(0, 121, 242, 0.6);
 }
 
 [data-resize-handle-active] {
-  background: var(--r-accent) !important;
+  background: rgba(0, 121, 242, 0.6) !important;
 }

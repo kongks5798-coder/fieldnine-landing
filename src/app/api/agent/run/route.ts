@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const sessionMatch = cookies.match(/f9_access=([^;]+)/);
   const rateLimitKey = sessionMatch?.[1] ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
-  const rl = checkRateLimit(rateLimitKey, { limit: 5, windowSec: 60 });
+  const rl = await checkRateLimit(rateLimitKey, { limit: 5, windowSec: 60 });
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({ error: `Rate limit exceeded. Retry after ${rl.retryAfterSec}s.` }),
@@ -63,8 +63,8 @@ export async function POST(req: Request) {
         try {
           await runAgentPipeline(userRequest, fileContext, emit);
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Pipeline error";
-          emit({ type: "error", message: msg });
+          console.error("[agent/run pipeline]", err instanceof Error ? err.message : err);
+          emit({ type: "error", message: "Internal server error" });
         }
 
         clearTimeout(timer);
@@ -80,9 +80,9 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[agent/run]", err instanceof Error ? err.message : err);
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }

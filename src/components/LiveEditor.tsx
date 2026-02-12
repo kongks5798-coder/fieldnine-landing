@@ -35,6 +35,8 @@ import {
   Download,
   Moon,
   Sun,
+  GitBranch,
+  AlertTriangle,
 } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
 import FileExplorer, { getFileInfo, type VFile, type ExplorerTab } from "./FileExplorer";
@@ -73,65 +75,63 @@ const DEFAULT_FILES: Record<string, VFile> = {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Field Nine OS — Multimodal Intelligence</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
+  <title>Field Nine OS — Apex Intelligence</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
-    <nav class="nav">
+    <nav class="nav glass-panel">
       <div class="nav-brand">
         <span class="logo">&#9889;</span>
-        <span>Field Nine OS 2.0</span>
+        <span class="brand-name">Field Nine <span class="version-tag">Apex</span></span>
       </div>
-      <div class="nav-right">
-        <span class="global-dot" id="globalDot"></span>
-        <button class="btn-refresh" id="refreshBtn" title="Refresh">&#8635;</button>
+      <div class="model-controls">
+        <select id="modelSelector" class="glass-select">
+          <option value="gemini">✨ Gemini 1.5 Pro (Free)</option>
+          <option value="deepseek">🧠 DeepSeek R1 (Budget)</option>
+          <option value="groq">⚡ Groq Llama 3 (Fast)</option>
+          <option value="openai">🤖 OpenAI GPT-4o</option>
+        </select>
+        <button id="apiKeyBtn" class="btn-icon" title="API Keys">🔑</button>
+      </div>
+      <div class="nav-actions">
+        <div class="connection-status online">
+          <span class="status-dot"></span>
+          <span class="status-text">Online</span>
+        </div>
       </div>
     </nav>
-
-    <!-- Gemini-style Multimodal Interface -->
-    <main class="main-container">
-      <div class="chat-interface">
-        <div class="chat-history" id="chatHistory">
-          <!-- AI Welcome Message -->
-          <div class="message ai">
-            <div class="avatar">AI</div>
-            <div class="bubble">
-              <p>시스템이 온라인 상태입니다. 멀티모달 분석 준비 완료.</p>
-              <p class="sub-text">이미지, 로그 파일, 또는 음성을 입력하세요.</p>
+    <main class="apex-viewport">
+      <div class="data-grid-bg"></div>
+      <section class="intel-core glass-panel">
+        <div id="avengersOverlay" class="avengers-overlay hidden">
+          <div class="avengers-box">
+            <div class="avengers-header">
+              <span class="pulse-icon">🚨</span>
+              <h3>Emergency Protocol: AVENGERS MODE</h3>
             </div>
+            <div class="avengers-console" id="avengersLog"></div>
           </div>
         </div>
-        
-        <!-- Floating Input Bar -->
-        <div class="input-area">
-          <div class="media-preview hidden" id="mediaPreview"></div>
-          <div class="input-bar">
-            <button class="btn-icon" id="attachBtn" title="Add Media">⊕</button>
-            <input type="text" id="chatInput" placeholder="Message Field Nine AI..." />
-            <button class="btn-icon" id="micBtn" title="Voice Input">🎙️</button>
-            <button class="btn-send" id="sendBtn">➤</button>
+        <div class="core-header">
+          <div class="trinity-orbit">
+            <div class="orbit-inner"></div>
+            <div class="orbit-ring-1"></div>
           </div>
+          <h2 id="currentModelDisplay">Gemini 1.5 Pro Active</h2>
         </div>
-      </div>
-
-      <!-- Live Analysis Log (Side Panel) -->
-      <aside class="analysis-panel">
-        <h3>Live Diagnostics</h3>
-        <div class="log-content" id="logContent">
-          <div class="log-entry">Waiting for input stream...</div>
+        <div id="chatHistory" class="apex-chat"></div>
+        <div class="apex-input-area">
+          <textarea id="chatInput" placeholder="'에러'라고 입력하여 자율 복구 테스트..." rows="1"></textarea>
+          <button id="sendBtn" class="btn-ignite">SEND</button>
         </div>
-      </aside>
+      </section>
     </main>
-
-    <footer class="footer">
-      <p>Built with <span class="heart">&#9829;</span> on Field Nine</p>
-    </footer>
   </div>
-
   <script src="data.js"></script>
   <script src="ui.js"></script>
+  <script src="Agent_Engine.js"></script>
   <script src="app.js"></script>
 </body>
 </html>`,
@@ -140,343 +140,540 @@ const DEFAULT_FILES: Record<string, VFile> = {
   "style.css": {
     name: "style.css",
     language: "css",
-    content: `/* === Field Nine OS — Multimodal Theme === */
+    content: `/* === Field Nine OS — Apex Intelligence Theme === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+:root {
+  --apex-bg: #06080d;
+  --apex-surface: rgba(12, 16, 28, 0.75);
+  --apex-border: rgba(255,255,255,0.06);
+  --apex-text: #e2e8f0;
+  --apex-muted: #64748b;
+  --apex-blue: #3b82f6;
+  --apex-purple: #8b5cf6;
+  --apex-green: #22c55e;
+  --apex-red: #ef4444;
+  --apex-amber: #f59e0b;
+}
+
 body {
-  font-family: 'Inter', 'Noto Sans KR', system-ui, sans-serif;
-  background: #0a0a0a;
-  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--apex-bg);
+  color: var(--apex-text);
   height: 100vh;
   overflow: hidden;
 }
 
-.app { 
-  display: flex; 
-  flex-direction: column; 
-  height: 100%; 
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* --- Glass Utility --- */
+.glass-panel {
+  background: var(--apex-surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--apex-border);
 }
+.glass-select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--apex-border);
+  color: var(--apex-text);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+.glass-select:focus { border-color: var(--apex-blue); }
 
 /* --- Nav --- */
 .nav {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
-  background: rgba(10,10,10,0.8);
-  backdrop-filter: blur(10px);
-  z-index: 10;
+  padding: 10px 20px; z-index: 10; gap: 12px;
 }
-.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
-.logo { font-size: 24px; background: linear-gradient(45deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.nav-right { display: flex; align-items: center; gap: 12px; }
-
-.global-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 8px rgba(34,197,94,0.5);
+.nav-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
+.logo { font-size: 22px; background: linear-gradient(135deg, var(--apex-blue), var(--apex-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-name { white-space: nowrap; }
+.version-tag {
+  font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+  background: linear-gradient(135deg, var(--apex-blue), var(--apex-purple));
+  color: white; vertical-align: middle; margin-left: 4px;
 }
-
-.btn-refresh {
-  background: rgba(255,255,255,0.06); border: none;
-  color: #94a3b8; width: 32px; height: 32px; border-radius: 8px;
-  cursor: pointer; transition: all 0.2s;
-}
-.btn-refresh:hover { background: rgba(255,255,255,0.1); color: #fff; }
-
-/* --- Main Layout --- */
-.main-container {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  position: relative;
-}
-
-/* --- Chat Interface --- */
-.chat-interface {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0a0a0a 100%);
-}
-
-.chat-history {
-  flex: 1;
-  padding: 24px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.message { display: flex; gap: 12px; max-width: 80%; animation: fadeIn 0.3s ease-out; }
-.message.user { align-self: flex-end; flex-direction: row-reverse; }
-.message.ai { align-self: flex-start; }
-
-.avatar {
-  width: 36px; height: 36px; border-radius: 50%;
+.model-controls { display: flex; align-items: center; gap: 8px; }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.btn-icon {
+  background: rgba(255,255,255,0.06); border: none; color: var(--apex-muted);
+  width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 12px;
+  font-size: 14px; transition: all 0.2s;
 }
-.message.ai .avatar { background: #3b82f6; color: white; }
-.message.user .avatar { background: #64748b; color: white; }
+.btn-icon:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-.bubble {
-  padding: 12px 16px; border-radius: 16px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.05);
-  line-height: 1.5; font-size: 15px;
+.connection-status {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--apex-muted);
 }
-.message.user .bubble { background: #3b82f6; color: white; border: none; }
-.sub-text { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--apex-muted);
+}
+.connection-status.online .status-dot {
+  background: var(--apex-green);
+  box-shadow: 0 0 6px rgba(34,197,94,0.5);
+}
+
+/* --- Apex Viewport --- */
+.apex-viewport {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+
+.data-grid-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 30%, transparent 70%);
+}
+
+/* --- Intel Core (Main Card) --- */
+.intel-core {
+  position: relative; z-index: 1;
+  width: 92%; max-width: 720px; height: 80%;
+  border-radius: 20px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- Avengers Overlay --- */
+.avengers-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+.avengers-overlay.hidden { display: none; }
+.avengers-box {
+  width: 90%; max-width: 520px;
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 16px; overflow: hidden;
+  background: rgba(20,0,0,0.6);
+  backdrop-filter: blur(12px);
+}
+.avengers-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+  background: rgba(239,68,68,0.1);
+  border-bottom: 1px solid rgba(239,68,68,0.2);
+}
+.avengers-header h3 { font-size: 14px; color: #fca5a5; font-weight: 600; }
+.pulse-icon { animation: pulse 1s infinite; font-size: 18px; }
+.avengers-console {
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #94a3b8;
+  max-height: 260px;
+  overflow-y: auto;
+  line-height: 1.7;
+}
+.avengers-console .line-ok { color: var(--apex-green); }
+.avengers-console .line-err { color: #f87171; }
+.avengers-console .line-warn { color: var(--apex-amber); }
+.avengers-console .line-info { color: var(--apex-blue); }
+
+/* --- Core Header --- */
+.core-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--apex-border);
+}
+.core-header h2 { font-size: 13px; font-weight: 500; color: var(--apex-muted); }
+
+.trinity-orbit {
+  position: relative; width: 32px; height: 32px;
+}
+.orbit-inner {
+  position: absolute; top: 50%; left: 50%;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--apex-blue);
+  box-shadow: 0 0 10px rgba(59,130,246,0.6);
+  transform: translate(-50%,-50%);
+}
+.orbit-ring-1 {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: var(--apex-purple);
+  border-right-color: var(--apex-blue);
+  animation: spin 3s linear infinite;
+}
+
+/* --- Chat Area --- */
+.apex-chat {
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.system-init-message {
+  text-align: center; padding: 24px;
+}
+.init-content h3 { font-size: 16px; margin-bottom: 8px; }
+.init-content p { font-size: 13px; color: var(--apex-muted); }
+.init-content .sub-text { font-size: 12px; margin-top: 6px; color: #475569; }
+
+.msg { display: flex; gap: 10px; max-width: 85%; animation: fadeIn 0.3s ease; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg.ai { align-self: flex-start; }
+.msg-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; shrink: 0;
+}
+.msg.ai .msg-avatar { background: var(--apex-blue); color: white; }
+.msg.user .msg-avatar { background: #334155; color: #cbd5e1; }
+.msg-bubble {
+  padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.6;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--apex-border);
+}
+.msg.user .msg-bubble {
+  background: var(--apex-blue); color: white; border: none;
+}
+.msg-bubble .typing-dots span {
+  display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--apex-muted); margin: 0 2px;
+  animation: blink 1.4s infinite both;
+}
+.msg-bubble .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.msg-bubble .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
 /* --- Input Area --- */
-.input-area {
-  padding: 24px;
-  position: relative;
-  z-index: 20;
+.apex-input-area {
+  display: flex; gap: 10px; padding: 14px 18px;
+  border-top: 1px solid var(--apex-border);
+  background: rgba(6,8,13,0.5);
 }
-
-.input-bar {
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(30,41,59,0.7);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 100px;
-  padding: 8px 16px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+#chatInput {
+  flex: 1; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--apex-border); color: white;
+  border-radius: 12px; padding: 10px 14px;
+  font-size: 13px; font-family: inherit;
+  resize: none; outline: none;
   transition: border-color 0.2s;
 }
-.input-bar:focus-within { border-color: #3b82f6; }
-
-.btn-icon {
-  background: none; border: none; color: #94a3b8;
-  font-size: 20px; cursor: pointer; padding: 8px;
-  border-radius: 50%; transition: 0.2s;
+#chatInput:focus { border-color: var(--apex-blue); }
+.btn-ignite {
+  background: linear-gradient(135deg, var(--apex-blue), var(--apex-purple));
+  border: none; color: white; font-weight: 600; font-size: 12px;
+  padding: 0 20px; border-radius: 12px; cursor: pointer;
+  letter-spacing: 0.5px; transition: all 0.2s;
 }
-.btn-icon:hover { color: #fff; background: rgba(255,255,255,0.1); }
-.btn-icon.recording { color: #ef4444; animation: pulse 1s infinite; }
+.btn-ignite:hover { transform: scale(1.03); box-shadow: 0 0 20px rgba(59,130,246,0.3); }
 
-#chatInput {
-  flex: 1; background: none; border: none; color: white;
-  font-size: 16px; padding: 8px; outline: none;
-}
+/* --- Animations --- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes blink { 0%,80%,100% { opacity: 0.2; } 40% { opacity: 1; } }
 
-.btn-send {
-  background: #3b82f6; border: none; color: white;
-  width: 40px; height: 40px; border-radius: 50%;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 18px; transition: 0.2s;
-}
-.btn-send:hover { transform: scale(1.05); background: #2563eb; }
-
-/* --- Media Preview --- */
-.media-preview {
-  position: absolute; bottom: 85px; left: 24px;
-  background: rgba(15,23,42,0.9);
-  padding: 10px; border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.1);
-  display: flex; align-items: center; gap: 12px;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.media-preview img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; }
-.media-preview.hidden { display: none; }
-
-/* --- Analysis Panel --- */
-.analysis-panel {
-  width: 300px;
-  background: rgba(15,23,42,0.5);
-  border-left: 1px solid rgba(255,255,255,0.06);
-  padding: 24px;
-  display: flex; flex-direction: column;
-}
-
-.analysis-panel h3 {
-  font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
-  color: #64748b; margin-bottom: 16px; font-weight: 600;
-}
-
-.log-content {
-  flex: 1; font-family: 'Fira Code', monospace;
-  font-size: 12px; color: #94a3b8;
-  overflow-y: auto;
-}
-
-.log-entry { margin-bottom: 8px; border-left: 2px solid #334155; padding-left: 8px; }
-.log-entry.success { border-color: #22c55e; color: #4ade80; }
-.log-entry.warn { border-color: #eab308; color: #facc15; }
-.log-entry.error { border-color: #ef4444; color: #f87171; }
-
-/* --- Footer --- */
-.footer {
-  padding: 12px; text-align: center;
-  font-size: 12px; color: #475569;
-  background: #0a0a0a;
-}
-.heart { color: #ef4444; }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }`,
+/* --- Scrollbar --- */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }`,
     icon: FileText,
   },
   "data.js": {
     name: "data.js",
     language: "javascript",
-    content: `// === Infrastructure Dashboard Configuration ===
-window.INFRA_CONFIG = {
-  apiUrl: '/api/infra-status',
-  refreshIntervalMs: 60000,
-  states: {
-    ok:      { label: 'Operational', cls: 'ok' },
-    warn:    { label: 'Degraded',    cls: 'warn' },
-    error:   { label: 'Down',        cls: 'error' },
-    offline: { label: 'Offline',     cls: 'offline' }
-  }
-};`,
+    content: `// === Apex Intelligence — Model Registry ===
+window.APEX_MODELS = {
+  gemini: {
+    name: 'Gemini 1.5 Pro',
+    provider: 'Google',
+    badge: '✨',
+    color: '#4285f4',
+    responses: [
+      '분석 완료. 요청하신 작업을 처리했습니다.',
+      '멀티모달 파이프라인으로 데이터 흐름을 확인했습니다.',
+      'Gemini 1.5 Pro가 128K 컨텍스트 윈도우를 활용해 결과를 도출했습니다.',
+    ],
+  },
+  deepseek: {
+    name: 'DeepSeek R1',
+    provider: 'DeepSeek',
+    badge: '🧠',
+    color: '#00d4aa',
+    responses: [
+      'Chain-of-Thought 추론을 완료했습니다. 결과를 확인하세요.',
+      'DeepSeek R1이 단계별 논리 분석을 수행했습니다.',
+      '추론 비용 최적화: GPT-4 대비 95% 절감된 결과입니다.',
+    ],
+  },
+  groq: {
+    name: 'Groq Llama 3',
+    provider: 'Groq',
+    badge: '⚡',
+    color: '#f55036',
+    responses: [
+      '초고속 추론 완료 — 응답 시간 < 100ms.',
+      'LPU 가속으로 실시간 처리했습니다.',
+      'Groq 인프라에서 Llama 3 70B를 통해 분석했습니다.',
+    ],
+  },
+  openai: {
+    name: 'OpenAI GPT-4o',
+    provider: 'OpenAI',
+    badge: '🤖',
+    color: '#10a37f',
+    responses: [
+      'GPT-4o 멀티모달 분석이 완료되었습니다.',
+      'Vision + Language 통합 추론 결과입니다.',
+      'OpenAI API를 통한 최첨단 응답을 생성했습니다.',
+    ],
+  },
+};
+
+window.APEX_ERROR_SCENARIOS = [
+  { type: 'timeout',  label: 'API Timeout',       fix: 'Failover to backup endpoint' },
+  { type: 'rateLimit', label: 'Rate Limit Hit',    fix: 'Switching to budget model' },
+  { type: 'parse',    label: 'Response Parse Fail', fix: 'Retry with structured output' },
+  { type: 'auth',     label: 'Auth Token Expired',  fix: 'Refreshing credentials' },
+];`,
     icon: FileCog,
   },
   "ui.js": {
     name: "ui.js",
     language: "javascript",
-    content: `// === UI Helper Functions ===
-window.timeAgo = function(dateStr) {
-  var diff = Date.now() - new Date(dateStr).getTime();
-  var sec = Math.floor(diff / 1000);
-  if (sec < 60) return sec + 's ago';
-  return Math.floor(sec / 60) + 'm ago';
+    content: `// === Apex Intelligence — UI Helpers ===
+
+window.ApexUI = {
+  /** Append a chat message to #chatHistory */
+  addMessage: function(role, html) {
+    var chat = document.getElementById('chatHistory');
+    if (!chat) return;
+    var div = document.createElement('div');
+    div.className = 'msg ' + role;
+    var avatarText = role === 'ai' ? 'AI' : 'U';
+    div.innerHTML =
+      '<div class="msg-avatar">' + avatarText + '</div>' +
+      '<div class="msg-bubble">' + html + '</div>';
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  },
+
+  /** Show typing indicator, returns remove function */
+  showTyping: function() {
+    var div = this.addMessage('ai',
+      '<div class="typing-dots"><span></span><span></span><span></span></div>');
+    return function() { if (div && div.parentNode) div.parentNode.removeChild(div); };
+  },
+
+  /** Log a line into Avengers console */
+  avengersLog: function(text, cls) {
+    var log = document.getElementById('avengersLog');
+    if (!log) return;
+    var line = document.createElement('div');
+    line.className = cls ? 'line-' + cls : '';
+    line.textContent = '> ' + text;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  },
+
+  /** Show/hide Avengers overlay */
+  toggleAvengers: function(show) {
+    var el = document.getElementById('avengersOverlay');
+    if (!el) return;
+    if (show) { el.classList.remove('hidden'); }
+    else { el.classList.add('hidden'); }
+  },
+
+  /** Update model display text */
+  setModelDisplay: function(text) {
+    var el = document.getElementById('currentModelDisplay');
+    if (el) el.textContent = text;
+  },
+
+  /** Simple delay helper */
+  wait: function(ms) {
+    return new Promise(function(r) { setTimeout(r, ms); });
+  },
 };`,
+    icon: FileCog,
+  },
+  "Agent_Engine.js": {
+    name: "Agent_Engine.js",
+    language: "javascript",
+    content: `// === Apex Intelligence — Autonomous Agent Engine ===
+// Handles: error detection, self-recovery, Avengers Mode
+
+window.AgentEngine = (function() {
+  var isRunning = false;
+
+  /** Run Avengers Mode: animated error recovery sequence */
+  async function runAvengers() {
+    if (isRunning) return;
+    isRunning = true;
+
+    var UI = window.ApexUI;
+    var scenarios = window.APEX_ERROR_SCENARIOS || [];
+    var pick = scenarios[Math.floor(Math.random() * scenarios.length)] || {
+      type: 'unknown', label: 'Unknown Error', fix: 'Generic recovery'
+    };
+
+    // Clear previous logs
+    var logEl = document.getElementById('avengersLog');
+    if (logEl) logEl.innerHTML = '';
+
+    UI.toggleAvengers(true);
+
+    UI.avengersLog('ERROR DETECTED: ' + pick.label, 'err');
+    await UI.wait(600);
+    UI.avengersLog('Diagnosing root cause...', 'warn');
+    await UI.wait(800);
+    UI.avengersLog('Type: ' + pick.type.toUpperCase(), 'info');
+    await UI.wait(500);
+    UI.avengersLog('Initiating autonomous recovery...', 'warn');
+    await UI.wait(700);
+    UI.avengersLog('Strategy: ' + pick.fix, 'info');
+    await UI.wait(900);
+    UI.avengersLog('Executing fix...', 'warn');
+    await UI.wait(1000);
+    UI.avengersLog('Verifying system integrity...', 'info');
+    await UI.wait(600);
+    UI.avengersLog('RECOVERY COMPLETE — All systems nominal', 'ok');
+
+    await UI.wait(1500);
+    UI.toggleAvengers(false);
+    isRunning = false;
+
+    return pick;
+  }
+
+  return { runAvengers: runAvengers };
+})();`,
     icon: FileCog,
   },
   "app.js": {
     name: "app.js",
     language: "javascript",
-    content: `// === Field Nine OS 2.0: Multimodal Logic ===
+    content: `// app.js
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Field Nine OS: Apex Engine Booting...');
 
-document.addEventListener('DOMContentLoaded', function() {
-  const chatInput = document.getElementById('chatInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const chatHistory = document.getElementById('chatHistory');
-  const logContent = document.getElementById('logContent');
-  const attachBtn = document.getElementById('attachBtn');
-  const mediaPreview = document.getElementById('mediaPreview');
-  const micBtn = document.getElementById('micBtn');
+    const System = {
+        init() {
+            this.bindEvents();
+        },
 
-  let currentAttachment = null;
+        bindEvents() {
+            const sendBtn = document.getElementById('sendBtn');
+            if(sendBtn) sendBtn.addEventListener('click', () => this.handleSend());
 
-  // --- 1. Message Handling ---
-  function appendMessage(role, text) {
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'message ' + role;
-    msgDiv.innerHTML = 
-      '<div class="avatar">' + (role === 'ai' ? 'AI' : 'YOU') + '</div>' +
-      '<div class="bubble">' + text + '</div>';
-    chatHistory.appendChild(msgDiv);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-  }
+            const chatInput = document.getElementById('chatInput');
+            if(chatInput) {
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.handleSend();
+                    }
+                });
+            }
 
-  function log(text, type) {
-    const entry = document.createElement('div');
-    entry.className = 'log-entry ' + (type || '');
-    entry.textContent = '> ' + text;
-    logContent.appendChild(entry);
-    logContent.scrollTop = logContent.scrollHeight;
-  }
+            const selector = document.getElementById('modelSelector');
+            if(selector) {
+                selector.addEventListener('change', (e) => {
+                    const name = e.target.options[e.target.selectedIndex].text;
+                    document.getElementById('currentModelDisplay').textContent = name + " Active";
+                    alert('모델이 변경되었습니다: ' + name);
+                });
+            }
+        },
 
-  // --- 2. Interaction Handlers ---
-  
-  // Attach Button (Simulate File Selection)
-  if (attachBtn) {
-    attachBtn.addEventListener('click', () => {
-      // Mock file selection
-      const mockFiles = ['system_dump.log', 'architecture_v2.png', 'ui_mockup.jpg', 'kernel_panic.txt'];
-      const randomFile = mockFiles[Math.floor(Math.random() * mockFiles.length)];
-      
-      currentAttachment = {
-        name: randomFile,
-        type: randomFile.endsWith('png') || randomFile.endsWith('jpg') ? 'image' : 'file'
-      };
+        handleSend() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
 
-      mediaPreview.innerHTML = 
-        '<div class="media-icon">' + (currentAttachment.type === 'image' ? '🖼️' : '📄') + '</div>' +
-        '<div class="media-info">' + currentAttachment.name + '</div>';
-      mediaPreview.classList.remove('hidden');
-      log('File selected: ' + currentAttachment.name, 'warn');
-    });
-  }
+            this.addMessage('user', text);
+            input.value = '';
 
-  // Send Button (Real API Call)
-  if (sendBtn) {
-    sendBtn.addEventListener('click', handleSend);
-  }
-  
-  chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSend();
-  });
+            if (text.includes('에러') || text.includes('error')) {
+                this.triggerAvengersMode();
+            } else {
+                var safeText = this._escapeHTML(text);
+                setTimeout(() => {
+                    this.addMessage('ai', '[AI] "' + safeText + '"라고 하셨군요. 확인했습니다.');
+                }, 1000);
+            }
+        },
 
-  async function handleSend() {
-    const text = chatInput.value.trim();
-    if (!text && !currentAttachment) return;
+        triggerAvengersMode() {
+            const overlay = document.getElementById('avengersOverlay');
+            const logBox = document.getElementById('avengersLog');
 
-    // 1. Show User Message
-    let userDisplay = text;
-    if (currentAttachment) {
-      userDisplay = '[Attached: ' + currentAttachment.name + '] ' + text;
-    }
-    appendMessage('user', userDisplay);
-    chatInput.value = '';
-    mediaPreview.classList.add('hidden');
+            if(!overlay || !logBox) return;
 
-    // 2. Prepare Payload
-    const payload = {
-      messages: [{ role: 'user', content: text }],
-      filename: currentAttachment ? currentAttachment.name : undefined,
-      file: currentAttachment ? 'base64_placeholder' : undefined // In real app, send base64
+            overlay.classList.remove('hidden');
+            logBox.innerHTML = '';
+
+            const logs = [
+                "⚠️ Critical Error Detected!",
+                "🛑 Stopping Process...",
+                "🔄 [Protocol] Avengers Mode Activated",
+                "✨ [Gemini] Analyzing Error Logs...",
+                "🧠 [DeepSeek] Reasoning Root Cause...",
+                "🤖 [OpenAI] Applying Fix Patch...",
+                "✅ System Restored Successfully!"
+            ];
+
+            let i = 0;
+            const self = this;
+            const interval = setInterval(() => {
+                if (i >= logs.length) {
+                    clearInterval(interval);
+                    setTimeout(() => overlay.classList.add('hidden'), 2000);
+                    self.addMessage('ai', '✅ <strong>복구 완료:</strong> 여러 AI가 협력하여 에러를 해결했습니다.');
+                    return;
+                }
+                const div = document.createElement('div');
+                div.textContent = '> ' + logs[i];
+                div.style.marginBottom = '4px';
+                if(i === 0) div.style.color = '#ff4444';
+                if(i === 6) div.style.color = '#44ff44';
+
+                logBox.appendChild(div);
+                logBox.scrollTop = logBox.scrollHeight;
+                i++;
+            }, 800);
+        },
+
+        _escapeHTML(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        },
+
+        addMessage(role, text) {
+            const history = document.getElementById('chatHistory');
+            if(!history) return;
+
+            const div = document.createElement('div');
+            div.className = 'msg ' + role;
+            const avatar = document.createElement('div');
+            avatar.className = 'msg-avatar';
+            avatar.textContent = role === 'user' ? 'U' : 'AI';
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            if (role === 'user') {
+                bubble.textContent = text;
+            } else {
+                bubble.innerHTML = text;
+            }
+            div.appendChild(avatar);
+            div.appendChild(bubble);
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
     };
-    
-    currentAttachment = null;
 
-    // 3. Call API (Heuristic Engine)
-    log('Transmitting data to Neural Core...', 'warn');
-    
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const data = await res.json();
-      
-      if (data.analysis) {
-        // Formatted Analysis Result
-        appendMessage('ai', data.analysis.replace(/\\n/g, '<br>'));
-        log('Analysis complete. Confidence: 99.8%', 'success');
-      } else if (data.text) {
-        appendMessage('ai', data.text);
-      } else {
-        appendMessage('ai', 'System Acknowledged.');
-      }
-      
-    } catch (err) {
-      log('Transmission Error: ' + err.message, 'error');
-      appendMessage('ai', 'Connection Lost. Retrying via backup link...');
-    }
-  }
-  
-  // Voice Button (Mock)
-  if (micBtn) {
-    micBtn.addEventListener('click', () => {
-      micBtn.classList.toggle('recording');
-      if (micBtn.classList.contains('recording')) {
-        log('Audio stream active. Listening...', 'warn');
-      } else {
-        log('Audio stream closed.', 'success');
-        chatInput.value = "System status report";
-      }
-    });
-  }
-
-  console.log('Field Nine OS 2.0: Multimodal Modules Loaded');
+    System.init();
 });`,
     icon: FileCog,
   },
@@ -498,7 +695,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
     JSON.parse(JSON.stringify(DEFAULT_FILES))
   );
   const [activeFile, setActiveFile] = useState("index.html");
-  const [openTabs, setOpenTabs] = useState(["index.html", "style.css", "data.js", "ui.js", "app.js"]);
+  const [openTabs, setOpenTabs] = useState(["index.html", "style.css", "data.js", "ui.js", "Agent_Engine.js", "app.js"]);
   const [renderedHTML, setRenderedHTML] = useState("");
   const [viewport, setViewport] = useState<ViewportSize>("desktop");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -636,7 +833,7 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
       try {
         const res = await fetch("/api/save-code", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
           body: JSON.stringify({ files: fileChanges, message: commitMsg }),
         });
         const data = await res.json();
@@ -839,15 +1036,49 @@ export default function LiveEditor({ initialPrompt, projectSlug, onGoHome }: Liv
               var style = document.getElementById('fn-hot-style');
               if (style) { style.textContent = e.data.css; }
             }
+            // REPL eval bridge
+            if (e.data && e.data.source === 'fn-repl') {
+              try {
+                var r = (0, eval)(e.data.code);
+                _post('log', [r]);
+              } catch(err) {
+                _post('error', [err.message]);
+              }
+            }
           });
+          function _serializeArg(a) {
+            if (a === null) return { argType: 'null', value: 'null', preview: 'null' };
+            if (a === undefined) return { argType: 'undefined', value: 'undefined', preview: 'undefined' };
+            var t = typeof a;
+            if (t === 'string') return { argType: 'string', value: a, preview: a.length > 100 ? a.slice(0, 100) + '...' : a };
+            if (t === 'number') return { argType: 'number', value: String(a), preview: String(a) };
+            if (t === 'boolean') return { argType: 'boolean', value: String(a), preview: String(a) };
+            if (t === 'function') return { argType: 'function', value: '', preview: 'f ' + (a.name || 'anonymous') + '()' };
+            if (Array.isArray(a)) {
+              try { var s = JSON.stringify(a); return { argType: 'array', value: s, preview: String(a.length) }; }
+              catch(e) { return { argType: 'array', value: '[]', preview: '0' }; }
+            }
+            if (t === 'object') {
+              try {
+                var s = JSON.stringify(a, null, 2);
+                var keys = Object.keys(a);
+                var p = '{' + keys.slice(0, 3).join(', ') + (keys.length > 3 ? ', ...' : '') + '}';
+                return { argType: 'object', value: s, preview: p };
+              } catch(e) { return { argType: 'object', value: '{}', preview: '{...}' }; }
+            }
+            return { argType: 'string', value: String(a), preview: String(a) };
+          }
           const _post = (type, args) => {
             try {
+              var arr = Array.from(args);
+              var serialized = arr.map(_serializeArg);
               window.parent.postMessage({
                 source: 'fn-preview',
                 type: type,
-                text: Array.from(args).map(a =>
-                  typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
-                ).join(' ')
+                text: arr.map(function(a) {
+                  return typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a);
+                }).join(' '),
+                args: serialized
               }, '*');
             } catch(e) {}
           };
@@ -919,13 +1150,15 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
   /* ===== Console + Inspector messages from iframe ===== */
   useEffect(() => {
     const handler = (e: MessageEvent) => {
+      // Only accept messages from same origin or sandboxed iframes (null origin)
+      if (e.origin !== "null" && e.origin !== window.location.origin) return;
       if (e.data?.source === "fn-preview") {
         const now = new Date().toLocaleTimeString("ko-KR", {
           hour: "2-digit", minute: "2-digit", second: "2-digit",
         });
         setConsoleLines((prev) => [
           ...prev.slice(-50),
-          { type: e.data.type, text: e.data.text, time: now },
+          { type: e.data.type, text: e.data.text, time: now, args: e.data.args },
         ]);
 
         // Virtual Error Detector: detects errors and triggers AI auto-fix
@@ -1136,28 +1369,32 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
   const pendingInsertRef = useRef<{ code: string; targetFile: string } | null>(null);
 
   const handleInsertCode = useCallback((code: string, targetFile: string, auto?: boolean) => {
-    // Truncation warning: check completeness before inserting AI code
-    const ext = targetFile.split(".").pop()?.toLowerCase() ?? "";
-    const lang = ext === "js" || ext === "mjs" ? "javascript" : ext === "ts" || ext === "tsx" ? "typescript" : ext;
-    const check = isCodeComplete(code, lang);
-    if (!check.complete) {
-      addToast({ type: "error", message: `AI 코드 잘림 감지: ${targetFile} (${check.reason}) — 커밋 차단됨` });
-      console.warn(`[insert-code] Truncated AI output for ${targetFile}: ${check.reason}`);
-      // Still insert so user can see & fix, but auto-commit won't fire (guard in triggerAutoCommit)
-    }
+    try {
+      // Truncation warning: check completeness before inserting AI code
+      const ext = targetFile.split(".").pop()?.toLowerCase() ?? "";
+      const lang = ext === "js" || ext === "mjs" ? "javascript" : ext === "ts" || ext === "tsx" ? "typescript" : ext;
+      const check = isCodeComplete(code, lang);
+      if (!check.complete) {
+        addToast({ type: "error", message: `AI 코드 잘림 감지: ${targetFile} (${check.reason}) — 커밋 차단됨` });
+        console.warn(`[insert-code] Truncated AI output for ${targetFile}: ${check.reason}`);
+      }
 
-    // Auto mode (AI streaming/auto-insert): always apply directly, skip diff preview
-    if (auto) {
-      applyCodeDirect(code, targetFile);
-      return;
-    }
-    const existing = files[targetFile];
-    // Manual insert: show diff if file exists and has meaningful content
-    if (existing && existing.content.trim().length > 10 && existing.content !== code) {
-      pendingInsertRef.current = { code, targetFile };
-      setDiffPreview({ fileName: targetFile, oldCode: existing.content, newCode: code });
-    } else {
-      applyCodeDirect(code, targetFile);
+      // Auto mode (AI streaming/auto-insert): always apply directly, skip diff preview
+      if (auto) {
+        applyCodeDirect(code, targetFile);
+        return;
+      }
+      const existing = files[targetFile];
+      // Manual insert: show diff if file exists and has meaningful content
+      if (existing && existing.content.trim().length > 10 && existing.content !== code) {
+        pendingInsertRef.current = { code, targetFile };
+        setDiffPreview({ fileName: targetFile, oldCode: existing.content, newCode: code });
+      } else {
+        applyCodeDirect(code, targetFile);
+      }
+    } catch (err) {
+      console.error("[handleInsertCode] Error:", err);
+      addToast({ type: "error", message: `코드 삽입 실패: ${targetFile}` });
     }
   }, [files, applyCodeDirect, addToast]);
 
@@ -1312,8 +1549,17 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
     // Fallback: simulated shell
     const lower = cmd.toLowerCase().trim();
-    if (lower === "ls") {
-      setShellHistory((prev) => [...prev, Object.keys(files).join("  ")]);
+    if (lower === "ls" || lower === "ls -la" || lower === "ls -l") {
+      const fileNames = Object.keys(files);
+      if (lower === "ls") {
+        setShellHistory((prev) => [...prev, fileNames.join("  ")]);
+      } else {
+        const lines = fileNames.map((f) => {
+          const size = files[f]?.content?.length ?? 0;
+          return `-rw-r--r--  1 user  staff  ${String(size).padStart(6)} Feb 11 12:00 ${f}`;
+        });
+        setShellHistory((prev) => [...prev, `total ${fileNames.length}`, ...lines]);
+      }
     } else if (lower === "clear") {
       setShellHistory([]);
     } else if (lower.startsWith("echo ")) {
@@ -1324,8 +1570,43 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
       setShellHistory((prev) => [...prev, "v20.11.0 (simulated)"]);
     } else if (lower === "npm -v") {
       setShellHistory((prev) => [...prev, "10.2.4 (simulated)"]);
+    } else if (lower.startsWith("cat ")) {
+      const fileName = cmd.slice(4).trim();
+      const file = files[fileName];
+      if (file) {
+        setShellHistory((prev) => [...prev, ...file.content.split("\n")]);
+      } else {
+        setShellHistory((prev) => [...prev, `cat: ${fileName}: No such file or directory`]);
+      }
+    } else if (lower.startsWith("head ")) {
+      const fileName = cmd.slice(5).trim();
+      const file = files[fileName];
+      if (file) {
+        setShellHistory((prev) => [...prev, ...file.content.split("\n").slice(0, 10)]);
+      } else {
+        setShellHistory((prev) => [...prev, `head: ${fileName}: No such file or directory`]);
+      }
+    } else if (lower.startsWith("wc ")) {
+      const fileName = cmd.slice(3).trim();
+      const file = files[fileName];
+      if (file) {
+        const lines = file.content.split("\n").length;
+        const words = file.content.split(/\s+/).filter(Boolean).length;
+        const chars = file.content.length;
+        setShellHistory((prev) => [...prev, `  ${lines}  ${words}  ${chars} ${fileName}`]);
+      } else {
+        setShellHistory((prev) => [...prev, `wc: ${fileName}: No such file or directory`]);
+      }
+    } else if (lower === "date") {
+      setShellHistory((prev) => [...prev, new Date().toString()]);
+    } else if (lower === "whoami") {
+      setShellHistory((prev) => [...prev, "user"]);
+    } else if (lower === "uname -a" || lower === "uname") {
+      setShellHistory((prev) => [...prev, "FieldNine OS 2.0 (WebContainer/simulated) x86_64"]);
+    } else if (lower === "env") {
+      setShellHistory((prev) => [...prev, "NODE_ENV=development", "HOME=/home/user", "SHELL=/bin/bash", `PWD=/home/user/project`, `FILES=${Object.keys(files).length}`]);
     } else if (lower === "help") {
-      setShellHistory((prev) => [...prev, "Enable WebContainer for real Node.js runtime. Commands: ls, pwd, echo, clear, help"]);
+      setShellHistory((prev) => [...prev, "Commands: ls, cat, head, wc, pwd, echo, date, whoami, uname, env, clear, help", "Enable WebContainer for real Node.js runtime."]);
     } else {
       setShellHistory((prev) => [...prev, `bash: ${cmd}: command not found (enable WebContainer for real runtime)`]);
     }
@@ -1492,7 +1773,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
   return (
     <div className={`flex h-screen bg-[var(--r-bg)] ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
       {/* ===== Left Sidebar (48px) — hidden on mobile ===== */}
-      <div className="hidden md:flex w-12 bg-[var(--r-surface)] flex-col items-center py-3 border-r border-[var(--r-border)] shrink-0">
+      <div className="hidden md:flex w-12 bg-[var(--r-surface)]/70 backdrop-blur-xl flex-col items-center py-3 border-r border-[var(--r-border)]/50 shrink-0">
         <button
           type="button"
           onClick={onGoHome}
@@ -1594,7 +1875,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
       {/* ===== Main IDE Area ===== */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* ===== Top Header Bar ===== */}
-        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 bg-[var(--r-surface)] border-b border-[var(--r-border)] shrink-0 overflow-x-auto">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 bg-[var(--r-surface)]/80 backdrop-blur-xl border-b border-[var(--r-border)]/50 shrink-0 overflow-x-auto">
           <div className="flex items-center gap-1 sm:gap-2">
             <button
               type="button"
@@ -1787,7 +2068,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
         {/* ===== Mobile Panel Switcher ===== */}
         {isMobile && (
-          <div className="flex items-center bg-[var(--r-surface)] border-b border-[var(--r-border)] shrink-0 md:hidden">
+          <div className="flex items-center bg-[var(--r-surface)]/80 backdrop-blur-xl border-b border-[var(--r-border)]/50 shrink-0 md:hidden">
             {([
               ["editor", FileCode2, "Code"],
               ["preview", Monitor, "Preview"],
@@ -1844,7 +2125,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                     srcDoc={previewHTML}
                     title="Live Preview"
                     className="w-full h-full bg-white border-0"
-                    sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
+                    sandbox="allow-scripts allow-forms"
                   />
                 </div>
               </div>
@@ -1852,7 +2133,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
             {mobilePanel === "console" && (
               <div className="flex-1 min-h-0">
-                <ConsolePanel consoleTab={consoleTab} setConsoleTab={setConsoleTab} consoleLines={consoleLines} setConsoleLines={setConsoleLines} consoleFilter={consoleFilter} setConsoleFilter={setConsoleFilter} shellHistory={shellHistory} setShellHistory={setShellHistory} shellInput={shellInput} setShellInput={setShellInput} handleShellSubmit={handleShellSubmit} gitHistory={gitHistory} gitLoading={gitLoading} fetchGitHistory={fetchGitHistory} restoringCommit={restoringCommit} handleGitRestore={handleGitRestore} onCollapse={() => setMobilePanel("editor")} onAIFix={handleAIFix} wcEnabled={wcEnabled} onWcToggle={() => setWcEnabled((v) => !v)} wcStatus={wcStatus} wcShellProcess={wcShellProcess} />
+                <ConsolePanel consoleTab={consoleTab} setConsoleTab={setConsoleTab} consoleLines={consoleLines} setConsoleLines={setConsoleLines} consoleFilter={consoleFilter} setConsoleFilter={setConsoleFilter} shellHistory={shellHistory} setShellHistory={setShellHistory} shellInput={shellInput} setShellInput={setShellInput} handleShellSubmit={handleShellSubmit} gitHistory={gitHistory} gitLoading={gitLoading} fetchGitHistory={fetchGitHistory} restoringCommit={restoringCommit} handleGitRestore={handleGitRestore} onCollapse={() => setMobilePanel("editor")} onAIFix={handleAIFix} iframeRef={iframeRef} wcEnabled={wcEnabled} onWcToggle={() => setWcEnabled((v) => !v)} wcStatus={wcStatus} wcShellProcess={wcShellProcess} />
               </div>
             )}
 
@@ -1889,11 +2170,18 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
 
             {/* --- Editor + Console --- */}
             <Panel defaultSize="40" minSize="25" id="editor-console">
+              <div className="relative h-full overflow-hidden bg-[#0d1117]">
+                {/* Gradient Mesh Background */}
+                <div className="absolute inset-0 pointer-events-none z-0">
+                  <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-[#0079f2]/8 rounded-full blur-[120px]" />
+                  <div className="absolute bottom-0 right-1/4 w-[350px] h-[350px] bg-[#8b5cf6]/8 rounded-full blur-[100px]" />
+                  <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-[#00b894]/6 rounded-full blur-[80px]" />
+                </div>
               <Group
                 orientation="vertical"
                 defaultLayout={verticalLayout.defaultLayout}
                 onLayoutChanged={verticalLayout.onLayoutChanged}
-                className="h-full"
+                className="h-full relative z-[1]"
                 id="replit-v"
               >
                 {/* Editor (supports split view) */}
@@ -1968,6 +2256,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                       handleGitRestore={handleGitRestore}
                       onCollapse={() => consolePanelRef.current?.collapse()}
                       onAIFix={handleAIFix}
+                      iframeRef={iframeRef}
                       wcEnabled={wcEnabled}
                       onWcToggle={() => setWcEnabled((v) => !v)}
                       wcStatus={wcStatus}
@@ -1976,6 +2265,7 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
                   </ErrorBoundary>
                 </Panel>
               </Group>
+              </div>
             </Panel>
 
             <Separator className="splitter-handle-v" />
@@ -2009,6 +2299,42 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
               </ErrorBoundary>
             </Panel>
           </Group>
+        )}
+
+        {/* ===== Global IDE Status Bar ===== */}
+        {!isMobile && (
+          <div className="flex items-center justify-between h-[22px] bg-[#007ACC]/50 backdrop-blur-xl border-t border-[#007ACC]/20 text-white text-[11px] px-2 shrink-0 select-none font-mono">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <GitBranch size={11} />
+                main
+              </span>
+              <span className="flex items-center gap-1">
+                <span className={`w-[7px] h-[7px] rounded-full ${
+                  isSyncing ? "bg-[#fbbf24] animate-pulse" :
+                  showSynced ? "bg-[#3fb950]" :
+                  "bg-[#3fb950]"
+                }`} />
+                {isSyncing ? "Syncing" : "Synced"}
+              </span>
+              {consoleLines.filter((l) => l.type === "error").length > 0 && (
+                <span className="flex items-center gap-1 bg-white/15 px-1.5 py-[1px] rounded">
+                  <AlertTriangle size={10} />
+                  {consoleLines.filter((l) => l.type === "error").length}
+                </span>
+              )}
+              {consoleLines.filter((l) => l.type === "warn").length > 0 && (
+                <span className="flex items-center gap-1 text-white/80">
+                  {consoleLines.filter((l) => l.type === "warn").length} warnings
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span>{Object.keys(files).length} files</span>
+              <span>UTF-8</span>
+              <span>Spaces: 2</span>
+            </div>
+          </div>
         )}
       </div>
       {diffPreview && (
