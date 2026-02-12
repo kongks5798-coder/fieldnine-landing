@@ -88,10 +88,8 @@ const DEFAULT_FILES: Record<string, VFile> = {
       </div>
       <div class="model-controls">
         <select id="modelSelector" class="glass-select">
-          <option value="gemini">✨ Gemini 1.5 Pro (Free)</option>
-          <option value="deepseek">🧠 DeepSeek R1 (Budget)</option>
-          <option value="groq">⚡ Groq Llama 3 (Fast)</option>
-          <option value="openai">🤖 OpenAI GPT-4o</option>
+          <option value="gemini">✨ Gemini 2.0 Flash</option>
+          <option value="claude">🟣 Claude Sonnet (Cowork)</option>
         </select>
         <button id="apiKeyBtn" class="btn-icon" title="API Keys">🔑</button>
       </div>
@@ -383,8 +381,15 @@ body {
     language: "javascript",
     content: `// === Apex Intelligence — Model Registry ===
 window.APEX_MODELS = {
+  claude: {
+    name: 'Claude Sonnet',
+    provider: 'Anthropic',
+    badge: '🟣',
+    color: '#7c3aed',
+    mode: 'postMessage',
+  },
   gemini: {
-    name: 'Gemini 1.5 Pro',
+    name: 'Gemini 2.0 Flash',
     provider: 'Google',
     badge: '✨',
     color: '#4285f4',
@@ -553,166 +558,205 @@ window.AgentEngine = (function() {
   "app.js": {
     name: "app.js",
     language: "javascript",
-    content: `// app.js — Real Gemini API Integration
+    content: `// app.js — Gemini + Claude Cowork Mode
 // Safety: No setInterval/recursion. All async with try-catch. No infinite loop risk.
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('\\u{1F680} Field Nine OS: Apex Engine Booting (Live API)...');
+    console.log('\\u{1F680} Field Nine OS: Apex Engine Booting (Cowork Mode)...');
 
     var GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     var API_KEY_STORAGE = 'apex_gemini_api_key';
     var CHAT_HISTORY_KEY = 'apex_chat_history';
-    var MAX_HISTORY = 20; // Conversation context limit (prevents payload bloat)
-    var REQUEST_TIMEOUT_MS = 30000; // 30s max per request
+    var MODEL_STORAGE = 'apex_active_model';
+    var MAX_HISTORY = 20;
+    var REQUEST_TIMEOUT_MS = 30000;
+
+    // ── Claude postMessage bridge ──
+    var _claudePending = {};  // requestId → { resolve, reject }
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.source === 'f9-ai-response' && e.data.requestId) {
+            var cb = _claudePending[e.data.requestId];
+            if (!cb) return;
+            delete _claudePending[e.data.requestId];
+            if (e.data.error) cb.reject(new Error(e.data.error));
+            else cb.resolve(e.data.text || '');
+        }
+    });
 
     var System = {
-        isSending: false,    // Duplicate send guard
-        chatMemory: [],      // Gemini conversation history
+        isSending: false,
+        chatMemory: [],
+        activeModel: 'gemini', // 'gemini' or 'claude'
 
         init: function() {
+            this.activeModel = this._loadModel();
             this.bindEvents();
             this.loadApiKey();
             this.restoreChatMemory();
-            console.log('[System] Init complete. API key:', this.getApiKey() ? 'SET' : 'NOT SET');
+            this._syncModelUI();
+            console.log('[System] Model:', this.activeModel, '| Gemini key:', this.getApiKey() ? 'SET' : 'NOT SET');
         },
 
-        // ── API Key Management ──
+        // ── Model Switching ──
+        _loadModel: function() {
+            try { return localStorage.getItem(MODEL_STORAGE) || 'gemini'; }
+            catch(e) { return 'gemini'; }
+        },
+        _saveModel: function(m) {
+            try { localStorage.setItem(MODEL_STORAGE, m); } catch(e) {}
+        },
+        _syncModelUI: function() {
+            var sel = document.getElementById('modelSelector');
+            if (sel) {
+                for (var i = 0; i < sel.options.length; i++) {
+                    if (sel.options[i].value === this.activeModel) { sel.selectedIndex = i; break; }
+                }
+            }
+            var badge = this.activeModel === 'claude' ? '\\u{1F7E3} Claude Sonnet' : '\\u2728 Gemini Flash';
+            window.ApexUI.setModelDisplay(badge + ' Active');
+        },
+
+        // ── API Key ──
         getApiKey: function() {
             try { return localStorage.getItem(API_KEY_STORAGE) || ''; }
             catch(e) { return ''; }
         },
-
         setApiKey: function(key) {
             try { localStorage.setItem(API_KEY_STORAGE, key.trim()); }
-            catch(e) { console.warn('[System] localStorage unavailable'); }
+            catch(e) {}
         },
-
         loadApiKey: function() {
-            if (!this.getApiKey()) {
+            if (this.activeModel === 'gemini' && !this.getApiKey()) {
                 window.ApexUI.addMessage('ai',
-                    '<strong>\\u{1F511} Gemini API \\ud0a4\\uac00 \\ud544\\uc694\\ud569\\ub2c8\\ub2e4</strong><br>' +
-                    '<code>/key YOUR_API_KEY</code> \\ub97c \\uc785\\ub825\\ud558\\uba74 \\uc800\\uc7a5\\ub429\\ub2c8\\ub2e4.<br>' +
-                    '<a href="https://aistudio.google.com/apikey" target="_blank" ' +
-                    'style="color:#4285f4;text-decoration:underline;">Google AI Studio\\uc5d0\\uc11c \\ubc1c\\uae09</a>'
+                    '<strong>\\u{1F511} Gemini API \\ud0a4 \\ud544\\uc694</strong><br>' +
+                    '<code>/key YOUR_API_KEY</code> \\uc785\\ub825 \\ub610\\ub294 <code>/model claude</code>\\ub85c \\uc804\\ud658<br>' +
+                    '<a href="https://aistudio.google.com/apikey" target="_blank" style="color:#4285f4;text-decoration:underline;">Google AI Studio</a>'
                 );
             }
         },
 
-        // ── Chat Memory (for multi-turn) ──
+        // ── Chat Memory ──
         restoreChatMemory: function() {
             try {
                 var saved = localStorage.getItem(CHAT_HISTORY_KEY);
                 if (saved) this.chatMemory = JSON.parse(saved).slice(-MAX_HISTORY);
             } catch(e) { this.chatMemory = []; }
         },
-
         saveChatMemory: function() {
-            try {
-                var trimmed = this.chatMemory.slice(-MAX_HISTORY);
-                localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(trimmed));
-            } catch(e) {}
+            try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(this.chatMemory.slice(-MAX_HISTORY))); }
+            catch(e) {}
         },
 
-        // ── Event Binding (no recursion, no intervals) ──
+        // ── Events ──
         bindEvents: function() {
             var self = this;
             var sendBtn = document.getElementById('sendBtn');
             if (sendBtn) sendBtn.addEventListener('click', function() { self.handleSend(); });
 
             var chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        self.handleSend();
-                    }
-                });
-            }
+            if (chatInput) chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); self.handleSend(); }
+            });
 
             var selector = document.getElementById('modelSelector');
-            if (selector) {
-                selector.addEventListener('change', function(e) {
-                    var name = e.target.options[e.target.selectedIndex].text;
-                    window.ApexUI.setModelDisplay(name + ' Active');
-                });
-            }
+            if (selector) selector.addEventListener('change', function(e) {
+                var val = e.target.value;
+                if (val === 'gemini' || val === 'claude') {
+                    self.activeModel = val;
+                    self._saveModel(val);
+                    self._syncModelUI();
+                    window.ApexUI.addMessage('ai',
+                        '\\u{1F504} <strong>' + (val === 'claude' ? 'Claude Sonnet' : 'Gemini Flash') + '</strong> \\ubaa8\\ub4dc\\ub85c \\uc804\\ud658');
+                }
+            });
         },
 
-        // ── Main Send Handler ──
+        // ── Main Send ──
         handleSend: async function() {
-            // Guard: prevent duplicate sends
-            if (this.isSending) {
-                console.warn('[System] Request already in progress — blocked duplicate');
-                return;
-            }
+            if (this.isSending) return;
 
             var input = document.getElementById('chatInput');
             var text = (input ? input.value.trim() : '');
             if (!text) return;
 
-            // Slash command: /key
+            // Slash: /key
             if (text.startsWith('/key ')) {
                 var newKey = text.slice(5).trim();
-                if (newKey.length < 10) {
-                    window.ApexUI.addMessage('ai', '\\u274C API \\ud0a4\\uac00 \\ub108\\ubb34 \\uc9e7\\uc2b5\\ub2c8\\ub2e4.');
-                    return;
-                }
+                if (newKey.length < 10) { window.ApexUI.addMessage('ai', '\\u274C \\ud0a4\\uac00 \\ub108\\ubb34 \\uc9e7\\uc2b5\\ub2c8\\ub2e4.'); return; }
                 this.setApiKey(newKey);
                 input.value = '';
-                window.ApexUI.addMessage('ai',
-                    '\\u2705 <strong>API \\ud0a4 \\uc800\\uc7a5 \\uc644\\ub8cc!</strong> \\uc774\\uc81c \\ub300\\ud654\\ub97c \\uc2dc\\uc791\\ud558\\uc138\\uc694.');
+                window.ApexUI.addMessage('ai', '\\u2705 <strong>Gemini API \\ud0a4 \\uc800\\uc7a5 \\uc644\\ub8cc!</strong>');
                 return;
             }
-
-            // Slash command: /clear
+            // Slash: /model
+            if (text.startsWith('/model ')) {
+                var m = text.slice(7).trim().toLowerCase();
+                if (m === 'gemini' || m === 'claude') {
+                    this.activeModel = m;
+                    this._saveModel(m);
+                    this._syncModelUI();
+                    input.value = '';
+                    window.ApexUI.addMessage('ai',
+                        '\\u{1F504} <strong>' + (m === 'claude' ? 'Claude Sonnet' : 'Gemini Flash') + '</strong> \\ubaa8\\ub4dc \\ud65c\\uc131\\ud654');
+                } else {
+                    window.ApexUI.addMessage('ai', '\\u274C \\uc0ac\\uc6a9 \\uac00\\ub2a5: <code>/model gemini</code> \\ub610\\ub294 <code>/model claude</code>');
+                }
+                return;
+            }
+            // Slash: /clear
             if (text === '/clear') {
                 this.chatMemory = [];
                 this.saveChatMemory();
-                var history = document.getElementById('chatHistory');
-                if (history) history.innerHTML = '';
+                var h = document.getElementById('chatHistory');
+                if (h) h.innerHTML = '';
                 input.value = '';
-                window.ApexUI.addMessage('ai', '\\u{1F9F9} \\ub300\\ud654 \\uae30\\ub85d\\uc774 \\ucd08\\uae30\\ud654\\ub418\\uc5c8\\uc2b5\\ub2c8\\ub2e4.');
+                window.ApexUI.addMessage('ai', '\\u{1F9F9} \\ub300\\ud654 \\ucd08\\uae30\\ud654 \\uc644\\ub8cc');
                 return;
             }
-
-            // Check API key
-            var apiKey = this.getApiKey();
-            if (!apiKey) {
+            // Slash: /help
+            if (text === '/help') {
+                input.value = '';
                 window.ApexUI.addMessage('ai',
-                    '\\u{1F511} API \\ud0a4\\uac00 \\uc124\\uc815\\ub418\\uc9c0 \\uc54a\\uc558\\uc2b5\\ub2c8\\ub2e4. <code>/key YOUR_KEY</code> \\ub97c \\uc785\\ub825\\ud574\\uc8fc\\uc138\\uc694.');
+                    '<strong>\\u{2753} \\uba85\\ub839\\uc5b4</strong><br>' +
+                    '<code>/model gemini</code> — Gemini Flash \\ubaa8\\ub4dc<br>' +
+                    '<code>/model claude</code> — Claude Sonnet \\ubaa8\\ub4dc (IDE \\ud504\\ub85d\\uc2dc)<br>' +
+                    '<code>/key API_KEY</code> — Gemini API \\ud0a4 \\uc124\\uc815<br>' +
+                    '<code>/clear</code> — \\ub300\\ud654 \\ucd08\\uae30\\ud654');
                 return;
             }
 
-            // Show user message
+            // Check: Gemini needs API key, Claude works via IDE proxy
+            if (this.activeModel === 'gemini' && !this.getApiKey()) {
+                window.ApexUI.addMessage('ai',
+                    '\\u{1F511} Gemini \\ud0a4 \\ud544\\uc694. <code>/key YOUR_KEY</code> \\ub610\\ub294 <code>/model claude</code>');
+                return;
+            }
+
             window.ApexUI.addMessage('user', this._escapeHTML(text));
             input.value = '';
 
-            // Add to memory
             this.chatMemory.push({ role: 'user', parts: [{ text: text }] });
 
-            // Lock sending + show typing
             this.isSending = true;
             this._setInputEnabled(false);
             var removeTyping = window.ApexUI.showTyping();
 
             try {
-                var reply = await this._callGeminiAPI(apiKey, this.chatMemory);
+                var reply;
+                if (this.activeModel === 'claude') {
+                    reply = await this._callClaudeViaParent(text);
+                } else {
+                    reply = await this._callGeminiAPI(this.getApiKey(), this.chatMemory);
+                }
 
                 removeTyping();
-
-                // Add AI reply to memory
                 this.chatMemory.push({ role: 'model', parts: [{ text: reply }] });
                 this.saveChatMemory();
-
                 window.ApexUI.addMessage('ai', this._formatReply(reply));
 
             } catch (err) {
                 removeTyping();
                 console.error('[System] API Error:', err.message);
-
-                // ── Avengers Mode: only on REAL errors ──
-                window.ApexUI.addMessage('ai',
-                    '\\u274C <strong>API \\uc624\\ub958:</strong> ' + this._escapeHTML(err.message));
-
+                window.ApexUI.addMessage('ai', '\\u274C <strong>API \\uc624\\ub958:</strong> ' + this._escapeHTML(err.message));
                 if (window.AgentEngine && typeof window.AgentEngine.runAvengers === 'function') {
                     await window.AgentEngine.runAvengers();
                 }
@@ -723,21 +767,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
 
-        // ── Gemini API Call (with timeout, no retry loop) ──
+        // ── Claude via postMessage to parent IDE ──
+        _callClaudeViaParent: function(text) {
+            var requestId = 'req-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+            // Build context from recent memory
+            var context = this.chatMemory.slice(-6).map(function(m) {
+                return (m.role === 'user' ? 'User' : 'AI') + ': ' + (m.parts[0].text || '').slice(0, 500);
+            }).join('\\n');
+            var fullPrompt = context ? context + '\\nUser: ' + text : text;
+
+            return new Promise(function(resolve, reject) {
+                _claudePending[requestId] = { resolve: resolve, reject: reject };
+                // Timeout safety (no setInterval)
+                var tid = setTimeout(function() {
+                    if (_claudePending[requestId]) {
+                        delete _claudePending[requestId];
+                        reject(new Error('Claude \\uc751\\ub2f5 \\uc2dc\\uac04 \\ucd08\\uacfc (30s)'));
+                    }
+                }, 30000);
+
+                window.parent.postMessage({
+                    source: 'f9-ai-request',
+                    requestId: requestId,
+                    prompt: fullPrompt,
+                    model: 'claude-sonnet'
+                }, '*');
+
+                // Wrap resolve/reject to clear timeout
+                var origResolve = resolve;
+                var origReject = reject;
+                _claudePending[requestId] = {
+                    resolve: function(v) { clearTimeout(tid); origResolve(v); },
+                    reject: function(e) { clearTimeout(tid); origReject(e); }
+                };
+            });
+        },
+
+        // ── Gemini API ──
         _callGeminiAPI: async function(apiKey, chatHistory) {
             var url = GEMINI_API_URL + '?key=' + encodeURIComponent(apiKey);
-
-            // Trim history to prevent payload bloat
-            var trimmedHistory = chatHistory.slice(-MAX_HISTORY);
-
             var body = JSON.stringify({
-                contents: trimmedHistory,
-                generationConfig: {
-                    temperature: 0.8,
-                    maxOutputTokens: 2048,
-                    topP: 0.95,
-                    topK: 40
-                },
+                contents: chatHistory.slice(-MAX_HISTORY),
+                generationConfig: { temperature: 0.8, maxOutputTokens: 2048, topP: 0.95, topK: 40 },
                 safetySettings: [
                     { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
                     { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
@@ -745,77 +816,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
                 ]
             });
-
-            // Timeout via AbortController (no setInterval)
             var controller = new AbortController();
             var timeoutId = setTimeout(function() { controller.abort(); }, REQUEST_TIMEOUT_MS);
-
             try {
                 var res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: body,
-                    signal: controller.signal
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: body, signal: controller.signal
                 });
-
                 clearTimeout(timeoutId);
-
                 if (!res.ok) {
                     var errBody = '';
                     try { errBody = (await res.json()).error.message; } catch(e) {}
                     throw new Error('HTTP ' + res.status + (errBody ? ': ' + errBody : ''));
                 }
-
                 var data = await res.json();
-
-                // Extract text from Gemini response
                 var candidates = data.candidates;
                 if (!candidates || !candidates[0] || !candidates[0].content) {
-                    var blockReason = (data.promptFeedback && data.promptFeedback.blockReason) || 'Unknown';
-                    throw new Error('\\uc751\\ub2f5 \\ucc28\\ub2e8\\ub428 (reason: ' + blockReason + ')');
+                    var reason = (data.promptFeedback && data.promptFeedback.blockReason) || 'Unknown';
+                    throw new Error('\\uc751\\ub2f5 \\ucc28\\ub2e8 (' + reason + ')');
                 }
-
-                var parts = candidates[0].content.parts;
-                var textParts = parts.map(function(p) { return p.text || ''; });
-                return textParts.join('');
-
+                return candidates[0].content.parts.map(function(p) { return p.text || ''; }).join('');
             } catch(err) {
                 clearTimeout(timeoutId);
-                if (err.name === 'AbortError') {
-                    throw new Error('\\uc694\\uccad \\uc2dc\\uac04 \\ucd08\\uacfc (30\\ucd08). \\ub124\\ud2b8\\uc6cc\\ud06c\\ub97c \\ud655\\uc778\\ud558\\uc138\\uc694.');
-                }
+                if (err.name === 'AbortError') throw new Error('\\uc694\\uccad \\uc2dc\\uac04 \\ucd08\\uacfc (30s)');
                 throw err;
             }
         },
 
-        // ── Helpers (no recursion) ──
+        // ── Helpers ──
         _escapeHTML: function(str) {
-            var d = document.createElement('div');
-            d.textContent = str;
-            return d.innerHTML;
+            var d = document.createElement('div'); d.textContent = str; return d.innerHTML;
         },
-
         _formatReply: function(text) {
-            // Basic markdown: **bold**, \\n→<br>, \\'code\\'
             return text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')
-                .replace(/\\'([^\\']+)\\'/g, '<code>$1</code>')
+                .replace(/\`([^\`]+)\`/g, '<code>$1</code>')
                 .replace(/\\n/g, '<br>');
         },
-
         _setInputEnabled: function(enabled) {
             var input = document.getElementById('chatInput');
             var btn = document.getElementById('sendBtn');
-            if (input) { input.disabled = !enabled; }
-            if (btn) {
-                btn.disabled = !enabled;
-                btn.textContent = enabled ? '\\u{25B6}' : '\\u23F3';
-            }
+            if (input) input.disabled = !enabled;
+            if (btn) { btn.disabled = !enabled; btn.textContent = enabled ? '\\u{25B6}' : '\\u23F3'; }
         },
-
         addMessage: function(role, text) {
             window.ApexUI.addMessage(role, role === 'user' ? this._escapeHTML(text) : text);
         }
@@ -1360,6 +1404,55 @@ document.addEventListener('click',function(e){e.preventDefault();e.stopPropagati
           }
         }
         setInspectorMode(false);
+      }
+
+      // Claude proxy: preview iframe requests AI via parent (authenticated)
+      if (e.data?.source === "f9-ai-request") {
+        const { requestId, prompt, model } = e.data;
+        if (!requestId || !prompt) return;
+        (async () => {
+          try {
+            const res = await fetch("/api/chat", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json", "X-Requested-With": "F9OS" },
+              body: JSON.stringify({
+                messages: [{ role: "user", content: prompt }],
+                model: model || "claude-sonnet",
+              }),
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            // Collect streamed SSE text
+            const reader = res.body?.getReader();
+            if (!reader) throw new Error("No reader");
+            const decoder = new TextDecoder();
+            let fullText = "";
+            let sseBuffer = "";
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              sseBuffer += decoder.decode(value, { stream: true });
+              const lines = sseBuffer.split("\n");
+              sseBuffer = lines.pop() ?? "";
+              for (const line of lines) {
+                if (!line.startsWith("data: ")) continue;
+                const raw = line.slice(6);
+                if (raw === "[DONE]") continue;
+                try {
+                  const parsed = JSON.parse(raw);
+                  if (parsed.type === "text-delta" && parsed.text) fullText += parsed.text;
+                } catch {}
+              }
+            }
+            iframeRef.current?.contentWindow?.postMessage(
+              { source: "f9-ai-response", requestId, text: fullText }, "*"
+            );
+          } catch (err) {
+            iframeRef.current?.contentWindow?.postMessage(
+              { source: "f9-ai-response", requestId, error: err instanceof Error ? err.message : "Unknown error" }, "*"
+            );
+          }
+        })();
       }
     };
     window.addEventListener("message", handler);

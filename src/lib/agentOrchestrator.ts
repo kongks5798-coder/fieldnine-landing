@@ -32,6 +32,41 @@ export interface FileChange {
 
 type SSEWriter = (event: AgentEvent) => void;
 
+/** Strip markdown code fences that AI hallucinates despite instructions */
+function stripMarkdownFences(text: string): string {
+  let s = text.trim();
+  // Remove opening fence: ```html, ```javascript, ```css, ```js, etc.
+  s = s.replace(/^```\w*\s*\n?/, "");
+  // Remove closing fence
+  s = s.replace(/\n?```\s*$/, "");
+  return s.trim();
+}
+
+/** Parse files from fixer output — handles both `--- file ---` and markdown formats */
+function parseMultiFileOutput(text: string): FileChange[] {
+  const files: FileChange[] = [];
+
+  // Format 1: --- filename.ext ---\n(content)
+  const dashRegex = /---\s+(\S+)\s+---\n([\s\S]*?)(?=---\s+\S+\s+---|$)/g;
+  let match;
+  while ((match = dashRegex.exec(text)) !== null) {
+    const path = match[1].trim();
+    const content = match[2].trim();
+    if (path && content) files.push({ path, content });
+  }
+  if (files.length > 0) return files;
+
+  // Format 2: ```language\n// filename.ext\n(content)\n```
+  const fenceRegex = /```\w*\s*\n(?:\/\/\s*(\S+\.(?:js|ts|css|html))\s*\n)?([\s\S]*?)```/g;
+  while ((match = fenceRegex.exec(text)) !== null) {
+    const path = match[1]?.trim();
+    const content = match[2]?.trim();
+    if (path && content) files.push({ path, content });
+  }
+
+  return files;
+}
+
 // ===== Model Helpers =====
 
 function getModel(_complexity: "simple" | "complex") {
@@ -148,6 +183,9 @@ Rules:
     content += chunk;
   }
 
+  // Strip markdown fences AI often hallucinates despite instructions
+  content = stripMarkdownFences(content);
+
   emit({ type: "code", file: subtask.targetFile, content });
   emit({ type: "subtask", id: subtask.id, description: subtask.description, status: "done" });
 
@@ -247,17 +285,10 @@ Rules:
     fullText += chunk;
   }
 
-  // Parse fixed files from output
-  const fixedFiles: FileChange[] = [];
-  const fileRegex = /---\s+(\S+)\s+---\n([\s\S]*?)(?=---\s+\S+\s+---|$)/g;
-  let match;
-  while ((match = fileRegex.exec(fullText)) !== null) {
-    const path = match[1].trim();
-    const content = match[2].trim();
-    if (path && content) {
-      fixedFiles.push({ path, content });
-      emit({ type: "code", file: path, content });
-    }
+  // Parse fixed files — handles both `--- file ---` and markdown formats
+  const fixedFiles = parseMultiFileOutput(fullText);
+  for (const f of fixedFiles) {
+    emit({ type: "code", file: f.path, content: f.content });
   }
 
   // If parsing failed, return original files
@@ -303,7 +334,7 @@ export async function runAgentPipeline(
     emit({ type: "stage", stage: "complete" });
     emit({ type: "complete", files });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    emit({ type: "error", message });
+    console.error("[agentOrchestrator]", err instanceof Error ? err.message : err);
+    emit({ type: "error", message: "Agent pipeline failed. Please try again." });
   }
 }
