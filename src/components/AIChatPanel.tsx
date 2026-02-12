@@ -47,7 +47,7 @@ const PARSE_CACHE_MAX = 100;
 function cachedParse(content: string): ParsedAIResponse {
   const cached = parseCache.get(content);
   if (cached) return cached;
-  const result = cachedParse(content);
+  const result = parseAIResponse(content);
   if (parseCache.size >= PARSE_CACHE_MAX) {
     const first = parseCache.keys().next().value;
     if (first !== undefined) parseCache.delete(first);
