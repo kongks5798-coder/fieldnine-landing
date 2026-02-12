@@ -25,13 +25,15 @@ export const chatSchema = z.object({
   file: safeString(500_000).optional(),
   filename: safeString(200).optional(),
   fileContext: z
-    .array(
-      z.object({
-        name: safeString(200),
-        content: safeLongString(200_000),
-      })
-    )
-    .max(20)
+    .union([
+      z.array(
+        z.object({
+          name: safeString(200),
+          content: safeLongString(200_000),
+        })
+      ).max(20),
+      z.record(safeString(200), safeLongString(200_000)),
+    ])
     .optional(),
   livePreviewUrl: safeString(500).optional(),
 });
